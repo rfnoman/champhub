@@ -76,7 +76,7 @@ export function PayoutBoard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("draftPayout")}</CardTitle>
+          <CardTitle className="label-sm">{t("draftPayout")}</CardTitle>
           <p className="text-muted-foreground text-xs">{t("draftHint")}</p>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
@@ -123,7 +123,7 @@ export function PayoutBoard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("payouts")}</CardTitle>
+          <CardTitle className="label-sm">{t("payouts")}</CardTitle>
         </CardHeader>
         <CardContent>
           {payouts.length === 0 ? (
@@ -175,7 +175,7 @@ export function PayoutBoard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("refunds")}</CardTitle>
+          <CardTitle className="label-sm">{t("refunds")}</CardTitle>
         </CardHeader>
         <CardContent>
           {refunds.length === 0 ? (

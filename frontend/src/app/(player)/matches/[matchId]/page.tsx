@@ -85,7 +85,7 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">
+          <CardTitle className="label-sm">
             {t("roster", { count: data.roster_count, capacity: data.capacity })}
           </CardTitle>
         </CardHeader>

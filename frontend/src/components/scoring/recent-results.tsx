@@ -30,7 +30,7 @@ export async function RecentResults({ playerId }: { playerId: string }) {
   return (
     <Card className="w-full max-w-xl" data-testid="recent-results">
       <CardHeader>
-        <CardTitle className="text-sm">{t("heading")}</CardTitle>
+        <CardTitle className="label-sm">{t("heading")}</CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="flex flex-col divide-y">

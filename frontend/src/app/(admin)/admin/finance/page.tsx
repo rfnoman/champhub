@@ -33,7 +33,7 @@ export default async function AdminFinancePage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("platformEarned")}</CardTitle>
+            <CardTitle className="label-sm">{t("platformEarned")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="num text-2xl font-bold tabular-nums" data-testid="platform-total">
@@ -43,7 +43,7 @@ export default async function AdminFinancePage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("owedToTurfs")}</CardTitle>
+            <CardTitle className="label-sm">{t("owedToTurfs")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Money amount={data?.owed_to_turfs ?? 0} className="text-2xl font-bold" />
@@ -51,7 +51,7 @@ export default async function AdminFinancePage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("deliveryFees")}</CardTitle>
+            <CardTitle className="label-sm">{t("deliveryFees")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Money amount={data?.delivery ?? 0} className="text-2xl font-bold" />

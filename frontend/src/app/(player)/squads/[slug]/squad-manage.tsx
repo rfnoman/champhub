@@ -53,7 +53,7 @@ export function SquadManage({ squad }: { squad: Squad }) {
       {isLeader && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("settings")}</CardTitle>
+            <CardTitle className="label-sm">{t("settings")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-start justify-between gap-4">
@@ -83,7 +83,9 @@ export function SquadManage({ squad }: { squad: Squad }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("members", { count: squad.members.length })}</CardTitle>
+          <CardTitle className="label-sm">
+            {t("members", { count: squad.members.length })}
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {squad.members.map((member) => (

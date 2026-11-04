@@ -54,7 +54,7 @@ export default async function TurfDetailPage({ params }: { params: Promise<{ slu
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("availability")}</CardTitle>
+          <CardTitle className="label-sm">{t("availability")}</CardTitle>
           <p className="text-muted-foreground text-xs">{t("availabilityHint")}</p>
         </CardHeader>
         <CardContent>
@@ -70,7 +70,7 @@ export default async function TurfDetailPage({ params }: { params: Promise<{ slu
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("openingHours")}</CardTitle>
+            <CardTitle className="label-sm">{t("openingHours")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="flex flex-col gap-1 text-sm">
@@ -97,7 +97,7 @@ export default async function TurfDetailPage({ params }: { params: Promise<{ slu
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("amenities")}</CardTitle>
+            <CardTitle className="label-sm">{t("amenities")}</CardTitle>
           </CardHeader>
           <CardContent>
             {data.amenities.length === 0 ? (

@@ -90,7 +90,7 @@ export function InventoryBoard({
       {low.length > 0 && (
         <Card className="border-destructive/40">
           <CardHeader>
-            <CardTitle className="text-sm">{t("lowHeading", { count: low.length })}</CardTitle>
+            <CardTitle className="label-sm">{t("lowHeading", { count: low.length })}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-1.5">
             {low.map((item) => (
@@ -104,7 +104,7 @@ export function InventoryBoard({
 
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-3">
-          <CardTitle className="text-sm">{t("shelf")}</CardTitle>
+          <CardTitle className="label-sm">{t("shelf")}</CardTitle>
           <Button size="sm" variant="outline" onClick={() => setAdding((value) => !value)}>
             {adding ? t("close") : t("addProduct")}
           </Button>
@@ -159,7 +159,7 @@ export function InventoryBoard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("log")}</CardTitle>
+          <CardTitle className="label-sm">{t("log")}</CardTitle>
           <p className="text-muted-foreground text-xs">{t("logHint")}</p>
         </CardHeader>
         <CardContent>

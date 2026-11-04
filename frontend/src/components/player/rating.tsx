@@ -21,10 +21,10 @@ export function ratingTone(value: number): string {
 }
 
 function barTone(value: number): string {
-  if (value >= 80) return "bg-rating-elite";
-  if (value >= 65) return "bg-rating-strong";
-  if (value >= 50) return "bg-rating-fair";
-  return "bg-rating-low/50";
+  if (value >= 80) return "bg-rating-elite-vivid";
+  if (value >= 65) return "bg-rating-strong-vivid";
+  if (value >= 50) return "bg-rating-fair-vivid";
+  return "bg-rating-low-vivid/50";
 }
 
 /** One labelled 1–99 bar, used for both skills and shared attributes. */

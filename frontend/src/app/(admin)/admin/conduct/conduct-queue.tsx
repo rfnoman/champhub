@@ -56,7 +56,7 @@ export function ConductQueue({ reports }: { reports: ConductReport[] }) {
           <Card key={id}>
             <CardHeader className="flex-row items-start justify-between gap-3">
               <div className="min-w-0">
-                <CardTitle className="text-sm">
+                <CardTitle className="label-sm">
                   {t("against", { name: report.reported_name })}
                 </CardTitle>
                 <p className="text-muted-foreground mt-1 text-xs">

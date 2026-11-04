@@ -98,7 +98,7 @@ export function RentalBoard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("handOver")}</CardTitle>
+          <CardTitle className="label-sm">{t("handOver")}</CardTitle>
           <p className="text-muted-foreground text-xs">{t("handOverHint")}</p>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
@@ -158,7 +158,7 @@ export function RentalBoard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("out")}</CardTitle>
+          <CardTitle className="label-sm">{t("out")}</CardTitle>
         </CardHeader>
         <CardContent>
           {rentals.length === 0 ? (

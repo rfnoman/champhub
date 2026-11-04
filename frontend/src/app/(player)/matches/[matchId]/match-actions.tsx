@@ -75,7 +75,7 @@ export function MatchActions({
       {!match.is_on_roster && match.my_invite_id && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("youAreInvited")}</CardTitle>
+            <CardTitle className="label-sm">{t("youAreInvited")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button
@@ -173,7 +173,7 @@ export function MatchActions({
       {match.is_organiser && match.pending_requests.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">
+            <CardTitle className="label-sm">
               {t("pendingRequests", { count: match.pending_requests.length })}
             </CardTitle>
           </CardHeader>
@@ -238,7 +238,7 @@ export function MatchActions({
       {match.is_organiser && match.live_invites.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("invitations")}</CardTitle>
+            <CardTitle className="label-sm">{t("invitations")}</CardTitle>
             <p className="text-muted-foreground text-xs">{t("proposalsHint")}</p>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
@@ -298,7 +298,7 @@ export function MatchActions({
       {invitable.length > 0 && match.needed > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("invitePlayer")}</CardTitle>
+            <CardTitle className="label-sm">{t("invitePlayer")}</CardTitle>
             <p className="text-muted-foreground text-xs">
               {match.is_organiser ? t("inviteHintOrganiser") : t("inviteHintMember")}
             </p>

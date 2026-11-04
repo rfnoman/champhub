@@ -106,7 +106,7 @@ export function ActivityBoard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("lastTwelveWeeks")}</CardTitle>
+          <CardTitle className="label-sm">{t("lastTwelveWeeks")}</CardTitle>
           <p className="text-muted-foreground text-xs">
             {t("weekSummary", { matches: week?.matches ?? 0, calories: week?.calories ?? 0 })}
             {streak && streak.current > 0 && ` · ${t("streakWeeks", { count: streak.current })}`}
@@ -137,7 +137,7 @@ export function ActivityBoard({
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("goals")}</CardTitle>
+            <CardTitle className="label-sm">{t("goals")}</CardTitle>
             <p className="text-muted-foreground text-xs">{t("goalsHint")}</p>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -158,7 +158,7 @@ export function ActivityBoard({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("addActivity")}</CardTitle>
+            <CardTitle className="label-sm">{t("addActivity")}</CardTitle>
             <p className="text-muted-foreground text-xs">{t("addActivityHint")}</p>
           </CardHeader>
           <CardContent className="flex flex-wrap items-end gap-3">
@@ -208,7 +208,7 @@ export function ActivityBoard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("history")}</CardTitle>
+          <CardTitle className="label-sm">{t("history")}</CardTitle>
         </CardHeader>
         <CardContent>
           {logs.length === 0 ? (

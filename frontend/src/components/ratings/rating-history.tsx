@@ -32,7 +32,7 @@ export async function RatingHistory({ changes }: { changes: RatingChange[] }) {
   return (
     <Card className="w-full max-w-xl" data-testid="rating-history">
       <CardHeader>
-        <CardTitle className="text-sm">{t("heading")}</CardTitle>
+        <CardTitle className="label-sm">{t("heading")}</CardTitle>
         <p className="text-muted-foreground text-xs">{t("hint")}</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

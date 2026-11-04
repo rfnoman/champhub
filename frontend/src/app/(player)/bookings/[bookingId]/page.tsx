@@ -70,7 +70,7 @@ export default async function BookingPage({ params }: { params: Promise<{ bookin
       {data.is_mine && ["reserved", "confirmed"].includes(data.status) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("payNow")}</CardTitle>
+            <CardTitle className="label-sm">{t("payNow")}</CardTitle>
             <p className="text-muted-foreground text-xs">
               {advancePercent > 0 && data.status === "reserved"
                 ? t("advanceHint", { percent: advancePercent })
@@ -104,7 +104,7 @@ export default async function BookingPage({ params }: { params: Promise<{ bookin
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("actions")}</CardTitle>
+          <CardTitle className="label-sm">{t("actions")}</CardTitle>
         </CardHeader>
         <CardContent>
           <BookingActions booking={data} isStaff={isStaff} />
@@ -114,7 +114,7 @@ export default async function BookingPage({ params }: { params: Promise<{ bookin
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("timeline")}</CardTitle>
+            <CardTitle className="label-sm">{t("timeline")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ol className="flex flex-col gap-3">
@@ -141,7 +141,7 @@ export default async function BookingPage({ params }: { params: Promise<{ bookin
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("details")}</CardTitle>
+            <CardTitle className="label-sm">{t("details")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2 text-sm">
             <Row label={t("player")} value={data.player_name} />

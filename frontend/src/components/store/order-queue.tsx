@@ -71,7 +71,7 @@ export function OrderQueue({ orders, riders = [] }: { orders: Order[]; riders?: 
           <Card key={id}>
             <CardHeader className="flex-row items-start justify-between gap-3">
               <div className="min-w-0">
-                <CardTitle className="text-sm">
+                <CardTitle className="label-sm">
                   {order.player_name} · <Money amount={order.total} />
                 </CardTitle>
                 <p className="text-muted-foreground mt-1 text-xs">

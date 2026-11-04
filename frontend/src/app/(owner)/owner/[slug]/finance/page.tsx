@@ -61,7 +61,7 @@ export default async function FinancePage({
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("earned")}</CardTitle>
+            <CardTitle className="label-sm">{t("earned")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             <p className="num text-3xl font-bold tabular-nums" data-testid="finance-total">
@@ -81,7 +81,7 @@ export default async function FinancePage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("payouts")}</CardTitle>
+            <CardTitle className="label-sm">{t("payouts")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {(payouts.data ?? []).length === 0 ? (
@@ -112,7 +112,7 @@ export default async function FinancePage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("lines")}</CardTitle>
+          <CardTitle className="label-sm">{t("lines")}</CardTitle>
         </CardHeader>
         <CardContent>
           {data.entries.length === 0 ? (

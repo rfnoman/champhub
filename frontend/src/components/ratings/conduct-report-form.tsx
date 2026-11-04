@@ -80,7 +80,7 @@ export function ConductReportForm({
   return (
     <Card data-testid="conduct-form">
       <CardHeader>
-        <CardTitle className="text-sm">{t("heading")}</CardTitle>
+        <CardTitle className="label-sm">{t("heading")}</CardTitle>
         <p className="text-muted-foreground text-xs">{t("hint")}</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">

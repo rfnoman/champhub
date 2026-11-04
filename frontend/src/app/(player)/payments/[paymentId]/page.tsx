@@ -51,7 +51,7 @@ export default async function PaymentResultPage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{data.what_for}</CardTitle>
+          <CardTitle className="label-sm">{data.what_for}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           <div className="flex items-baseline justify-between">

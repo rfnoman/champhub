@@ -110,7 +110,7 @@ function ReviewPanel({
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-3">
         <div>
-          <CardTitle className="text-sm">{t("review")}</CardTitle>
+          <CardTitle className="label-sm">{t("review")}</CardTitle>
           <p className="text-muted-foreground mt-1 text-xs">{t("reviewHint")}</p>
         </div>
         <Badge variant={turf.status === "approved" ? "default" : "secondary"}>
@@ -174,7 +174,7 @@ function GroundsPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">{t("grounds")}</CardTitle>
+        <CardTitle className="label-sm">{t("grounds")}</CardTitle>
         <p className="text-muted-foreground text-xs">{t("groundsHint")}</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -527,7 +527,7 @@ function HoursPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">{t("hours")}</CardTitle>
+        <CardTitle className="label-sm">{t("hours")}</CardTitle>
         <p className="text-muted-foreground text-xs">{t("hoursHint")}</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -675,7 +675,7 @@ function StaffPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">{t("staff")}</CardTitle>
+        <CardTitle className="label-sm">{t("staff")}</CardTitle>
         <p className="text-muted-foreground text-xs">{t("staffHint")}</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatWhen } from "@/i18n/formats";
+import { sportTheme } from "@/lib/sport-theme";
 
 export const metadata = { title: "Home · TurfApp" };
 
@@ -48,23 +49,30 @@ export default async function HomePage() {
       </header>
 
       {nextMatch ? (
-        <Card className="border-primary/40" data-testid="next-match">
+        <Card
+          {...sportTheme(nextMatch.sport.slug)}
+          className="border-sport/40 floodlight relative overflow-hidden"
+          data-testid="next-match"
+        >
           <CardHeader>
-            <CardTitle className="text-sm">{t("nextMatch")}</CardTitle>
+            <CardTitle className="label-sm">{t("nextMatch")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-medium">
-                {nextMatch.sport.name} · {nextMatch.turf_name}
+              <p className="font-display text-lg font-bold tracking-tight">
+                <span aria-hidden className="mr-1.5">
+                  {nextMatch.sport.icon}
+                </span>
+                {nextMatch.turf_name}
               </p>
-              <p className="text-muted-foreground text-sm">{when(nextMatch.starts_at)}</p>
+              <p className="num text-muted-foreground text-sm">{when(nextMatch.starts_at)}</p>
               {nextMatch.needed > 0 && (
-                <Badge variant="secondary" className="mt-1">
+                <Badge variant="sport" className="mt-1.5">
                   {t("stillNeeds", { count: nextMatch.needed })}
                 </Badge>
               )}
             </div>
-            <Button size="sm" asChild>
+            <Button variant="brand" size="touch" asChild>
               <Link href={`/matches/${nextMatch.id}`}>{t("openMatch")}</Link>
             </Button>
           </CardContent>
@@ -83,7 +91,7 @@ export default async function HomePage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("thisWeek")}</CardTitle>
+            <CardTitle className="label-sm">{t("thisWeek")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <WeekRing
@@ -110,7 +118,7 @@ export default async function HomePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("streak")}</CardTitle>
+            <CardTitle className="label-sm">{t("streak")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {dashboard.data?.streak && <StreakBadge streak={dashboard.data.streak} />}
@@ -142,7 +150,7 @@ export default async function HomePage() {
       {(bundles.data ?? []).length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">
+            <CardTitle className="label-sm">
               {nextMatch ? t("forNextMatch", { turf: nextMatch.turf_name }) : t("bundles")}
             </CardTitle>
           </CardHeader>
@@ -166,7 +174,7 @@ export default async function HomePage() {
       {openMatches.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("openNearby")}</CardTitle>
+            <CardTitle className="label-sm">{t("openNearby")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-1.5">
             {openMatches.map((match) => (

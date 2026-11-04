@@ -186,7 +186,7 @@ export function CounterPos({
         {sales.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">{t("today")}</CardTitle>
+              <CardTitle className="label-sm">{t("today")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="flex flex-col divide-y text-sm" data-testid="todays-sales">
@@ -213,7 +213,7 @@ export function CounterPos({
 
       <Card className="h-fit lg:sticky lg:top-4">
         <CardHeader>
-          <CardTitle className="text-sm">{t("cart")}</CardTitle>
+          <CardTitle className="label-sm">{t("cart")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {error && (

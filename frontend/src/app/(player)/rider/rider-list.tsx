@@ -62,7 +62,7 @@ export function RiderList({ orders }: { orders: Order[] }) {
           <Card key={id}>
             <CardHeader className="flex-row items-start justify-between gap-3">
               <div className="min-w-0">
-                <CardTitle className="text-sm">{where}</CardTitle>
+                <CardTitle className="label-sm">{where}</CardTitle>
                 <p className="text-muted-foreground mt-1 text-xs">
                   {order.player_name} · <Money amount={order.total} /> · {t("collectCash")}
                 </p>

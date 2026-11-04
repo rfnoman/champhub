@@ -65,7 +65,7 @@ export function TurfCalendar({
       {pending.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("pending", { count: pending.length })}</CardTitle>
+            <CardTitle className="label-sm">{t("pending", { count: pending.length })}</CardTitle>
             <p className="text-muted-foreground text-xs">{t("pendingHint")}</p>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
@@ -129,7 +129,7 @@ export function TurfCalendar({
 
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-3">
-          <CardTitle className="text-sm">{t("day")}</CardTitle>
+          <CardTitle className="label-sm">{t("day")}</CardTitle>
           <Input
             type="date"
             aria-label={t("date")}
@@ -253,7 +253,7 @@ function WalkInForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">{t("walkIn")}</CardTitle>
+        <CardTitle className="label-sm">{t("walkIn")}</CardTitle>
         <p className="text-muted-foreground text-xs">{t("walkInHint")}</p>
       </CardHeader>
       <CardContent className="flex flex-wrap items-end gap-2">

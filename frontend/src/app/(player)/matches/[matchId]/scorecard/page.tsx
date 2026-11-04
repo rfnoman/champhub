@@ -127,7 +127,7 @@ export default async function ScorecardPage({ params }: { params: Promise<{ matc
       {card.events.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("history")}</CardTitle>
+            <CardTitle className="label-sm">{t("history")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ol className="flex flex-col gap-1.5 text-sm">

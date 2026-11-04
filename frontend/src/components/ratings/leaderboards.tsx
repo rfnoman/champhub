@@ -65,7 +65,7 @@ export async function Leaderboards({
       {boards.map((board) => (
         <Card key={`${board.metric}-${board.statKey}`}>
           <CardHeader>
-            <CardTitle className="text-sm">
+            <CardTitle className="label-sm">
               {t("title", { metric: board.metric, stat: board.statKey })}
             </CardTitle>
             <p className="text-muted-foreground text-xs">{t("thisMonth")}</p>

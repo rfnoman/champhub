@@ -135,7 +135,7 @@ export function CartPanel({
   return (
     <Card className="h-fit lg:sticky lg:top-4" data-testid="cart">
       <CardHeader>
-        <CardTitle className="text-sm">{t("cart")}</CardTitle>
+        <CardTitle className="label-sm">{t("cart")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {error && (

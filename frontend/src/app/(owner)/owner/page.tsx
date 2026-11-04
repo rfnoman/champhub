@@ -50,7 +50,7 @@ export default async function OwnerDashboardPage() {
       {invitations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("invitations")}</CardTitle>
+            <CardTitle className="label-sm">{t("invitations")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {invitations.map((invitation) => (

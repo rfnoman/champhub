@@ -45,7 +45,7 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("items")}</CardTitle>
+          <CardTitle className="label-sm">{t("items")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="flex flex-col divide-y text-sm">
@@ -97,7 +97,7 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
       {data.address && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("deliveringTo")}</CardTitle>
+            <CardTitle className="label-sm">{t("deliveringTo")}</CardTitle>
           </CardHeader>
           <CardContent className="text-sm">
             {data.address.line}, {data.address.area}
@@ -112,7 +112,7 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("progress")}</CardTitle>
+          <CardTitle className="label-sm">{t("progress")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ol className="flex flex-col gap-1.5 text-sm">

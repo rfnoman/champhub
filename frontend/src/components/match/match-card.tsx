@@ -66,7 +66,7 @@ export function MatchCard({ match }: { match: MatchSummary }) {
           aria-valuemax={match.capacity}
         >
           <div
-            className="bg-sport duration-slow ease-out-quint h-full rounded-full transition-[width]"
+            className="bg-sport-vivid duration-slow ease-out-quint h-full rounded-full transition-[width]"
             style={{ width: `${Math.min(100, filled)}%` }}
           />
         </div>

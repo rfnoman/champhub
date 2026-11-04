@@ -76,7 +76,7 @@ export function Warehouse({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("addHeading")}</CardTitle>
+          <CardTitle className="label-sm">{t("addHeading")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1.5">
@@ -123,7 +123,7 @@ export function Warehouse({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("stock")}</CardTitle>
+          <CardTitle className="label-sm">{t("stock")}</CardTitle>
         </CardHeader>
         <CardContent>
           {stock.length === 0 ? (

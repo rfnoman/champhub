@@ -81,7 +81,7 @@ export function TeamBuilder({ match, teams }: { match: MatchDetail; teams: Match
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-3">
         <div>
-          <CardTitle className="text-sm">{t("heading")}</CardTitle>
+          <CardTitle className="label-sm">{t("heading")}</CardTitle>
           <p className="text-muted-foreground mt-1 text-xs">{t("body")}</p>
         </div>
         <Button

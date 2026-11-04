@@ -133,7 +133,7 @@ export function StoreBrowser({
         {match && (
           <Card className="border-primary/40" data-testid="match-hero">
             <CardHeader>
-              <CardTitle className="text-sm">
+              <CardTitle className="label-sm">
                 {t("forYourMatch", { turf: match.turf_name })}
               </CardTitle>
               <p className="text-muted-foreground text-xs">
@@ -171,7 +171,7 @@ export function StoreBrowser({
         {bundles.length > 0 && (
           <Card data-testid="bundles">
             <CardHeader>
-              <CardTitle className="text-sm">{t("bundles")}</CardTitle>
+              <CardTitle className="label-sm">{t("bundles")}</CardTitle>
               <p className="text-muted-foreground text-xs">{t("bundlesHint")}</p>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">

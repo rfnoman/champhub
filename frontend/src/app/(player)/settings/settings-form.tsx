@@ -97,7 +97,7 @@ export function SettingsForm({
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("basics")}</CardTitle>
+          <CardTitle className="label-sm">{t("basics")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 sm:col-span-2">
@@ -144,7 +144,7 @@ export function SettingsForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("privacy")}</CardTitle>
+          <CardTitle className="label-sm">{t("privacy")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-start justify-between gap-4">
@@ -159,7 +159,7 @@ export function SettingsForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("attributes")}</CardTitle>
+          <CardTitle className="label-sm">{t("attributes")}</CardTitle>
           <p className="text-muted-foreground text-xs">{t("attributesHint", { cap: ratingCap })}</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
@@ -192,7 +192,7 @@ export function SettingsForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("sports")}</CardTitle>
+          <CardTitle className="label-sm">{t("sports")}</CardTitle>
           <p className="text-muted-foreground text-xs">{t("sportsHint")}</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">

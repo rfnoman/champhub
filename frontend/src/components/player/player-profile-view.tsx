@@ -87,7 +87,7 @@ export async function PlayerProfileView({
 
       <Card className="w-full max-w-xl">
         <CardHeader>
-          <CardTitle className="text-sm">{t("attributesHeading")}</CardTitle>
+          <CardTitle className="label-sm">{t("attributesHeading")}</CardTitle>
           <p className="text-muted-foreground text-xs">{t("attributesHint")}</p>
         </CardHeader>
         <CardContent>

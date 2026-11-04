@@ -100,7 +100,7 @@ export function PostMatchSheet({
       {scorecard.motm_voting_open && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("motmHeading")}</CardTitle>
+            <CardTitle className="label-sm">{t("motmHeading")}</CardTitle>
             <p className="text-muted-foreground text-xs">{t("motmHint")}</p>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
@@ -122,7 +122,7 @@ export function PostMatchSheet({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("ratingsHeading")}</CardTitle>
+          <CardTitle className="label-sm">{t("ratingsHeading")}</CardTitle>
           <p className="text-muted-foreground text-xs">{t("ratingsHint")}</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">

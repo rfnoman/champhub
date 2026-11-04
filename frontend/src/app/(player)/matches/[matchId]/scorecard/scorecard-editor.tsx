@@ -171,7 +171,7 @@ export function ScorecardEditor({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">{t("finalScore")}</CardTitle>
+          <CardTitle className="label-sm">{t("finalScore")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end justify-center gap-6">
           {(
@@ -201,7 +201,7 @@ export function ScorecardEditor({
       {definitions.length > 0 && players.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">{t("playerStats")}</CardTitle>
+            <CardTitle className="label-sm">{t("playerStats")}</CardTitle>
             <p className="text-muted-foreground text-xs">{t("playerStatsHint")}</p>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -312,7 +312,7 @@ export function ScorecardDecision({ match }: { match: MatchDetail }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">{t("yourCall")}</CardTitle>
+        <CardTitle className="label-sm">{t("yourCall")}</CardTitle>
         <p className="text-muted-foreground text-xs">{t("yourCallHint")}</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">

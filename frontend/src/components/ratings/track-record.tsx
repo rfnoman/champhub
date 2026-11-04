@@ -21,7 +21,7 @@ export async function TrackRecord({ record }: { record: TrackRecord }) {
   return (
     <Card className="w-full max-w-xl" data-testid="track-record">
       <CardHeader>
-        <CardTitle className="text-sm">{t("heading")}</CardTitle>
+        <CardTitle className="label-sm">{t("heading")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         {totals.map(([slug, sport]) => (
