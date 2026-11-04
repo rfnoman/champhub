@@ -26,7 +26,7 @@ export async function SiteHeader() {
         aria-hidden
         className="via-brand/40 pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent"
       />
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-1.5 px-4">
+      <div className="page-column flex h-14 items-center gap-1.5 px-4">
         {/* Must stay exactly one visible link whose accessible name is the wordmark —
             smoke.spec.ts asserts it in both languages. */}
         <Link

@@ -30,6 +30,7 @@ test.describe("design review", () => {
       ["31-profile", "/profile"],
       ["32-turfs", "/turfs"],
       ["33-play", "/play"],
+      ["70-owner-align", "/owner"],
       ["33b-play-top", "/play"],
       ["34-home", "/home"],
       ["35-store", "/store"],

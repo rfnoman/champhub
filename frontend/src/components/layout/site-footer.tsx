@@ -14,7 +14,7 @@ export async function SiteFooter() {
 
   return (
     <footer className="mt-12 border-t">
-      <div className="text-muted-foreground mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm">
+      <div className="text-muted-foreground page-column flex flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm">
         <p>{t("copyright", { year: new Date().getFullYear() })}</p>
         <nav className="flex flex-wrap gap-4">
           {LEGAL_DOCUMENTS.map((document) => (

@@ -50,7 +50,7 @@ export default async function HomePage() {
           className="border-chalk/10 pointer-events-none absolute -top-[14rem] left-1/2 size-[28rem] -translate-x-1/2 rounded-full border"
         />
 
-        <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 px-4 py-16 sm:py-24 lg:grid-cols-[1.15fr_auto] lg:gap-16">
+        <div className="page-column relative grid items-center gap-12 px-4 py-16 sm:py-24 lg:grid-cols-[1.15fr_auto] lg:gap-16">
           <div className="flex flex-col items-start gap-6">
             <span className="text-brand text-sm font-medium">{t("kicker")}</span>
             {/* The page's only <h1>; smoke.spec.ts asserts exactly one is visible. */}
@@ -74,7 +74,7 @@ export default async function HomePage() {
 
       {/* -------------------------------------------------------------- Sports */}
       <section className="border-border/60 border-t">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-16">
+        <div className="page-column flex flex-col gap-8 px-4 py-16">
           <div className="flex flex-col gap-2">
             <h2 className="display-lg">{t("sportsTitle")}</h2>
             <p className="text-muted-foreground max-w-[56ch]">{t("sportsBody")}</p>
@@ -102,7 +102,7 @@ export default async function HomePage() {
 
       {/* --------------------------------------------------------------- Steps */}
       <section className="border-border/60 border-t">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-16">
+        <div className="page-column flex flex-col gap-8 px-4 py-16">
           <h2 className="display-lg">{t("stepsTitle")}</h2>
           {/* Numbered because this genuinely is a sequence — you cannot fill a match
               you have not booked. */}
@@ -125,7 +125,7 @@ export default async function HomePage() {
 
       {/* --------------------------------------------------------------- Owner */}
       <section className="border-border/60 border-t">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-4 px-4 py-16">
+        <div className="page-column flex flex-col items-start gap-4 px-4 py-16">
           <h2 className="display-lg">{t("ownerTitle")}</h2>
           <p className="text-muted-foreground max-w-[56ch]">{t("ownerBody")}</p>
           <Button variant="outline" size="touch" asChild className="mt-2">

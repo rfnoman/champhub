@@ -29,17 +29,20 @@ export function PageContainer({
   width?: "default" | "wide" | "bleed";
   className?: string;
 }) {
+  // `data-page-width` is what the header and footer read, through the `:has()` rule in
+  // globals.css — it is how three siblings end up sharing one column.
   if (width === "bleed") {
-    return <div className={cn("flex w-full flex-1 flex-col", className)}>{children}</div>;
+    return (
+      <div data-page-width="bleed" className={cn("flex w-full flex-1 flex-col", className)}>
+        {children}
+      </div>
+    );
   }
 
   return (
     <div
-      className={cn(
-        "mx-auto flex w-full flex-1 flex-col gap-6 px-4 py-8",
-        width === "wide" ? "max-w-7xl" : "max-w-5xl",
-        className,
-      )}
+      data-page-width={width}
+      className={cn("page-column flex flex-1 flex-col gap-6 px-4 py-8", className)}
     >
       {children}
     </div>

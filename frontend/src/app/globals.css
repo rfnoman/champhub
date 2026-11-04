@@ -427,6 +427,23 @@
   color: var(--muted-foreground);
 }
 
+/* The page column.
+ *
+ * The header, the footer and the page content all have to line up: a wordmark that sits
+ * four rem inside the heading beneath it reads as a mistake, because it is one.
+ *
+ * The width is a property rather than a class because the three are siblings — the
+ * header renders *before* `<main>`, so it cannot inherit anything the page sets. The
+ * page declares its width with `data-page-width`, `:has()` lifts that to `<body>`, and
+ * the custom property then cascades down to all three. Where `:has()` is unsupported
+ * the header simply keeps the default width, which is what it did before.
+ */
+@utility page-column {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--page-max);
+}
+
 /* The native select, styled (DECISIONS D76).
  *
  * It stays a real `<select>` with real `<option>` children: on a cheap Android phone
@@ -513,6 +530,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* The reading column the app was built in; route groups widen it below. */
+    --page-max: 64rem;
     /* Something for the chrome's blur to pick up. Pure CSS, zero bytes, and it is what
        makes the glass legible in *both* themes. */
     background-image: radial-gradient(
@@ -525,6 +544,15 @@
   }
   html {
     @apply font-sans;
+  }
+
+  /* Owner and admin need the room — a settings page with four panels and three stock
+     tables. The marketing page sits between the two. */
+  body:has([data-page-width="wide"]) {
+    --page-max: 80rem;
+  }
+  body:has([data-page-width="bleed"]) {
+    --page-max: 72rem;
   }
 
   /* Bengali conjuncts need vertical room a Latin-tuned leading does not give them, and
