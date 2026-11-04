@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { CounterPos } from "./counter-pos";
 
-export const metadata = { title: "Counter · TurfApp" };
+export const metadata = { title: "Counter · ChampHub" };
 
 /** The till. Built for a tablet on a shelf, not a desk. */
 export default async function CounterPage({ params }: { params: Promise<{ slug: string }> }) {

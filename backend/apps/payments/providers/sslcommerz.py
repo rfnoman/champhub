@@ -88,8 +88,8 @@ class SSLCommerzProvider(PaymentProvider):
             "ipn_url": return_urls["ipn"],
             "cus_name": (profile.name if profile else None)
             or getattr(player, "full_name", "")
-            or "TurfApp player",
-            "cus_email": getattr(player, "email", "") or "player@turfapp.local",
+            or "ChampHub player",
+            "cus_email": getattr(player, "email", "") or "player@champhub.local",
             "cus_phone": getattr(player, "phone", "") or "01700000000",
             "cus_add1": "Dhaka",
             "cus_city": "Dhaka",
@@ -243,7 +243,7 @@ class SSLCommerzProvider(PaymentProvider):
         target = payment.target
         if getattr(target, "ground", None) is not None:
             return f"Booking at {target.ground.turf.name}"[:255]
-        return "TurfApp order"
+        return "ChampHub order"
 
     @staticmethod
     def _safe(data: dict) -> dict:

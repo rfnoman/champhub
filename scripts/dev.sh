@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Run TurfApp locally: infrastructure, Django, Celery and Next.js in one terminal.
+# Run ChampHub locally: infrastructure, Django, Celery and Next.js in one terminal.
 #
 #   ./scripts/dev.sh                 everything
 #   ./scripts/dev.sh --no-worker     skip Celery (nothing schedules work until Phase 03)
@@ -48,7 +48,7 @@ die() { fail "$*"; exit 1; }
 
 usage() {
   cat <<EOF
-${C_BOLD}TurfApp dev runner${C_RESET}
+${C_BOLD}ChampHub dev runner${C_RESET}
 
 Usage: ./scripts/dev.sh [options]
 
@@ -323,7 +323,7 @@ if [ "$RUN_FRONTEND" -eq 1 ]; then
   fi
 fi
 
-printf '\n%s%sTurfApp is running%s\n' "$C_BOLD" "$C_GREEN" "$C_RESET"
+printf '\n%s%sChampHub is running%s\n' "$C_BOLD" "$C_GREEN" "$C_RESET"
 [ "$RUN_FRONTEND" -eq 1 ] && printf '  app      http://localhost:%s\n' "$FRONTEND_PORT"
 if [ "$RUN_BACKEND" -eq 1 ]; then
   printf '  health   http://127.0.0.1:%s/api/v1/health\n' "$BACKEND_PORT"

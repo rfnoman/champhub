@@ -1405,7 +1405,7 @@ wheels = [
 ]
 
 [[package]]
-name = "turfapp-backend"
+name = "champhub-backend"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

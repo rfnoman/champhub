@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getServerApiClient } from "@/lib/api/server";
 import { RiderList } from "./rider-list";
 
-export const metadata = { title: "My deliveries · TurfApp" };
+export const metadata = { title: "My deliveries · ChampHub" };
 
 /**
  * A rider's round, on a phone.

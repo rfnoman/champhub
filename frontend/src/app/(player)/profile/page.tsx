@@ -8,7 +8,7 @@ import { PlayerRecord } from "@/components/ratings/player-record";
 import { RecentResults } from "@/components/scoring/recent-results";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "My profile · TurfApp" };
+export const metadata = { title: "My profile · ChampHub" };
 
 export default async function MyProfilePage() {
   const api = await getServerApiClient();

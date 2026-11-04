@@ -10,8 +10,8 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "TurfApp — book a ground, fill your match",
-    short_name: "TurfApp",
+    name: "ChampHub — book a ground, fill your match",
+    short_name: "ChampHub",
     description: "Book sports turfs in Bangladesh, fill your match, build your profile.",
     start_url: "/",
     display: "standalone",

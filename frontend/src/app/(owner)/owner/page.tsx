@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const metadata = { title: "Turf dashboard · TurfApp" };
+export const metadata = { title: "Turf dashboard · ChampHub" };
 
 /** Review state drives the badge colour: a rejection should not look like an approval. */
 function statusTone(status: OwnerTurf["status"]) {

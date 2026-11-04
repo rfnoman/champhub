@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/ui/money";
 
-export const metadata = { title: "My orders · TurfApp" };
+export const metadata = { title: "My orders · ChampHub" };
 
 export default async function OrdersPage() {
   const api = await getServerApiClient();

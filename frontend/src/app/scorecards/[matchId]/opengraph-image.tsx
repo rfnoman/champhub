@@ -55,7 +55,7 @@ export default async function Image({ params }: { params: Promise<{ matchId: str
           textTransform: "uppercase",
         }}
       >
-        {data ? `${data.sport} · ${data.turf_name}` : "TurfApp"}
+        {data ? `${data.sport} · ${data.turf_name}` : "ChampHub"}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 48, marginTop: 36 }}>

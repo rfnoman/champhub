@@ -11,7 +11,7 @@ type InstallEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-const DISMISSED = "turfapp:install-dismissed";
+const DISMISSED = "champhub:install-dismissed";
 
 /**
  * An "add to home screen" offer, shown once.

@@ -4,7 +4,7 @@ import { getServerApiClient } from "@/lib/api/server";
 
 import { TurfDiscovery } from "./discovery";
 
-export const metadata = { title: "Find a turf · TurfApp" };
+export const metadata = { title: "Find a turf · ChampHub" };
 
 export default async function TurfsPage() {
   const api = await getServerApiClient();

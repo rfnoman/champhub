@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getServerApiClient } from "@/lib/api/server";
 import { StoreBrowser } from "./store-browser";
 
-export const metadata = { title: "Store · TurfApp" };
+export const metadata = { title: "Store · ChampHub" };
 
 /**
  * The store, arranged around the player's next match (DOMAIN §9).

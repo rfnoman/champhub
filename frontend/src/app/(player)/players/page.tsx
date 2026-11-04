@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getServerApiClient } from "@/lib/api/server";
 import { PlayerSearch } from "./player-search";
 
-export const metadata = { title: "Find players · TurfApp" };
+export const metadata = { title: "Find players · ChampHub" };
 
 /**
  * Player discovery (DOMAIN §3).

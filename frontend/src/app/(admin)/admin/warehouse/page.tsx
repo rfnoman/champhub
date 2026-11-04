@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getServerApiClient } from "@/lib/api/server";
 import { Warehouse } from "./warehouse";
 
-export const metadata = { title: "Warehouse · TurfApp" };
+export const metadata = { title: "Warehouse · ChampHub" };
 
 /** The platform's own stock — what the Phase 08 store will sell and deliver. */
 export default async function WarehousePage() {

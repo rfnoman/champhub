@@ -8,7 +8,7 @@ import { Day } from "@/components/ui/when";
 
 import { BookingsChart } from "./bookings-chart";
 
-export const metadata = { title: "Dashboard · TurfApp" };
+export const metadata = { title: "Dashboard · ChampHub" };
 
 /**
  * Whether the pilot is working.

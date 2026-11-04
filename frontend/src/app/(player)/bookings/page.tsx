@@ -7,7 +7,7 @@ import { BookingTime } from "@/components/booking/booking-time";
 import { Card, CardContent } from "@/components/ui/card";
 import { Money } from "@/components/ui/money";
 
-export const metadata = { title: "My bookings · TurfApp" };
+export const metadata = { title: "My bookings · ChampHub" };
 
 export default async function MyBookingsPage({
   searchParams,

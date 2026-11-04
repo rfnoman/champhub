@@ -61,7 +61,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ siz
           letterSpacing: -pixels * 0.01,
         }}
       >
-        T
+        C
       </div>
     </div>,
     { width: pixels, height: pixels },

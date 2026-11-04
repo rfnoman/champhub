@@ -4,7 +4,7 @@ import { getServerApiClient } from "@/lib/api/server";
 
 import { TurfReviewQueue } from "./review-queue";
 
-export const metadata = { title: "Turfs · TurfApp admin" };
+export const metadata = { title: "Turfs · ChampHub admin" };
 
 export default async function AdminTurfsPage({
   searchParams,

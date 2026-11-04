@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { InventoryBoard } from "./inventory-board";
 
-export const metadata = { title: "Inventory · TurfApp" };
+export const metadata = { title: "Inventory · ChampHub" };
 
 /** The owner's shelf: what is on it, what is running out, and what moved. */
 export default async function InventoryPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -9,10 +9,10 @@
 # commands. Three images would be three things to keep in step, and the day they drift
 # is the day beat runs last week's business rules.
 
-name: turfapp
+name: champhub
 
 x-backend: &backend
-  image: ${BACKEND_IMAGE:-turfapp-backend:latest}
+  image: ${BACKEND_IMAGE:-champhub-backend:latest}
   build:
     context: ./backend
   env_file: [.env.prod]
@@ -55,7 +55,7 @@ services:
       replicas: 1
 
   web:
-    image: ${FRONTEND_IMAGE:-turfapp-web:latest}
+    image: ${FRONTEND_IMAGE:-champhub-web:latest}
     build:
       context: ./frontend
       args:

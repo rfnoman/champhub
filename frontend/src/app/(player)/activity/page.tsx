@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getServerApiClient } from "@/lib/api/server";
 import { ActivityBoard } from "./activity-board";
 
-export const metadata = { title: "Activity · TurfApp" };
+export const metadata = { title: "Activity · ChampHub" };
 
 /** Everything the player has done, and what they are aiming at. */
 export default async function ActivityPage() {

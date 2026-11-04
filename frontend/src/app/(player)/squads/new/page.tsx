@@ -2,7 +2,7 @@ import { getServerApiClient } from "@/lib/api/server";
 
 import { CreateSquadForm } from "./create-form";
 
-export const metadata = { title: "New squad · TurfApp" };
+export const metadata = { title: "New squad · ChampHub" };
 
 export default async function NewSquadPage() {
   const api = await getServerApiClient();

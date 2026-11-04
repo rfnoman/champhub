@@ -325,7 +325,7 @@ test.describe("launch journeys", () => {
     await page.goto("/");
     await page.getByRole("button", { name: "Language" }).click();
     await page.getByRole("menuitem", { name: "বাংলা" }).click();
-    await expect(page.getByRole("link", { name: "টার্ফঅ্যাপ" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "চ্যাম্পহাব" })).toBeVisible();
 
     await finishOnboarding(page, "bn");
 

@@ -4,7 +4,7 @@ import { getServerApiClient } from "@/lib/api/server";
 
 import { ProposalQueue } from "./proposal-queue";
 
-export const metadata = { title: "Sports · TurfApp admin" };
+export const metadata = { title: "Sports · ChampHub admin" };
 
 export default async function AdminSportsPage() {
   const api = await getServerApiClient();

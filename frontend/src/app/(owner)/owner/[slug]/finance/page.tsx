@@ -10,7 +10,7 @@ import { API_BASE_URL } from "@/lib/api/config";
 import { Money } from "@/components/ui/money";
 import { formatWhen } from "@/i18n/formats";
 
-export const metadata = { title: "Finance · TurfApp" };
+export const metadata = { title: "Finance · ChampHub" };
 
 /** What a turf has earned, what the platform took, and what is owed. */
 export default async function FinancePage({

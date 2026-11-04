@@ -1,4 +1,4 @@
-# TurfApp
+# ChampHub
 
 A platform for sports turfs in Bangladesh. Turf owners list grounds and sell inventory;
 players book grounds (solo or as a squad), fill matches with other players, record

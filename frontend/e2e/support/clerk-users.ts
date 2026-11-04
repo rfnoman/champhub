@@ -76,8 +76,8 @@ async function clerkRequest(path: string, init: RequestInit = {}): Promise<Respo
 export async function createTestUser(): Promise<TestUser> {
   // Unique per run so parallel workers and repeated runs never collide.
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
-  const identifier = `e2e+clerk_test+${suffix}@turfapp.dev`;
-  const password = `E2e-TurfApp-${suffix}!`;
+  const identifier = `e2e+clerk_test+${suffix}@champhub.dev`;
+  const password = `E2e-ChampHub-${suffix}!`;
 
   const response = await clerkRequest("/users", {
     method: "POST",

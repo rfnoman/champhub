@@ -104,7 +104,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--admin-email",
-            default="admin@turfapp.local",
+            default="admin@champhub.local",
             help="Email for the seeded platform admin.",
         )
 
@@ -155,7 +155,7 @@ class Command(BaseCommand):
             user, _ = User.objects.update_or_create(
                 clerk_id=spec["clerk_id"],
                 defaults={
-                    "email": f"{spec['clerk_id']}@turfapp.local",
+                    "email": f"{spec['clerk_id']}@champhub.local",
                     "first_name": spec["first_name"],
                     "last_name": spec["last_name"],
                 },
@@ -201,7 +201,7 @@ class Command(BaseCommand):
             owner, _ = User.objects.update_or_create(
                 clerk_id=f"seed_owner_{spec['slug']}",
                 defaults={
-                    "email": f"owner.{spec['slug']}@turfapp.local",
+                    "email": f"owner.{spec['slug']}@champhub.local",
                     "first_name": spec["name"].split()[0],
                     "last_name": "Owner",
                 },
@@ -267,7 +267,7 @@ class Command(BaseCommand):
             cashier, _ = User.objects.update_or_create(
                 clerk_id=f"seed_cashier_{spec['slug']}",
                 defaults={
-                    "email": f"cashier.{spec['slug']}@turfapp.local",
+                    "email": f"cashier.{spec['slug']}@champhub.local",
                     "first_name": "Cashier",
                     "last_name": spec["area"],
                 },

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { SquadInviteActions } from "./invite-actions";
 
-export const metadata = { title: "My squads · TurfApp" };
+export const metadata = { title: "My squads · ChampHub" };
 
 export default async function SquadsPage() {
   const api = await getServerApiClient();

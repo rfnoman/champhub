@@ -60,6 +60,6 @@ describe("env", () => {
     expect(env("", "fallback")).toBe("fallback");
     expect(env("   ", "fallback")).toBe("fallback");
     expect(env(undefined, "fallback")).toBe("fallback");
-    expect(env("https://turfapp.com.bd", "fallback")).toBe("https://turfapp.com.bd");
+    expect(env("https://champhub.com.bd", "fallback")).toBe("https://champhub.com.bd");
   });
 });

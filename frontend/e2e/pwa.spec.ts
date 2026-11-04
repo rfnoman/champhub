@@ -11,7 +11,7 @@ test.describe("progressive web app", () => {
     expect(response.status()).toBe(200);
 
     const manifest = await response.json();
-    expect(manifest.short_name).toBe("TurfApp");
+    expect(manifest.short_name).toBe("ChampHub");
     expect(manifest.display).toBe("standalone");
     expect(manifest.start_url).toBe("/");
 
@@ -48,7 +48,7 @@ test.describe("progressive web app", () => {
 
     const cached = await page.evaluate(async () => {
       await navigator.serviceWorker.ready;
-      const cache = await caches.open("turfapp-offline-v2");
+      const cache = await caches.open("champhub-offline-v2");
       return Boolean(await cache.match("/offline"));
     });
 

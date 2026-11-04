@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "TurfApp",
+    "name": "ChampHub",
     "tagline": "Book a ground, fill your match, build your game."
   },
   "nav": {
@@ -699,7 +699,7 @@
     "ratingsFailed": "Those ratings did not save. Try again."
   },
   "publicScorecard": {
-    "tagline": "Played on TurfApp.",
+    "tagline": "Played on ChampHub.",
     "cta": "Find a match near you"
   },
   "results": {
@@ -927,7 +927,7 @@
     "cutoffOpen": "{hours}h left to have it sent to the turf",
     "cutoffPassed": "Too late to send to the turf — pick it up there",
     "source": "Shop from",
-    "platform": "TurfApp store",
+    "platform": "ChampHub store",
     "search": "Search products",
     "searchPlaceholder": "Search…",
     "all": "All",
@@ -1138,7 +1138,7 @@
     "failed": "That did not go through. Try again."
   },
   "install": {
-    "body": "Add TurfApp to your home screen for one-tap booking.",
+    "body": "Add ChampHub to your home screen for one-tap booking.",
     "install": "Add",
     "notNow": "Not now"
   },
@@ -1178,7 +1178,7 @@
     "viewProfile": "View profile"
   },
   "footer": {
-    "copyright": "© {year} TurfApp"
+    "copyright": "© {year} ChampHub"
   },
   "legal": {
     "lastUpdated": "Last updated {date}",

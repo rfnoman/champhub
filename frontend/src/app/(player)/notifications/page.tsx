@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { getServerApiClient } from "@/lib/api/server";
 import { Card, CardContent } from "@/components/ui/card";
 
-export const metadata = { title: "Notifications · TurfApp" };
+export const metadata = { title: "Notifications · ChampHub" };
 
 export default async function NotificationsPage() {
   const api = await getServerApiClient();

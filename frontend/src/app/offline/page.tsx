@@ -11,7 +11,7 @@
  */
 import { PageContainer } from "@/components/layout/page-container";
 
-export const metadata = { title: "Offline · TurfApp" };
+export const metadata = { title: "Offline · ChampHub" };
 
 export default function OfflinePage() {
   return (

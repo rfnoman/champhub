@@ -8,7 +8,7 @@ import { AvailabilityForm } from "@/components/ratings/availability-form";
 
 import { MatchBoard } from "./board";
 
-export const metadata = { title: "Match board · TurfApp" };
+export const metadata = { title: "Match board · ChampHub" };
 
 export default async function PlayPage() {
   const api = await getServerApiClient();

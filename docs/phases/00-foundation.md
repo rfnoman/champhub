@@ -51,7 +51,7 @@ recognises them. All later phases build on this skeleton.
 
 ## Prompt for Claude Code
 ```
-We are starting Phase 00 of the TurfApp project. Read CLAUDE.md, docs/PLAN.md,
+We are starting Phase 00 of the ChampHub project. Read CLAUDE.md, docs/PLAN.md,
 docs/DECISIONS.md and docs/phases/00-foundation.md.
 
 Set up the monorepo exactly as described in Phase 00: docker compose (PostGIS + Redis),

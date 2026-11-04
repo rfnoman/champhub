@@ -1,4 +1,4 @@
-# TurfApp — Project Brief for Claude Code
+# ChampHub — Project Brief for Claude Code
 
 A platform for sports turfs in Bangladesh: turf owners list grounds and sell inventory,
 players book grounds (solo or as a squad), fill matches with other players, record

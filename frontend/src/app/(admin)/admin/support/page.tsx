@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import { PlayerLookup } from "./player-lookup";
 
-export const metadata = { title: "Support · TurfApp" };
+export const metadata = { title: "Support · ChampHub" };
 
 /**
  * Finding the right account.

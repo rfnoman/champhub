@@ -2,7 +2,7 @@ import { getServerApiClient } from "@/lib/api/server";
 
 import { RegisterTurfForm } from "./register-form";
 
-export const metadata = { title: "Register your turf · TurfApp" };
+export const metadata = { title: "Register your turf · ChampHub" };
 
 export default async function RegisterTurfPage() {
   const api = await getServerApiClient();

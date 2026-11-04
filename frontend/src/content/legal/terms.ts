@@ -21,7 +21,7 @@ export const terms: LegalDocument = {
     {
       heading: "What this app is",
       body: [
-        "TurfApp lets you find and book sports turfs in Bangladesh, fill matches with other players, record what happened, and buy things to use while you play.",
+        "ChampHub lets you find and book sports turfs in Bangladesh, fill matches with other players, record what happened, and buy things to use while you play.",
         "We are the platform. We are not the turf. The ground you book belongs to its owner, who is responsible for its condition, its safety and what happens on it.",
       ],
     },

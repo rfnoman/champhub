@@ -6,7 +6,7 @@ import { getServerApiClient } from "@/lib/api/server";
 import { OrderQueue } from "@/components/store/order-queue";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Orders · TurfApp" };
+export const metadata = { title: "Orders · ChampHub" };
 
 /** Orders waiting at this turf's counter, beside its bookings. */
 export default async function TurfOrdersPage({ params }: { params: Promise<{ slug: string }> }) {

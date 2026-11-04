@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
 import { formatWhen } from "@/i18n/formats";
 
-export const metadata = { title: "Payments · TurfApp" };
+export const metadata = { title: "Payments · ChampHub" };
 
 /** What the player has paid, and what came back. */
 export default async function PaymentsPage() {

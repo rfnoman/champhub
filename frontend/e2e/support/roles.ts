@@ -17,6 +17,16 @@ import { createTestUser, deleteTestUser, type TestUser } from "./clerk-users";
  * separate kinds of user (DOMAIN §1). Signing in as it is the same ticket flow every
  * other test uses; nothing is faked.
  */
+/**
+ * Deliberately NOT renamed with the rest of the app in Phase 12.
+ *
+ * This is an address in the Clerk dev instance, created by hand — `seed_demo` only
+ * mirrors it into Django and `clerk.signIn` mints a token for a user that must already
+ * exist. Renaming the constant does not rename the Clerk account, so it would simply
+ * stop resolving and take every launch journey with it. Change it here only after the
+ * account is recreated in Clerk under the new address, and reseed Django in the same
+ * step.
+ */
 export const SEEDED_STAFF = "rafi+clerk_test@turfapp.dev";
 
 /** A second browser context signed in as the seeded staff account. */

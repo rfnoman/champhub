@@ -1145,7 +1145,7 @@ the point of D63. No console errors.
   app silently non-installable and nothing else in the suite would notice.
 
 **Verified in the browser** (Chrome DevTools, production build): the worker installed and
-activated at scope `/`, `turfapp-offline-v2` held the offline page, and the manifest
+activated at scope `/`, `champhub-offline-v2` held the offline page, and the manifest
 served all three icons. Then **the server was stopped** and `/turfs` navigated to — the
 cached offline page rendered in place of Chrome's error page, which is the only test of
 an offline fallback that means anything. Restarting and updating the worker deleted the
@@ -1155,7 +1155,7 @@ v1 cache and replaced it with v2, so bumping the name is how the page is changed
 
 - `maximum-scale` is deliberately not set: blocking pinch-zoom on a phone-first app
   removes an accessibility feature to tidy a layout.
-- The cache name carries a version (`turfapp-offline-v2`) and `activate` deletes every
+- The cache name carries a version (`champhub-offline-v2`) and `activate` deletes every
   other cache. That is the whole invalidation story, and it is enough for one static page.
 
 **Known gaps / follow-ups**
@@ -1661,7 +1661,7 @@ integration bugs live, and no single-feature test can see them.
 
 **What made them possible**
 
-`seed_demo` creates `rafi+clerk_test@turfapp.dev` as a platform admin, the owner of
+`seed_demo` creates `rafi+clerk_test@champhub.dev` as a platform admin, the owner of
 three turfs *and* a rider — in Clerk as well as in Django. Several journeys cross a role
 boundary (an owner lists a turf and an admin reviews it; a player orders and a cashier
 sells), and a suite that can only ever be one anonymous new player stops short of all of

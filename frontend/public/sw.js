@@ -12,7 +12,7 @@
  */
 
 // Bump this whenever the offline page changes: the old cache is deleted on activate.
-const OFFLINE_CACHE = "turfapp-offline-v2";
+const OFFLINE_CACHE = "champhub-offline-v2";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
@@ -56,14 +56,14 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: "TurfApp", body: event.data.text() };
+    payload = { title: "ChampHub", body: event.data.text() };
   }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "TurfApp", {
+    self.registration.showNotification(payload.title || "ChampHub", {
       body: payload.body || "",
       // One tag per kind, so three hydration nudges do not stack into a wall.
-      tag: payload.kind || "turfapp",
+      tag: payload.kind || "champhub",
       data: { url: payload.url || "/" },
       icon: "/icons/192.png",
       badge: "/icons/192.png",

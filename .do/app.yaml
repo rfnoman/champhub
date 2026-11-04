@@ -11,7 +11,7 @@
 # and differ only in their command — three images would be three things to keep in step,
 # and the day they drift is the day beat runs last week's business rules.
 
-name: turfapp
+name: champhub
 region: blr
 
 # ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ databases:
     engine: PG
     version: "17"
     production: true
-    cluster_name: turfapp-db
+    cluster_name: champhub-db
     # PostGIS is an extension on the cluster, and it is not enabled by default. After
     # the cluster exists, once:
     #   CREATE EXTENSION IF NOT EXISTS postgis;
@@ -35,7 +35,7 @@ databases:
     engine: REDIS
     version: "7"
     production: true
-    cluster_name: turfapp-redis
+    cluster_name: champhub-redis
 
 # ---------------------------------------------------------------------------
 # Migrations run before the new code is live, not alongside it. A deploy that starts

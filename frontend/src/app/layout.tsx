@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   // Absolute URLs for Open Graph images: a shared scorecard link is previewed by
   // Messenger and WhatsApp from their own servers, where a relative path means nothing.
   metadataBase: new URL(env(process.env.NEXT_PUBLIC_SITE_URL, "http://localhost:3000")),
-  title: "TurfApp",
+  title: "ChampHub",
   description: "Book sports turfs in Bangladesh, fill your match, build your profile.",
 };
 

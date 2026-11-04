@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getServerApiClient } from "@/lib/api/server";
 import { OrderQueue } from "@/components/store/order-queue";
 
-export const metadata = { title: "Orders · TurfApp" };
+export const metadata = { title: "Orders · ChampHub" };
 
 /** The platform's own queue, with riders to hand deliveries to. */
 export default async function AdminOrdersPage() {

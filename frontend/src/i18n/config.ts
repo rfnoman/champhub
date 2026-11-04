@@ -1,7 +1,7 @@
 /**
  * Locale configuration.
  *
- * TurfApp does not prefix URLs with the locale (DECISIONS D13): `/bookings` stays
+ * ChampHub does not prefix URLs with the locale (DECISIONS D13): `/bookings` stays
  * `/bookings` in both languages and the choice lives in a cookie. That keeps route
  * groups flat for every later phase and leaves Clerk's proxy untouched.
  */

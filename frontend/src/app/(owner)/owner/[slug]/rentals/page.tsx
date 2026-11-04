@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { RentalBoard } from "./rental-board";
 
-export const metadata = { title: "Rentals · TurfApp" };
+export const metadata = { title: "Rentals · ChampHub" };
 
 /** What is out, and who has it (DOMAIN §9). */
 export default async function RentalsPage({ params }: { params: Promise<{ slug: string }> }) {

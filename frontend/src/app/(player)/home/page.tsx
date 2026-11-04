@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatWhen } from "@/i18n/formats";
 import { sportTheme } from "@/lib/sport-theme";
 
-export const metadata = { title: "Home · TurfApp" };
+export const metadata = { title: "Home · ChampHub" };
 
 /**
  * The player's home: the next match, the week so far, and one thing to do about it.

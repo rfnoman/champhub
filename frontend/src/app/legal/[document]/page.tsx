@@ -32,7 +32,7 @@ export async function generateMetadata({
   const found = legalDocument(document);
   if (!found) return { title: "Not found" };
 
-  return { title: `${found.title} · TurfApp`, description: found.summary };
+  return { title: `${found.title} · ChampHub`, description: found.summary };
 }
 
 export default async function LegalPage({ params }: { params: Promise<{ document: string }> }) {

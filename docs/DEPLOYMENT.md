@@ -9,7 +9,7 @@ a booking page waiting on a round trip to Frankfurt is a booking page nobody use
 Vercel (edge)                    DigitalOcean App Platform, region blr
 ┌──────────────┐  HTTPS   ┌──────────────────────────────────────────┐
 │  Next.js     │ ───────▶ │  api     ×2   gunicorn + uvicorn workers │
-│  turfapp.…   │          │  worker  ×1   Celery                     │
+│  champhub.…   │          │  worker  ×1   Celery                     │
 └──────────────┘          │  beat    ×1   Celery beat  ← exactly one │
                           └───────────────┬──────────────────────────┘
                                           │
@@ -30,7 +30,7 @@ in the repository.
 | Vercel account | vercel.com | The frontend |
 | Clerk **production** instance | Clerk dashboard | Sign-in. A development instance will not serve a real domain. |
 | SSLCommerz merchant account | sslcommerz.com | Live payments. Sandbox credentials are free and come first. |
-| A domain | Any registrar | `turfapp.com.bd` or similar |
+| A domain | Any registrar | `champhub.com.bd` or similar |
 | Sentry project (optional) | sentry.io | Error reports. Everything works without it. |
 
 ## 1. The database cluster
@@ -76,7 +76,7 @@ in the repository:
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` — generate: `uv run python manage.py generate_vapid_keys`
 - `SPACES_KEY`, `SPACES_SECRET`, `SPACES_BUCKET`
 - `SENTRY_DSN` (optional)
-- `SITE_URL` — the Vercel domain, e.g. `https://turfapp.com.bd`
+- `SITE_URL` — the Vercel domain, e.g. `https://champhub.com.bd`
 
 ## 4. Vercel
 
@@ -85,8 +85,8 @@ Import the repository, set the root directory to `frontend`, and add:
 ```
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY   pk_live_…
 CLERK_SECRET_KEY                    sk_live_…
-NEXT_PUBLIC_API_BASE_URL            https://api.turfapp.com.bd
-NEXT_PUBLIC_SITE_URL                https://turfapp.com.bd
+NEXT_PUBLIC_API_BASE_URL            https://api.champhub.com.bd
+NEXT_PUBLIC_SITE_URL                https://champhub.com.bd
 NEXT_PUBLIC_SENTRY_DSN              (optional)
 ```
 
@@ -147,7 +147,7 @@ Set these in the repository:
 | Secret | `DIGITALOCEAN_ACCESS_TOKEN` | A DO API token with write access |
 | Secret | `DO_APP_ID` | From `doctl apps list` |
 | Secret | `SENTRY_AUTH_TOKEN` | Optional |
-| Variable | `API_BASE_URL` | `https://api.turfapp.com.bd` |
+| Variable | `API_BASE_URL` | `https://api.champhub.com.bd` |
 | Variable | `SENTRY_ORG`, `SENTRY_PROJECT` | Optional |
 
 ## 8. The first administrator
@@ -165,6 +165,6 @@ production (DECISIONS D64), and the first login after that will not work without
 
 ## Staging
 
-The same spec with `name: turfapp-staging`, a development-tier database, and
+The same spec with `name: champhub-staging`, a development-tier database, and
 `SSLCOMMERZ_SANDBOX=true`. Point it at a Clerk **development** instance so test accounts
 stay out of the production user list. Step 9's launch journeys run against this.

@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getServerApiClient } from "@/lib/api/server";
 import { ConductQueue } from "./conduct-queue";
 
-export const metadata = { title: "Conduct reports · TurfApp" };
+export const metadata = { title: "Conduct reports · ChampHub" };
 
 /** The review queue. Nothing a report says counts until it is upheld (DOMAIN §8). */
 export default async function ConductPage() {

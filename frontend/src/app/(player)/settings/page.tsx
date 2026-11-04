@@ -8,7 +8,7 @@ import { ReminderSettings } from "@/components/fitness/reminder-settings";
 
 import { SettingsForm } from "./settings-form";
 
-export const metadata = { title: "Settings · TurfApp" };
+export const metadata = { title: "Settings · ChampHub" };
 
 export default async function SettingsPage() {
   const api = await getServerApiClient();

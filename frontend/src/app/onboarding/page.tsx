@@ -9,7 +9,7 @@ import { PageContainer } from "@/components/layout/page-container";
 
 import { OnboardingWizard } from "./onboarding-wizard";
 
-export const metadata = { title: "Set up your profile · TurfApp" };
+export const metadata = { title: "Set up your profile · ChampHub" };
 
 /**
  * The onboarding wizard lives outside the `(player)` route group on purpose: that

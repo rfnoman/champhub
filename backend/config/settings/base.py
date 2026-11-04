@@ -351,7 +351,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "TurfApp API",
+    "TITLE": "ChampHub API",
     "DESCRIPTION": (
         "Sports turf booking, matches, scoring and store API for Bangladesh. "
         "Authenticate with a Clerk session JWT: `Authorization: Bearer <token>`."
@@ -531,7 +531,7 @@ API_PUBLIC_BASE_URL = env("API_PUBLIC_BASE_URL", default="http://localhost:8000"
 # Web push (DECISIONS D55). Unset in development and CI, where push is skipped.
 VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
 VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
-VAPID_CONTACT_EMAIL = env("VAPID_CONTACT_EMAIL", default="admin@turfapp.local")
+VAPID_CONTACT_EMAIL = env("VAPID_CONTACT_EMAIL", default="admin@champhub.local")
 
 # Fitness (DOMAIN §10)
 DEFAULT_PLAYER_WEIGHT_KG = 70
@@ -550,7 +550,7 @@ MAILERS = {
         "OPTIONS": {},
     }
 }
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="TurfApp <no-reply@turfapp.local>")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="ChampHub <no-reply@champhub.local>")
 
 #: JSON where something will index it, readable where a person is reading the terminal.
 #: Every log call already passes its facts through `extra=`; only the formatter changes

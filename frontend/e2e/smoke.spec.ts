@@ -4,7 +4,7 @@ test.describe("public shell", () => {
   test("home page loads with the header and sign-in affordance", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("link", { name: "TurfApp" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "ChampHub" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   });
@@ -14,11 +14,11 @@ test.describe("public shell", () => {
     await page.getByRole("button", { name: "Language" }).click();
     await page.getByRole("menuitem", { name: "বাংলা" }).click();
 
-    await expect(page.getByRole("link", { name: "টার্ফঅ্যাপ" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "চ্যাম্পহাব" })).toBeVisible();
 
     // Cookie-based, so it must survive a reload without any URL change (D13).
     await page.reload();
-    await expect(page.getByRole("link", { name: "টার্ফঅ্যাপ" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "চ্যাম্পহাব" })).toBeVisible();
     expect(new URL(page.url()).pathname).toBe("/");
   });
 

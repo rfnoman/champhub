@@ -6,7 +6,7 @@ import { Money } from "@/components/ui/money";
 
 import { PayoutBoard } from "./payout-board";
 
-export const metadata = { title: "Finance · TurfApp" };
+export const metadata = { title: "Finance · ChampHub" };
 
 /** The platform's position, the refunds, and the money it owes turfs. */
 export default async function AdminFinancePage() {
