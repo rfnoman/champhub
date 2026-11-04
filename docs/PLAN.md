@@ -1,6 +1,6 @@
 # Development Plan
 
-Twelve phases. Each one ends with something that runs end to end and is tested, so the app
+Thirteen phases. Each one ends with something that runs end to end and is tested, so the app
 is usable (and demo-able) after every phase. Each phase file in `docs/phases/` contains
 scope, business rules, acceptance criteria, and a **prompt to paste into Claude Code**.
 
@@ -18,8 +18,13 @@ scope, business rules, acceptance criteria, and a **prompt to paste into Claude 
 | 09 | [Fitness layer & notifications+](phases/09-fitness.md) | Activity log, calories, streaks, bundles, reminders, web push | 05, 08 |
 | 10 | [Online payments & ledger](phases/10-payments.md) | SSLCommerz checkout, advances, refunds, commissions, owner payouts | 03, 08 |
 | 11 | [Hardening, Bangla, launch](phases/11-launch.md) | Full Bangla, PWA, security, monitoring, production deploy | all |
+| 12 | [Design system](phases/12-design-system.md) | One visual identity across every screen: floodlit-pitch palette, light/dark, per-sport colour, glass chrome, press physics, and a mobile navigation that did not exist before | all |
 
 Phase 07 only needs 02, so it can run in parallel with 03–06 if you want two tracks.
+
+Phases 00–11 built the product; Phase 12 is the first one about how it looks, and it was
+not in the original plan. It is sequenced last on purpose: a design system applied to
+screens whose information architecture is still moving gets rebuilt twice.
 
 ## How to run a phase in Claude Code
 1. Open the `turf-app` folder in Claude Code. `CLAUDE.md` is loaded automatically.
