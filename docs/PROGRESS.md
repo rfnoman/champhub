@@ -1857,9 +1857,17 @@ Pixel 7 projects, 79 decisions, 12 phases. The render-blocking stylesheet went f
 ~5–7 kB synchronous with its features deferred behind hydration.
 
 **Verification**: lint, prettier, typecheck, Vitest and build green; the full Playwright
-suite green on both projects against the production build; the signed-in screens reviewed
-as screenshots in both themes; and no horizontal scroll in Bangla at 390px, asserted in
-`e2e/shots.spec.ts` rather than eyeballed.
+suite **143 passed / 0 failed** on both the chromium and Pixel 7 projects against a clean
+production build; the signed-in screens reviewed as screenshots in both themes; and no
+horizontal scroll in Bangla at 390px, asserted in `e2e/shots.spec.ts` rather than
+eyeballed.
+
+One trap worth recording for whoever runs that suite next: **do not `npm run build` while
+`npm run start` is serving.** A rebuild swaps the hashed chunks under the running server,
+so pages keep referencing a stylesheet that no longer exists and render with no CSS at
+all. It shows up as five scattered mobile failures — a Leaflet map computing to zero
+height, elements with `flex` reporting `display: block` — and reads exactly like a layout
+regression. Rebuild, restart, then run.
 
 **Follow-ups, honestly:**
 
