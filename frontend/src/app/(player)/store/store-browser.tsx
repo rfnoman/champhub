@@ -276,7 +276,7 @@ export function StoreBrowser({
                     <CardContent className="flex h-full flex-col gap-2 py-4">
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-sm font-medium">{item.product.name}</span>
-                        <span className="font-mono text-base font-semibold tabular-nums">
+                        <span className="num text-base font-semibold tabular-nums">
                           <Money amount={item.price} />
                         </span>
                       </div>

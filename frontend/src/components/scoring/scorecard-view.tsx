@@ -122,10 +122,7 @@ export async function ScorecardView({ scorecard }: { scorecard: AnyScorecard }) 
                     </span>
                   </td>
                   {columns.map((definition) => (
-                    <td
-                      key={definition.key}
-                      className="px-3 py-2 text-right font-mono tabular-nums"
-                    >
+                    <td key={definition.key} className="num px-3 py-2 text-right">
                       {row.stats[definition.key] ?? "—"}
                     </td>
                   ))}
@@ -144,7 +141,7 @@ function TeamScore({ name, score, won }: { name: string; score: number; won: boo
     <div className="flex min-w-24 flex-col items-center">
       <span
         className={cn(
-          "font-mono text-4xl font-bold tabular-nums",
+          "num text-4xl font-bold tabular-nums",
           won && "text-emerald-600 dark:text-emerald-400",
         )}
       >

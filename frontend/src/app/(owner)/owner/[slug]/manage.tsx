@@ -543,7 +543,7 @@ function HoursPanel({
                   <span className="flex flex-1 flex-wrap gap-2">
                     {rows.map((row) => (
                       <span key={row.id} className="flex items-center gap-1 text-xs">
-                        <span className="font-mono tabular-nums">
+                        <span className="num">
                           {row.open_time.slice(0, 5)}–{row.close_time.slice(0, 5)}
                         </span>
                         {row.crosses_midnight && (

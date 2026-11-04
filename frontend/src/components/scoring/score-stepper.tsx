@@ -58,7 +58,7 @@ export function ScoreStepper({
         step={step}
         onChange={(event) => onChange(clamp(Number(event.target.value) || 0))}
         className={cn(
-          "border-input bg-background rounded-lg border text-center font-mono tabular-nums",
+          "border-input bg-background num rounded-lg border text-center",
           // The spinner arrows are redundant next to the buttons and shrink the target.
           "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none",
           big ? "h-12 w-16 text-2xl font-semibold" : "h-8 w-12 text-sm",

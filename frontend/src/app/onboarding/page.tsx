@@ -5,6 +5,8 @@ import { getTranslations } from "next-intl/server";
 import { fetchClientConfig } from "@/lib/api/config-queries";
 import { getServerApiClient } from "@/lib/api/server";
 
+import { PageContainer } from "@/components/layout/page-container";
+
 import { OnboardingWizard } from "./onboarding-wizard";
 
 export const metadata = { title: "Set up your profile · TurfApp" };
@@ -31,16 +33,22 @@ export default async function OnboardingPage() {
   const t = await getTranslations("onboarding");
 
   if (!sports.data?.length) {
-    return <p className="text-muted-foreground text-sm">{t("noSports")}</p>;
+    return (
+      <PageContainer>
+        <p className="text-muted-foreground text-sm">{t("noSports")}</p>
+      </PageContainer>
+    );
   }
 
   return (
-    <OnboardingWizard
-      sports={sports.data}
-      attributes={attributes.data ?? []}
-      defaultName={profile.data?.display_name || profile.data?.name || ""}
-      ratingCap={config.self_assessed_rating_cap}
-      defaultRating={config.onboarding_default_rating}
-    />
+    <PageContainer>
+      <OnboardingWizard
+        sports={sports.data}
+        attributes={attributes.data ?? []}
+        defaultName={profile.data?.display_name || profile.data?.name || ""}
+        ratingCap={config.self_assessed_rating_cap}
+        defaultRating={config.onboarding_default_rating}
+      />
+    </PageContainer>
   );
 }

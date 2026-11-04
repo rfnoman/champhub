@@ -54,7 +54,7 @@ export async function WeekRing({
       </svg>
 
       <div className="min-w-0">
-        <p className="font-mono text-2xl font-bold tabular-nums">{label}</p>
+        <p className="num text-2xl font-bold tabular-nums">{label}</p>
         {sublabel && <p className="text-muted-foreground text-sm">{sublabel}</p>}
       </div>
     </div>

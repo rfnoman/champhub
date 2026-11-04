@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Hind_Siliguri } from "next/font/google";
+import { cn } from "cn";
+import { Archivo, Hind_Siliguri } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { InstallPrompt } from "@/components/layout/install-prompt";
 import { RegisterServiceWorker } from "@/components/layout/register-service-worker";
 import { env } from "@/lib/env";
@@ -30,6 +32,24 @@ const bengali = Hind_Siliguri({
   display: "swap",
 });
 
+/**
+ * The display face (DECISIONS D74): headings, the scoreline, and every numeral.
+ *
+ * Weight axis only. Archivo is also variable on width 62–125, which was the original
+ * attraction — one file giving both stadium-wide and data-condensed — but the latin
+ * subset costs 90.1 kB with the width axis against 34.9 kB without, and on a budget
+ * measured over slow 3G that is not a defensible trade for one axis. The wide/condensed
+ * contrast comes from weight and tracking instead.
+ *
+ * Latin only: Archivo has no Bengali coverage, so Bangla headings fall through to Hind
+ * Siliguri exactly as body text does.
+ */
+const archivo = Archivo({
+  subsets: ["latin"],
+  variable: "--font-archivo",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   // Absolute URLs for Open Graph images: a shared scorecard link is previewed by
   // Messenger and WhatsApp from their own servers, where a relative path means nothing.
@@ -42,9 +62,16 @@ export const metadata: Metadata = {
  * Installed, the app has no browser chrome, so the status bar takes its colour from
  * here. `maximum-scale` is deliberately left alone: pinch-zoom is an accessibility
  * feature and blocking it on a phone-first app would be a mistake.
+ *
+ * One colour per scheme, so the status bar matches the theme the phone is actually in
+ * (D77). It was a single hard-coded `#16a34a` for eleven phases — a green that existed
+ * only here, in the manifest and in the icon route, while the app itself was greyscale.
  */
 export const viewport: Viewport = {
-  themeColor: "#16a34a",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#07140F" },
+    { media: "(prefers-color-scheme: light)", color: "#F7F9F7" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -55,23 +82,42 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   // Clerk renders its own <script src>, which `strict-dynamic` blocks unless it carries
   // the same nonce `src/proxy.ts` minted for this response. Next stamps its own scripts
-  // automatically; Clerk has to be told.
+  // automatically; Clerk has to be told — and so does next-themes, whose inline no-flash
+  // script is blocked outright without it, silently and with every check still green
+  // (D78b).
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <html lang={locale} className={bengali.variable} suppressHydrationWarning>
-      <body className="bg-background text-foreground flex min-h-dvh flex-col antialiased">
+    <html
+      lang={locale}
+      className={`${bengali.variable} ${archivo.variable}`}
+      suppressHydrationWarning
+    >
+      <body
+        className={cn(
+          "bg-background text-foreground flex min-h-dvh flex-col antialiased",
+          // Reserve the mobile tab bar's height below the footer. On <main> it left
+          // the footer underneath the bar, which is where the bar actually sits.
+          "pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:pb-0",
+        )}
+      >
         {/* ClerkProvider belongs inside <body>, not wrapping <html>. */}
         <ClerkProvider nonce={nonce}>
           <NextIntlClientProvider>
-            <Providers>
+            <Providers nonce={nonce}>
               <RegisterServiceWorker />
               <SiteHeader />
-              <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
-                <InstallPrompt />
+              {/* Full width: each route group picks its own column via PageContainer,
+                  so owner tables and the marketing hero are no longer forced into the
+                  same max-w-5xl as a list of bookings. */}
+              <main className="flex w-full flex-1 flex-col">
+                <div className="mx-auto w-full max-w-5xl px-4 empty:hidden">
+                  <InstallPrompt />
+                </div>
                 {children}
               </main>
               <SiteFooter />
+              <BottomNav />
             </Providers>
           </NextIntlClientProvider>
         </ClerkProvider>

@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { getServerApiClient } from "@/lib/api/server";
 import { LiveNotifications } from "@/components/fitness/live-notifications";
+import { PageContainer } from "@/components/layout/page-container";
 
 /**
  * Player area gate.
@@ -32,7 +33,7 @@ export default async function PlayerLayout({ children }: { children: React.React
       {/* One stream for the whole signed-in area, so a notification arriving reaches
           whatever page the player happens to be on (DECISIONS D54). */}
       <LiveNotifications />
-      {children}
+      <PageContainer>{children}</PageContainer>
     </>
   );
 }

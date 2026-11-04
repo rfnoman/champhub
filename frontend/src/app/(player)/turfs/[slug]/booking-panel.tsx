@@ -178,9 +178,7 @@ export function BookingPanel({
         <div className="bg-muted/40 flex flex-col gap-3 rounded-lg border p-4 text-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <span className="font-medium">
-              <span className="font-mono tabular-nums">
-                {formatWhen(chosen.start, locale, "time")}
-              </span>
+              <span className="num">{formatWhen(chosen.start, locale, "time")}</span>
               {" · "}
               <Money amount={chosen.price} />
             </span>

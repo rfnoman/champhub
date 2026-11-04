@@ -18,9 +18,7 @@ export function When({
   className?: string;
 }) {
   const locale = useLocale();
-  return (
-    <span className={className ?? "font-mono tabular-nums"}>{formatWhen(at, locale, style)}</span>
-  );
+  return <span className={className ?? "num"}>{formatWhen(at, locale, style)}</span>;
 }
 
 /** A `YYYY-MM-DD` day with no time of day — a ledger line, an activity log entry. */
@@ -34,7 +32,5 @@ export function Day({
   className?: string;
 }) {
   const locale = useLocale();
-  return (
-    <span className={className ?? "font-mono tabular-nums"}>{formatDay(day, locale, style)}</span>
-  );
+  return <span className={className ?? "num"}>{formatDay(day, locale, style)}</span>;
 }

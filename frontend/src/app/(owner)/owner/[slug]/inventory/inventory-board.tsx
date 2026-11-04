@@ -171,7 +171,7 @@ export function InventoryBoard({
                 <li key={String(movement.id)} className="flex flex-wrap gap-x-2 py-1.5">
                   <span
                     className={cn(
-                      "w-10 text-right font-mono tabular-nums",
+                      "num w-10 text-right",
                       movement.qty_delta > 0 && "text-emerald-600 dark:text-emerald-400",
                       movement.qty_delta < 0 && "text-destructive",
                     )}
@@ -232,15 +232,11 @@ function StockRow({
             )}
           </span>
         </td>
-        <td className="px-2 py-2 text-right font-mono tabular-nums" data-testid="on-hand">
+        <td className="num px-2 py-2 text-right" data-testid="on-hand">
           {item.on_hand}
         </td>
-        <td className="text-muted-foreground px-2 py-2 text-right font-mono tabular-nums">
-          {item.reserved}
-        </td>
-        <td className="px-2 py-2 text-right font-mono font-semibold tabular-nums">
-          {item.available}
-        </td>
+        <td className="text-muted-foreground num px-2 py-2 text-right">{item.reserved}</td>
+        <td className="num px-2 py-2 text-right font-semibold tabular-nums">{item.available}</td>
         <td className="px-2 py-2 text-right">
           <Money amount={item.price} />
         </td>

@@ -121,7 +121,7 @@ export default async function HomePage() {
                   <li key={String(goal.id)} className="flex flex-col gap-1">
                     <span className="flex items-baseline justify-between text-xs">
                       <span>{goal.label}</span>
-                      <span className="text-muted-foreground font-mono tabular-nums">
+                      <span className="text-muted-foreground num">
                         {goal.achieved}/{goal.target}
                       </span>
                     </span>

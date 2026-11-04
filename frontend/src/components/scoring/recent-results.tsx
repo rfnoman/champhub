@@ -51,7 +51,7 @@ export async function RecentResults({ playerId }: { playerId: string }) {
                 >
                   {t("outcomeShort", { outcome: row.outcome })}
                 </span>
-                <span className="font-mono text-sm tabular-nums">
+                <span className="num text-sm tabular-nums">
                   {row.my_side === "B"
                     ? `${row.team_b_score}–${row.team_a_score}`
                     : `${row.team_a_score}–${row.team_b_score}`}

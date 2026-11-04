@@ -147,7 +147,7 @@ export function Warehouse({
                       </Badge>
                     )}
                   </span>
-                  <span className="font-mono tabular-nums">{item.available}</span>
+                  <span className="num">{item.available}</span>
                   <span className="flex items-center gap-1.5">
                     <Input
                       aria-label={t("receiveFor", { product: item.product.name })}

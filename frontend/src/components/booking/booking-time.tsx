@@ -21,7 +21,7 @@ export function BookingTime({
   const options = { timeZone: "Asia/Dhaka", hour: "2-digit", minute: "2-digit" } as const;
 
   return (
-    <span className="font-mono tabular-nums">
+    <span className="num">
       {withDate &&
         `${format.dateTime(new Date(start), {
           timeZone: "Asia/Dhaka",
@@ -38,7 +38,7 @@ export function BookingTime({
 export function DhakaMoment({ at }: { at: string }) {
   const format = useFormatter();
   return (
-    <span className="font-mono tabular-nums">
+    <span className="num">
       {format.dateTime(new Date(at), {
         timeZone: "Asia/Dhaka",
         day: "numeric",

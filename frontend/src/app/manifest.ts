@@ -16,8 +16,10 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#ffffff",
-    theme_color: "#16a34a",
+    // The splash screen while the app boots, so it matches the icon rather than
+    // flashing white before a dark app appears (D73).
+    background_color: "#07140F",
+    theme_color: "#07140F",
     // Both languages, so an installed shortcut is labelled in whatever the phone reads.
     lang: "en",
     dir: "ltr",

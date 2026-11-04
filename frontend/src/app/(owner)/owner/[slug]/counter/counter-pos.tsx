@@ -164,7 +164,7 @@ export function CounterPos({
                   >
                     <span className="line-clamp-2 text-sm font-medium">{item.product.name}</span>
                     <span className="flex w-full items-baseline justify-between">
-                      <span className="font-mono text-base font-semibold tabular-nums">
+                      <span className="num text-base font-semibold tabular-nums">
                         <Money amount={item.price} />
                       </span>
                       <span className="text-muted-foreground text-xs">
@@ -241,7 +241,7 @@ export function CounterPos({
                       >
                         −
                       </Button>
-                      <span className="w-6 text-center font-mono tabular-nums">{quantity}</span>
+                      <span className="num w-6 text-center">{quantity}</span>
                       <Button
                         size="xs"
                         variant="outline"
@@ -251,7 +251,7 @@ export function CounterPos({
                         +
                       </Button>
                     </span>
-                    <span className="w-16 text-right font-mono tabular-nums">
+                    <span className="num w-16 text-right">
                       <Money amount={Number(item.price) * quantity} />
                     </span>
                   </li>
@@ -262,7 +262,7 @@ export function CounterPos({
 
           <div className="flex items-baseline justify-between border-t pt-3">
             <span className="text-sm font-medium">{t("total")}</span>
-            <span className="font-mono text-2xl font-bold tabular-nums" data-testid="pos-total">
+            <span className="num text-2xl font-bold tabular-nums" data-testid="pos-total">
               <Money amount={total} />
             </span>
           </div>
@@ -275,14 +275,14 @@ export function CounterPos({
               min={0}
               value={cash}
               onChange={(event) => setCash(event.target.value)}
-              className="h-10 font-mono text-lg"
+              className="num h-10 text-lg"
             />
           </div>
 
           {Number(cash) > 0 && (
             <div className="flex items-baseline justify-between">
               <span className="text-sm font-medium">{t("changeDue")}</span>
-              <span className="font-mono text-2xl font-bold tabular-nums" data-testid="change-due">
+              <span className="num text-2xl font-bold tabular-nums" data-testid="change-due">
                 <Money amount={changeDue} />
               </span>
             </div>

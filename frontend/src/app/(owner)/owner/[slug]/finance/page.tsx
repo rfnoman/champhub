@@ -64,7 +64,7 @@ export default async function FinancePage({
             <CardTitle className="text-sm">{t("earned")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            <p className="font-mono text-3xl font-bold tabular-nums" data-testid="finance-total">
+            <p className="num text-3xl font-bold tabular-nums" data-testid="finance-total">
               <Money amount={data.total} />
             </p>
             <ul className="flex flex-col gap-1 text-sm">
@@ -121,7 +121,7 @@ export default async function FinancePage({
             <ul className="flex flex-col divide-y text-sm" data-testid="finance-lines">
               {data.entries.map((entry) => (
                 <li key={String(entry.id)} className="flex flex-wrap items-baseline gap-2 py-2">
-                  <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                  <span className="text-muted-foreground num text-xs tabular-nums">
                     {when(entry.occurred_on)}
                   </span>
                   <span className="min-w-0 flex-1 truncate">

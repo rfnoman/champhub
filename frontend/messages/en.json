@@ -17,7 +17,9 @@
     "squads": "Squads",
     "store": "Store",
     "activity": "Activity",
-    "payments": "Payments"
+    "payments": "Payments",
+    "primary": "Main",
+    "more": "More"
   },
   "auth": {
     "signIn": "Sign in",
@@ -29,11 +31,40 @@
     "label": "Language",
     "switchTo": "Switch to {language}"
   },
+  "theme": {
+    "label": "Theme",
+    "system": "Match my phone",
+    "light": "Light",
+    "dark": "Dark"
+  },
   "home": {
-    "heading": "Play more football in Dhaka",
-    "body": "Find a turf near you, book a slot, and fill the remaining spots with players at your level.",
+    "heading": "Your game is on tonight",
+    "body": "Book a ground near you, fill the empty spots with players at your level, and keep a record worth showing.",
     "ctaPlay": "Find a match",
-    "ctaOwner": "List your turf"
+    "ctaOwner": "List your turf",
+    "kicker": "Turf sport in Dhaka",
+    "liveTitle": "Filling now",
+    "liveWhen": "Tonight, 9:00 PM",
+    "liveWhere": "Banani Turf · Pitch 2",
+    "liveFormat": "7-a-side",
+    "liveSpots": "{count, plural, =1 {# spot left} other {# spots left}}",
+    "livePrice": "per head",
+    "liveJoin": "Join the match",
+    "sportsTitle": "Four sports, one profile",
+    "sportsBody": "Your rating is per sport, so a cricketer is not judged by their football.",
+    "stepsTitle": "How a match comes together",
+    "step1Title": "Book the ground",
+    "step1Body": "Pick a turf, a date and a slot. Pay cash at the turf or online, whichever you prefer.",
+    "step2Title": "Fill the spots",
+    "step2Body": "Leave your match open and players nearby ask to join, or bring your own squad.",
+    "step3Title": "Record the result",
+    "step3Body": "Enter the scorecard, pick a man of the match, and everyone's rating moves.",
+    "ownerTitle": "Run a turf?",
+    "ownerBody": "Take bookings, sell at the counter, track stock and get paid — in one place.",
+    "sport_football": "Football",
+    "sport_futsal": "Futsal",
+    "sport_cricket": "Cricket",
+    "sport_badminton": "Badminton"
   },
   "owner": {
     "heading": "Turf dashboard",

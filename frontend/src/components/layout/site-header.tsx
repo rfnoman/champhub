@@ -7,55 +7,38 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { LanguageSwitcher } from "./language-switcher";
+import { NavLinks } from "./nav-links";
 import { NotificationBell } from "./notification-bell";
+import { ThemeToggle } from "./theme-toggle";
 
 export async function SiteHeader() {
   const t = await getTranslations();
 
   return (
-    <header className="border-border/60 bg-background/95 sticky top-0 z-40 border-b backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
-        <Link href="/" className="mr-auto text-base font-semibold tracking-tight">
+    /**
+     * One of the four surfaces allowed to carry `backdrop-filter` (DECISIONS D75). It is
+     * sticky, so the blur is over a small fixed area rather than inside a scrolling list.
+     */
+    <header className="glass-chrome sticky top-0 z-40 border-b">
+      {/* The floodlight, catching the top edge of the chrome. The one piece of
+          non-functional light in the interior app — the hero gets the literal version. */}
+      <div
+        aria-hidden
+        className="via-brand/40 pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent"
+      />
+      <div className="mx-auto flex h-14 max-w-5xl items-center gap-1.5 px-4">
+        {/* Must stay exactly one visible link whose accessible name is the wordmark —
+            smoke.spec.ts asserts it in both languages. */}
+        <Link
+          href="/"
+          className="font-display text-brand hover:text-brand/85 mr-auto text-lg font-extrabold tracking-tight transition-colors"
+        >
           {t("app.name")}
         </Link>
 
-        <nav className="hidden items-center gap-1 sm:flex" aria-label={t("nav.home")}>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/home">{t("nav.home")}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/play">{t("nav.play")}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/bookings">{t("nav.myBookings")}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/activity">{t("nav.activity")}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/profile">{t("nav.profile")}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/squads">{t("nav.squads")}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/turfs">{t("nav.findTurf")}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/store">{t("nav.store")}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/owner">{t("nav.owner")}</Link>
-          </Button>
-          {/* `/me` dumps the raw backend session — useful while building, not something
-              to put in front of players. Development only (Phase 11 step 6). */}
-          {process.env.NODE_ENV !== "production" && (
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/me">{t("nav.debug")}</Link>
-            </Button>
-          )}
-        </nav>
+        <NavLinks />
 
+        <ThemeToggle />
         <LanguageSwitcher />
 
         {/* <Show> reads auth state, so it needs a Suspense boundary. */}

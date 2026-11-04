@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { PageContainer } from "@/components/layout/page-container";
 
 /**
  * Turf owner area gate. Signed-in only for now; Phase 02 adds the object-level check
@@ -6,5 +7,5 @@ import { auth } from "@clerk/nextjs/server";
  */
 export default async function OwnerLayout({ children }: { children: React.ReactNode }) {
   await auth.protect();
-  return <>{children}</>;
+  return <PageContainer width="wide">{children}</PageContainer>;
 }

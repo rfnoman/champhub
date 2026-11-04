@@ -54,7 +54,7 @@ export async function PlayerSportCardView({
         <div className="flex flex-col items-center">
           <span
             className={cn(
-              "font-mono text-4xl leading-none font-bold tabular-nums",
+              "num text-4xl leading-none font-bold tabular-nums",
               ratingTone(card.overall),
             )}
           >
@@ -122,7 +122,7 @@ export async function PlayerSportCardView({
               <dt className="text-muted-foreground text-[0.625rem] tracking-wide uppercase">
                 {t(key)}
               </dt>
-              <dd className="font-mono text-sm font-semibold tabular-nums">{value}</dd>
+              <dd className="num text-sm font-semibold tabular-nums">{value}</dd>
             </div>
           ))}
         </dl>

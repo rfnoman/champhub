@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 
 import { getServerApiClient } from "@/lib/api/server";
+import { PageContainer } from "@/components/layout/page-container";
 
 /**
  * Platform admin gate: signed in **and** `is_platform_admin` according to Django.
@@ -20,5 +21,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     notFound();
   }
 
-  return <>{children}</>;
+  return <PageContainer width="wide">{children}</PageContainer>;
 }

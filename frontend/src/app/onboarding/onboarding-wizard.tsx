@@ -334,7 +334,7 @@ export function OnboardingWizard({
                           value={[entry.skills[skill.key] ?? defaultRating]}
                           onValueChange={([value]) => setSkill(sport.slug, skill.key, value)}
                         />
-                        <span className="w-7 shrink-0 text-right font-mono text-xs tabular-nums">
+                        <span className="num w-7 shrink-0 text-right text-xs tabular-nums">
                           {entry.skills[skill.key] ?? defaultRating}
                         </span>
                       </div>
@@ -372,7 +372,7 @@ export function OnboardingWizard({
                         setAttributeValues((current) => ({ ...current, [attribute.key]: value }))
                       }
                     />
-                    <span className="w-7 shrink-0 text-right font-mono text-xs tabular-nums">
+                    <span className="num w-7 shrink-0 text-right text-xs tabular-nums">
                       {attributeValues[attribute.key] ?? defaultRating}
                     </span>
                   </div>

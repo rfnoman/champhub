@@ -38,7 +38,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ siz
         justifyContent: "center",
         width: "100%",
         height: "100%",
-        background: "#16a34a",
+        // The midnight pitch, with the floodlight falling from above (D73). Phase 12
+        // inverted this: the icon used to be a white ring on brand green while the app
+        // behind it was greyscale, so neither matched the other.
+        background: "#07140F",
+        backgroundImage: "radial-gradient(120% 90% at 50% -10%, #11402C 0%, #07140F 70%)",
         borderRadius: maskable ? 0 : pixels * 0.22,
       }}
     >
@@ -50,8 +54,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ siz
           width: pixels * scale,
           height: pixels * scale,
           borderRadius: "100%",
-          border: `${Math.round(pixels * 0.045)}px solid #ffffff`,
-          color: "#ffffff",
+          border: `${Math.round(pixels * 0.045)}px solid #00E07A`,
+          color: "#00E07A",
           fontSize: pixels * scale * 0.52,
           fontWeight: 700,
           letterSpacing: -pixels * 0.01,

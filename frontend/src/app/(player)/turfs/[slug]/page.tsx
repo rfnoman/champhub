@@ -79,7 +79,7 @@ export default async function TurfDetailPage({ params }: { params: Promise<{ slu
                 return (
                   <li key={day} className="flex items-baseline justify-between gap-3">
                     <span className="text-muted-foreground text-xs">{t(`weekday.${day}`)}</span>
-                    <span className="font-mono text-xs tabular-nums">
+                    <span className="num text-xs tabular-nums">
                       {rows.length === 0
                         ? t("closed")
                         : rows

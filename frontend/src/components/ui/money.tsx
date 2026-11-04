@@ -19,6 +19,10 @@ export function Money({
 }) {
   const locale = useLocale();
   return (
-    <span className={cn("font-mono tabular-nums", className)}>{formatMoney(amount, locale)}</span>
+    /* `num` rather than `num`: what a price wants is figures that
+       line up as the amount changes, not a typewriter face — and until Phase 12
+       `--font-mono` pointed at a font that was never loaded, so this fell through to
+       the browser default monospace (DECISIONS D74). */
+    <span className={cn("num", className)}>{formatMoney(amount, locale)}</span>
   );
 }

@@ -69,10 +69,7 @@ export async function Roster({
           <span className="flex shrink-0 items-center gap-2">
             {entry.overall != null && (
               <span
-                className={cn(
-                  "font-mono text-sm font-semibold tabular-nums",
-                  ratingTone(entry.overall),
-                )}
+                className={cn("num text-sm font-semibold tabular-nums", ratingTone(entry.overall))}
                 title={entry.is_provisional ? t("unverifiedRating") : undefined}
               >
                 {entry.overall}

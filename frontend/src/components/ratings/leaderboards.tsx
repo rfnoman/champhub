@@ -78,7 +78,7 @@ export async function Leaderboards({
                     {row.rank}
                   </span>
                   <span className="min-w-0 flex-1 truncate">{row.player_name}</span>
-                  <span className="font-mono text-sm font-semibold tabular-nums">
+                  <span className="num text-sm font-semibold tabular-nums">
                     {Number(row.value) % 1 === 0 ? Number(row.value) : row.value}
                   </span>
                 </li>

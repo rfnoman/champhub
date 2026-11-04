@@ -73,7 +73,7 @@ export function SlotGrid({
               !interactive && slot.available && "cursor-default",
             )}
           >
-            <span className="font-mono text-sm tabular-nums">{time}</span>
+            <span className="num text-sm tabular-nums">{time}</span>
             <span className="flex w-full items-center justify-between gap-1 text-xs">
               <Money amount={slot.price} className="font-sans" />
               {slot.label && <span className="text-muted-foreground">{slot.label}</span>}

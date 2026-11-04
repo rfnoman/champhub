@@ -172,9 +172,7 @@ export function CartPanel({
                         >
                           −
                         </Button>
-                        <span className="w-5 text-center font-mono tabular-nums">
-                          {line.quantity}
-                        </span>
+                        <span className="num w-5 text-center">{line.quantity}</span>
                         <Button
                           size="xs"
                           variant="outline"
@@ -185,7 +183,7 @@ export function CartPanel({
                           +
                         </Button>
                       </span>
-                      <span className="w-14 text-right font-mono tabular-nums">
+                      <span className="num w-14 text-right">
                         <Money amount={line.line_total} />
                       </span>
                     </li>
@@ -299,7 +297,7 @@ export function CartPanel({
 
             <div className="flex items-baseline justify-between border-t pt-3">
               <span className="text-sm font-medium">{t("total")}</span>
-              <span className="font-mono text-xl font-bold tabular-nums" data-testid="cart-total">
+              <span className="num text-xl font-bold tabular-nums" data-testid="cart-total">
                 <Money amount={total} />
               </span>
             </div>

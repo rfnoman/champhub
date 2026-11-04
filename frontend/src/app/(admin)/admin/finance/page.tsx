@@ -36,7 +36,7 @@ export default async function AdminFinancePage() {
             <CardTitle className="text-sm">{t("platformEarned")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-mono text-2xl font-bold tabular-nums" data-testid="platform-total">
+            <p className="num text-2xl font-bold tabular-nums" data-testid="platform-total">
               <Money amount={data?.platform ?? 0} />
             </p>
           </CardContent>

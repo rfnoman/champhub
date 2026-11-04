@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getTranslations } from "next-intl/server";
 
 import { getServerApiClient } from "@/lib/api/server";
+import { PageContainer } from "@/components/layout/page-container";
 
 /**
  * Debug page: proves the whole chain works — Clerk session on the frontend, token
@@ -59,9 +60,11 @@ export default async function MePage() {
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-4">
-      <dt className="text-muted-foreground w-40 shrink-0">{label}</dt>
-      <dd className={mono ? "font-mono text-xs break-all" : "break-words"}>{value}</dd>
-    </div>
+    <PageContainer>
+      <div className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-4">
+        <dt className="text-muted-foreground w-40 shrink-0">{label}</dt>
+        <dd className={mono ? "num text-xs break-all" : "break-words"}>{value}</dd>
+      </div>
+    </PageContainer>
   );
 }

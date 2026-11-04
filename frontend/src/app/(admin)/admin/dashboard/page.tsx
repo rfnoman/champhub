@@ -97,7 +97,7 @@ export default async function AdminDashboardPage({
           <CardContent>
             <Money
               amount={data.platform_earnings}
-              className="font-mono text-2xl font-bold tabular-nums"
+              className="num text-2xl font-bold tabular-nums"
             />
             <p className="text-muted-foreground mt-1 text-xs">
               {t("commission")} <Money amount={data.commission} className="" />
@@ -136,7 +136,7 @@ export default async function AdminDashboardPage({
                     {turf.name}
                     <span className="text-muted-foreground"> · {turf.area}</span>
                   </Link>
-                  <span className="font-mono tabular-nums">{turf.bookings}</span>
+                  <span className="num">{turf.bookings}</span>
                 </li>
               ))}
             </ol>
@@ -154,7 +154,7 @@ function Figure({ label, value, hint }: { label: string; value: string | number;
         <CardTitle className="text-sm font-medium">{label}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="font-mono text-2xl font-bold tabular-nums">{value}</p>
+        <p className="num text-2xl font-bold tabular-nums">{value}</p>
         {hint && <p className="text-muted-foreground mt-1 text-xs">{hint}</p>}
       </CardContent>
     </Card>

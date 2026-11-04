@@ -231,7 +231,7 @@ function ResultCard({ player }: { player: PlayerSearchResult }) {
 
       <div className="flex shrink-0 flex-col items-end gap-1">
         {best?.overall != null && (
-          <span className="font-mono text-lg font-bold tabular-nums">{best.overall}</span>
+          <span className="num text-lg font-bold tabular-nums">{best.overall}</span>
         )}
         <Badge variant="secondary" className="text-[10px]">
           {t("reliability", { score: player.reliability_score })}

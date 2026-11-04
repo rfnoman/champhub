@@ -214,7 +214,7 @@ export function ActivityBoard({
             <ul className="flex flex-col divide-y text-sm" data-testid="activity-history">
               {logs.map((log) => (
                 <li key={String(log.id)} className="flex flex-wrap items-baseline gap-2 py-2">
-                  <span className="font-mono text-xs tabular-nums">
+                  <span className="num text-xs tabular-nums">
                     {formatWhen(`${log.happened_on}T12:00:00+06:00`, locale, "dayMonth")}
                   </span>
                   <span className="min-w-0 flex-1 truncate">
@@ -224,8 +224,8 @@ export function ActivityBoard({
                     )}
                     {log.note && <span className="text-muted-foreground"> · {log.note}</span>}
                   </span>
-                  <span className="font-mono tabular-nums">{log.minutes}m</span>
-                  <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                  <span className="num">{log.minutes}m</span>
+                  <span className="text-muted-foreground num text-xs tabular-nums">
                     {log.est_calories} kcal
                   </span>
                   {log.is_estimate && (
