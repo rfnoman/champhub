@@ -16,6 +16,7 @@ Updated by Claude Code at the end of each phase.
 | 09 Fitness layer & notifications+ | **done** | 2026-11-04 | Activity from matches, goals, streaks, bundles, reminder jobs, web push, SSE live updates, home dashboard |
 | 10 Online payments & ledger | **done** (sandbox credentials pending) | 2026-11-04 | Provider abstraction, SSLCommerz with server-side validation, advances, policy refunds, balanced ledger, commissions, payouts |
 | 11 Hardening, Bangla, launch | **done** (not deployed; see gaps) | 2026-11-04 | Audit; Bangla; PWA; performance; security; observability; admin tools; policies; deployable; launch journeys |
+| 12 Design system | **done** | 2026-11-04 | "Floodlit pitch" palette, light/dark with system default, per-sport colour, Archivo display face, glass chrome, CSS press physics, mobile navigation, every screen restyled |
 
 ## Log
 <!-- Per phase: what was built, deviations from the plan, known gaps, follow-ups. -->
@@ -1786,3 +1787,93 @@ fired on the next merge. It could not have deployed anything — there are no se
 no app — but you had said not to deploy, and a workflow aimed at infrastructure that does
 not exist is noise at best. It is now `workflow_dispatch` only, with the trigger to add
 back written in the file and in `docs/DEPLOYMENT.md`.
+
+---
+
+## Phase 12 — Design system: "Floodlit pitch"
+
+Eleven phases built a complete product on the stock shadcn neutral theme. Every token in
+`globals.css` was zero-chroma `oklch`, including all five `--chart-*` steps, and the
+brand green `#16a34a` existed only in the manifest, the generated icon and
+`viewport.themeColor` — so the installed app icon was green and the app behind it was
+greyscale. This phase gives it a design, and fixes three things that were quietly broken
+underneath.
+
+**The direction** (D73): the floodlight and the chalk line. One light source per view,
+literal on the landing hero and a top-edge glow on interior chrome. Chalk-line geometry
+used to encode information rather than decorate it — the centre line splits a scoreline,
+a penalty arc crops the player card's rating, unavailable slots are hatched as out of
+play. Dark is the designed palette and light is a real second one: the vivid `#00E07A`
+cannot carry white text on white ground, so light mode demotes it to a highlight and
+`--primary` becomes a deeper `#047A47`. Four sport identities (football green, futsal
+amber, cricket cobalt, badminton violet) ride on a `data-sport` attribute with an
+allowlist and a fallback, because sports come from the database and admins can approve a
+fifth.
+
+**Three bugs found on the way, all of which looked fine:**
+
+- **`--font-mono` pointed at `var(--font-geist-mono)` and no Geist was ever loaded.**
+  Every price, rating, score and kickoff time in the app had been rendering in the
+  browser's default monospace since Phase 00. Those 23 sites now use a `num` utility
+  with real tabular figures, which is what they wanted in the first place.
+- **next-themes is blocked by our own CSP** (D78b). `script-src` carries a nonce and no
+  `'unsafe-inline'`, and next-themes works by injecting an inline no-flash script. Without
+  `nonce` threaded into `ThemeProvider` the browser drops it and the app is stuck in light
+  mode — with lint, typecheck, build and all 143 e2e tests still green. Nothing tests it.
+- **One token was doing two jobs.** `--rating-fair` coloured both the skill-bar fill and
+  the small "Avg 64" label. A fill wants to be vivid; small text has to clear AA. The
+  single value had to satisfy the stricter constraint, so every meter in light mode came
+  out muddy brown. Fills now use a `-vivid` pair; in dark mode the two collapse.
+
+**Decisions worth re-reading**: D72 (why `motion` is imported through the lazy-feature
+form — `features={domAnimation}` as a static import looks lazy and defers nothing),
+D74 (Archivo's width axis measured at 90.1 kB against 34.9 kB for weight-only, and
+dropped), D75 (glass splits into an unrestricted no-blur `glass-panel` and a four-file
+allowlist for `glass-chrome`, so nothing blurred sits inside a scrolling list),
+D76 (21 native selects stay native), D79 (press physics in CSS, so `Button` — used 62
+times, mostly in server components — does not become a client component).
+
+**What else changed.** `<main>` is full width with the column moved into `PageContainer`,
+so owner and admin get `max-w-7xl` and the landing page goes edge to edge. The landing
+page was 24 lines and is now the floodlit hero, the four sports, how a match comes
+together, and the owner pitch. **The app had no mobile navigation at all** — nine links
+in a `hidden sm:flex` nav on a phone-first installable PWA — and now has a glass tab bar.
+`MatchCard` and `TurfCard` were `async`, which is why the board and discovery each kept a
+private copy; making them sync deleted both duplicates. The admin index stopped being
+eight bare buttons and the owner's turf nav stopped being seven outline buttons with no
+current state. Every raw Tailwind palette literal is now a token.
+
+**`src/__tests__/e2e-hooks.test.ts` is the part most worth keeping.** The 143 Playwright
+tests still do not run in CI, so renaming a test id or dropping an `<h1>` is a change that
+passes every automated check. This scans the source for all 23 asserted test ids, the
+booking flow's deliberately language-independent hooks, `role="meter"`, the English labels
+the specs click, and D75's `backdrop-filter` allowlist — 29 assertions that *do* run in
+CI. It cannot catch a broken layout; it catches deletions and renames, which is most of
+what a restyle does to a test suite.
+
+**The numbers**: 56 Vitest (was 27), 143 Playwright green on both the chromium and
+Pixel 7 projects, 79 decisions, 12 phases. The render-blocking stylesheet went from
+13.5 kB to 17.0 kB gzipped, and one font family was added at 34.9 kB — `motion` adds
+~5–7 kB synchronous with its features deferred behind hydration.
+
+**Verification**: lint, prettier, typecheck, Vitest and build green; the full Playwright
+suite green on both projects against the production build; the signed-in screens reviewed
+as screenshots in both themes; and no horizontal scroll in Bangla at 390px, asserted in
+`e2e/shots.spec.ts` rather than eyeballed.
+
+**Follow-ups, honestly:**
+
+- **The perf budget was not re-measured under throttling.** Phase 11 recorded LCP 3.7s /
+  CLS 0.04 on low-end Android over slow 3G. This phase added 3.5 kB of CSS, a 34.9 kB
+  font and a deferred motion chunk, and the glass A/B trace (`reduce-effects` toggled at
+  runtime on one build, which is the comparison that isolates `backdrop-filter`) has not
+  been run. Do both before shipping to the pilot.
+- The IA debt the restyle exposed rather than fixed: `manage.tsx` is still 765 lines of
+  grounds, pricing, staff and photos on one page; `calendar.tsx` is still the day list
+  Phase 02 owed a grid; `board.tsx` still has two stacked filter bars with eight controls
+  above the matches.
+- The Bangla strings added here (about 40, across the landing page, the nav, the theme
+  toggle and the admin hints) are mine, not a native speaker's, and join the ~700 already
+  waiting for review.
+- `src/components/motion/` exists and `LazyMotion` is mounted, but only the landing hero
+  uses it. The list reflows and exit animations D72 justifies it with are not built yet.
