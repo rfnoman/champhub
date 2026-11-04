@@ -1183,5 +1183,16 @@
   "legal": {
     "lastUpdated": "Last updated {date}",
     "alsoRead": "Also worth reading"
+  },
+  "notFound": {
+    "heading": "This page is not here",
+    "body": "The link may be old, or the turf may not be listed yet. Both of those are fixable by going somewhere that is.",
+    "findMatch": "Find a match",
+    "home": "Go home"
+  },
+  "errorPage": {
+    "heading": "That did not load",
+    "body": "Something went wrong at our end. Nothing you booked or ordered has been affected.",
+    "retry": "Try again"
   }
 }
