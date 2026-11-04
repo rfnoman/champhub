@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { cn } from "cn";
 
 import type { Turf } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
+import { sportTheme } from "@/lib/sport-theme";
 
 /**
  * One turf in a listing.
@@ -12,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
  * optional is a prop: `action` for owner/admin buttons, `status` for the review badge
  * players never see.
  */
-export async function TurfCard({
+export function TurfCard({
   turf,
   href,
   status,
@@ -25,7 +26,7 @@ export async function TurfCard({
   action?: React.ReactNode;
   className?: string;
 }) {
-  const t = await getTranslations("turfs");
+  const t = useTranslations("turfs");
   const photo = turf.photos?.[0];
 
   const body = (
@@ -49,7 +50,10 @@ export async function TurfCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="text-muted-foreground flex h-full w-full items-center justify-center text-3xl">
+          <div
+            {...sportTheme(turf.sports?.[0]?.slug)}
+            className="from-sport/20 flex h-full w-full items-center justify-center bg-gradient-to-br to-transparent text-3xl"
+          >
             {turf.sports?.[0]?.icon ?? "🏟️"}
           </div>
         )}
@@ -58,7 +62,9 @@ export async function TurfCard({
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="truncate text-base font-semibold">{turf.name}</h3>
+            <h3 className="font-display truncate text-base font-bold tracking-tight">
+              {turf.name}
+            </h3>
             <p className="text-muted-foreground truncate text-xs">
               {turf.area}
               {turf.distance_km != null && ` · ${t("kmAway", { km: turf.distance_km })}`}
@@ -94,8 +100,8 @@ export async function TurfCard({
   );
 
   const shell = cn(
-    "bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm sm:flex-row",
-    href && "hover:bg-muted/40 transition-colors",
+    "glass-panel flex flex-col overflow-hidden rounded-2xl sm:flex-row",
+    href && "press hover:border-brand/35",
     className,
   );
 

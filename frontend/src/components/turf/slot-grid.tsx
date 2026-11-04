@@ -66,22 +66,29 @@ export function SlotGrid({
             onClick={() => onSelect?.(slot)}
             title={slot.available ? undefined : t(`slotReason.${slot.reason || "closed"}`)}
             className={cn(
-              "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors",
-              isSelected && "border-primary bg-primary/10",
-              !isSelected && slot.available && "hover:bg-muted/60",
-              !slot.available && "bg-muted/40 text-muted-foreground cursor-not-allowed opacity-60",
+              "press relative flex flex-col items-start gap-0.5 overflow-hidden rounded-xl border px-3 py-2.5 text-left",
+              // Minimum 44px even at the smallest text size: this is the control the
+              // whole booking flow turns on, tapped on a phone, often outdoors.
+              "min-h-11",
+              isSelected && "border-brand bg-brand/12 shadow-[0_0_0_1px_var(--brand)]",
+              !isSelected &&
+                slot.available &&
+                "border-border hover:border-brand/40 hover:bg-muted/50",
+              // Hatched like ground that is out of play, rather than merely dimmed —
+              // the one place the chalk vocabulary carries a state instead of a divide.
+              !slot.available &&
+                "text-muted-foreground border-border/50 cursor-not-allowed bg-[repeating-linear-gradient(135deg,transparent,transparent_5px,var(--muted)_5px,var(--muted)_7px)]",
               !interactive && slot.available && "cursor-default",
             )}
           >
-            <span className="num text-sm tabular-nums">{time}</span>
+            <span className="num text-sm font-semibold">{time}</span>
             <span className="flex w-full items-center justify-between gap-1 text-xs">
               <Money amount={slot.price} className="font-sans" />
               {slot.label && <span className="text-muted-foreground">{slot.label}</span>}
             </span>
             {!slot.available && (
-              <span className="text-[0.625rem] uppercase">
-                {t(`slotReason.${slot.reason || "closed"}`)}
-              </span>
+              /* Sentence case: the all-caps version of this was shouting a refusal. */
+              <span className="text-[0.6875rem]">{t(`slotReason.${slot.reason || "closed"}`)}</span>
             )}
           </button>
         );

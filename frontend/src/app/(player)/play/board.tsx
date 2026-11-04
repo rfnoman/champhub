@@ -1,19 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { cn } from "cn";
+import { useTranslations } from "next-intl";
 
 import type { MatchSummary, Sport } from "@/lib/api/types";
 import { useApiClient } from "@/lib/api/use-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MatchCard } from "@/components/match/match-card";
 import { TurfMap, type MapMarker } from "@/components/turf/turf-map";
-import { ratingTone } from "@/components/player/rating";
-import { Money } from "@/components/ui/money";
-import { formatWhen } from "@/i18n/formats";
 
 type View = "list" | "map";
 
@@ -265,71 +261,12 @@ export function MatchBoard({
         <ul data-testid="match-board" className="flex flex-col gap-3">
           {matches.map((match) => (
             <li key={match.id}>
-              <BoardRow match={match} />
+              <MatchCard match={match} />
             </li>
           ))}
         </ul>
       )}
     </div>
-  );
-}
-
-/** A board row. Kept in this file because it reads live, client-filtered data. */
-function BoardRow({ match }: { match: MatchSummary }) {
-  const t = useTranslations("board");
-  const locale = useLocale();
-  const when = formatWhen(match.starts_at, locale, "full");
-
-  return (
-    <Link
-      href={`/matches/${match.id}`}
-      className="bg-card hover:bg-muted/40 flex flex-col gap-2 rounded-xl border p-4 shadow-sm transition-colors"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-base font-semibold">
-            <span aria-hidden className="mr-1.5">
-              {match.sport.icon}
-            </span>
-            {match.turf_name}
-          </h2>
-          <p className="text-muted-foreground truncate text-xs">
-            {match.ground_name} · {match.area}
-            {match.distance_km != null && ` · ${t("kmAway", { km: match.distance_km })}`}
-          </p>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="text-sm font-medium">{when}</p>
-          <p className="text-muted-foreground text-xs">{match.sport_format.name}</p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-medium">
-            {t("needed", { count: match.needed })}
-          </span>
-          {match.squad && (
-            <span className="bg-secondary rounded-full px-2 py-0.5 text-xs">
-              {match.squad.name}
-            </span>
-          )}
-          <span className="text-muted-foreground text-xs">
-            {t("rosterOf", { count: match.roster_count, capacity: match.capacity })}
-          </span>
-        </span>
-        <span className="flex items-center gap-3 text-xs">
-          {match.average_rating != null ? (
-            <span className={cn("font-medium", ratingTone(match.average_rating))}>
-              {t("avgRating", { rating: match.average_rating })}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">{t("unrated")}</span>
-          )}
-          <Money amount={match.price} />
-        </span>
-      </div>
-    </Link>
   );
 }
 

@@ -33,18 +33,24 @@ export async function ScorecardView({ scorecard }: { scorecard: AnyScorecard }) 
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-card rounded-xl border p-6 text-center shadow-sm">
-        <p className="text-muted-foreground text-xs tracking-widest uppercase">
+      <div className="glass-panel floodlight relative overflow-hidden rounded-3xl p-6 text-center">
+        {/* Sentence case: this was a tracked-out all-caps eyebrow, which is the
+            commonest tell of a templated page. */}
+        <p className="label-sm">
           {scorecard.sport} · {scorecard.turf_name}
         </p>
 
-        <div className="mt-4 flex items-center justify-center gap-6">
+        <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
           <TeamScore
             name={teamA?.display_name ?? "Team A"}
             score={scorecard.team_a_score}
             won={winner === "A"}
           />
-          <span className="text-muted-foreground text-2xl">–</span>
+          {/* The centre line, which is what actually separates two sides on a pitch. */}
+          <span
+            aria-hidden
+            className="via-chalk/30 h-16 w-px bg-gradient-to-b from-transparent to-transparent"
+          />
           <TeamScore
             name={teamB?.display_name ?? "Team B"}
             score={scorecard.team_b_score}
@@ -65,8 +71,10 @@ export async function ScorecardView({ scorecard }: { scorecard: AnyScorecard }) 
         {[teamA, teamB].map(
           (team) =>
             team && (
-              <div key={team.id} className="bg-card rounded-xl border p-4 shadow-sm">
-                <h3 className="text-sm font-semibold">{team.display_name}</h3>
+              <div key={team.id} className="glass-panel rounded-2xl p-4">
+                <h3 className="font-display text-base font-bold tracking-tight">
+                  {team.display_name}
+                </h3>
                 {team.captain_name && (
                   <p className="text-muted-foreground text-xs">
                     {t("captain", { name: team.captain_name })}
@@ -86,15 +94,15 @@ export async function ScorecardView({ scorecard }: { scorecard: AnyScorecard }) 
       </div>
 
       {scorecard.rows.length > 0 && columns.length > 0 && (
-        <div className="bg-card overflow-x-auto rounded-xl border shadow-sm">
+        <div className="glass-panel overflow-x-auto rounded-2xl">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left">
-                <th className="px-3 py-2 font-medium">{t("player")}</th>
+              <tr className="border-border/60 border-b text-left">
+                <th className="label-sm px-3 py-2.5">{t("player")}</th>
                 {columns.map((definition) => (
                   <th
                     key={definition.key}
-                    className="px-3 py-2 text-right font-medium whitespace-nowrap"
+                    className="label-sm px-3 py-2.5 text-right whitespace-nowrap"
                   >
                     {definition.label}
                   </th>
@@ -103,14 +111,17 @@ export async function ScorecardView({ scorecard }: { scorecard: AnyScorecard }) 
             </thead>
             <tbody>
               {scorecard.rows.map((row) => (
-                <tr key={String(row.player_id)} className="border-b last:border-b-0">
+                <tr
+                  key={String(row.player_id)}
+                  className="border-border/60 hover:bg-muted/40 border-b transition-colors last:border-b-0"
+                >
                   <td className="px-3 py-2">
                     <span className="flex items-center gap-1.5">
                       <span
                         aria-hidden
                         className={cn(
                           "size-1.5 rounded-full",
-                          row.side === "A" ? "bg-primary" : "bg-muted-foreground",
+                          row.side === "A" ? "bg-brand" : "bg-muted-foreground",
                         )}
                       />
                       <span className="truncate">{row.name}</span>
@@ -141,13 +152,13 @@ function TeamScore({ name, score, won }: { name: string; score: number; won: boo
     <div className="flex min-w-24 flex-col items-center">
       <span
         className={cn(
-          "num text-4xl font-bold tabular-nums",
-          won && "text-emerald-600 dark:text-emerald-400",
+          "num text-6xl leading-none font-extrabold",
+          won ? "text-rating-elite" : "text-foreground/70",
         )}
       >
         {score}
       </span>
-      <span className="text-muted-foreground mt-1 max-w-28 truncate text-xs">{name}</span>
+      <span className="text-muted-foreground mt-2 max-w-28 truncate text-xs">{name}</span>
     </div>
   );
 }

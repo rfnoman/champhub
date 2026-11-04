@@ -1,15 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { cn } from "cn";
 
 import type { Sport, Turf } from "@/lib/api/types";
 import { useApiClient } from "@/lib/api/use-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TurfMap, type MapMarker } from "@/components/turf/turf-map";
+import { TurfCard } from "@/components/turf/turf-card";
 
 type View = "list" | "map";
 
@@ -222,35 +221,9 @@ export function TurfDiscovery({
         <ul className="flex flex-col gap-3">
           {turfs.map((turf) => (
             <li key={turf.id}>
-              <Link
-                href={`/turfs/${turf.slug}`}
-                className={cn(
-                  "bg-card hover:bg-muted/40 flex flex-col overflow-hidden rounded-xl border",
-                  "shadow-sm transition-colors sm:flex-row",
-                )}
-              >
-                <div
-                  aria-hidden
-                  className="bg-muted text-muted-foreground flex h-24 w-full shrink-0 items-center justify-center text-3xl sm:h-auto sm:w-32"
-                >
-                  {turf.sports?.[0]?.icon ?? "🏟️"}
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1 p-4">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <h2 className="truncate text-base font-semibold">{turf.name}</h2>
-                    {turf.distance_km != null && (
-                      <span className="text-muted-foreground shrink-0 text-xs">
-                        {t("kmAway", { km: turf.distance_km })}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-muted-foreground truncate text-xs">{turf.area}</p>
-                  <p className="text-xs">
-                    {turf.sports?.map((s) => s.name).join(" · ")}
-                    {turf.price_from && ` — ${t("priceFrom", { price: turf.price_from })}`}
-                  </p>
-                </div>
-              </Link>
+              {/* The shared card, not a copy of it. Discovery kept its own row only
+                  because TurfCard was `async` and this list is client-filtered. */}
+              <TurfCard turf={turf} href={`/turfs/${turf.slug}`} />
             </li>
           ))}
         </ul>
