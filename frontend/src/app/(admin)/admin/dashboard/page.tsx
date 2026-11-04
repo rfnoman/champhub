@@ -41,7 +41,7 @@ export default async function AdminDashboardPage({
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">{t("heading")}</h1>
           <p className="text-muted-foreground text-sm">
             <Day day={data.period_start} className="" /> –{" "}
             <Day day={data.period_end} className="" />
@@ -54,8 +54,8 @@ export default async function AdminDashboardPage({
               href={`/admin/dashboard?days=${option}`}
               className={
                 option === window
-                  ? "bg-primary text-primary-foreground rounded-md px-3 py-1.5"
-                  : "hover:bg-muted rounded-md border px-3 py-1.5"
+                  ? "bg-brand text-brand-foreground press rounded-full px-3.5 py-1.5 font-semibold"
+                  : "hover:bg-muted press rounded-full border px-3.5 py-1.5"
               }
             >
               {t("lastDays", { days: Number(option) })}

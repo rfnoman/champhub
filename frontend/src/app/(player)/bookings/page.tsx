@@ -29,7 +29,7 @@ export default async function MyBookingsPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">{t("heading")}</h1>
         <p className="text-muted-foreground text-sm">{t("body")}</p>
       </div>
 
@@ -41,8 +41,8 @@ export default async function MyBookingsPage({
             aria-current={which === option ? "page" : undefined}
             className={
               which === option
-                ? "bg-primary text-primary-foreground rounded-lg px-2.5 py-1 text-xs"
-                : "hover:bg-muted rounded-lg px-2.5 py-1 text-xs"
+                ? "bg-brand text-brand-foreground press rounded-full px-3 py-1.5 text-xs font-semibold"
+                : "hover:bg-muted press rounded-full px-3 py-1.5 text-xs"
             }
           >
             {t(option)}
@@ -65,7 +65,7 @@ export default async function MyBookingsPage({
             <li key={booking.id}>
               <Link
                 href={`/bookings/${booking.id}`}
-                className="bg-card hover:bg-muted/40 block rounded-xl border p-4 shadow-sm transition-colors"
+                className="press glass-panel block rounded-2xl p-4 transition-colors"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">

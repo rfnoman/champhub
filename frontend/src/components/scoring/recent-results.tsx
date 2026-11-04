@@ -43,7 +43,7 @@ export async function RecentResults({ playerId }: { playerId: string }) {
                 <span
                   className={cn(
                     "w-5 shrink-0 text-center text-xs font-bold",
-                    row.outcome === "win" && "text-emerald-600 dark:text-emerald-400",
+                    row.outcome === "win" && "text-rating-elite",
                     row.outcome === "loss" && "text-destructive",
                     row.outcome === "draw" && "text-muted-foreground",
                   )}

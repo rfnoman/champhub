@@ -129,7 +129,7 @@ export function OrderQueue({ orders, riders = [] }: { orders: Order[]; riders?: 
                     onChange={(event) =>
                       setRiderFor((current) => ({ ...current, [id]: event.target.value }))
                     }
-                    className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                    className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
                   >
                     {riders.map((rider) => (
                       <option key={String(rider.id)} value={String(rider.id)}>

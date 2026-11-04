@@ -105,7 +105,7 @@ export function PlayerSearch({
             id="search-sport"
             value={filters.sport}
             onChange={(event) => set("sport", event.target.value)}
-            className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+            className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
           >
             <option value="">{t("anySport")}</option>
             {sports.map((sport) => (
@@ -205,7 +205,7 @@ function ResultCard({ player }: { player: PlayerSearchResult }) {
   const best = [...player.sport_cards].sort((a, b) => (b.overall ?? 0) - (a.overall ?? 0))[0];
 
   return (
-    <div className="bg-card hover:border-primary/40 flex items-center gap-3 rounded-xl border p-3 shadow-sm transition-colors">
+    <div className="hover:border-primary/40 glass-panel flex items-center gap-3 rounded-2xl p-3 transition-colors">
       {player.photo_url ? (
         // eslint-disable-next-line @next/next/no-img-element -- arbitrary Clerk/CDN hosts
         <img

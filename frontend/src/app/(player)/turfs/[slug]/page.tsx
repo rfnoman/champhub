@@ -35,7 +35,7 @@ export default async function TurfDetailPage({ params }: { params: Promise<{ slu
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{data.name}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">{data.name}</h1>
         <p className="text-muted-foreground text-sm">
           {data.area} · {data.address}
         </p>
@@ -127,7 +127,7 @@ export default async function TurfDetailPage({ params }: { params: Promise<{ slu
 
       {data.sports.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">
+          <h2 className="font-display text-lg font-bold tracking-tight">
             {t("leaderboards", { sport: data.sports[0].name })}
           </h2>
           {/* The turf's main sport: a board per sport would be mostly empty rows. */}

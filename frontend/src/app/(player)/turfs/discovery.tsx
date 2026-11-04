@@ -158,7 +158,7 @@ export function TurfDiscovery({
             aria-label={t("filterSport")}
             value={sport}
             onChange={(event) => setSport(event.target.value)}
-            className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+            className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
           >
             <option value="">{t("allSports")}</option>
             {sports.map((item) => (
@@ -171,7 +171,7 @@ export function TurfDiscovery({
             aria-label={t("filterArea")}
             value={area}
             onChange={(event) => setArea(event.target.value)}
-            className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+            className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
           >
             <option value="">{t("allAreas")}</option>
             {areas.map((item) => (

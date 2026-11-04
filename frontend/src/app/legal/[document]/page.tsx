@@ -49,7 +49,7 @@ export default async function LegalPage({ params }: { params: Promise<{ document
     <PageContainer>
       <article className="mx-auto flex max-w-2xl flex-col gap-8">
         <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{found.title}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">{found.title}</h1>
           <p className="text-muted-foreground">{found.summary}</p>
           <p className="text-muted-foreground text-xs">
             {t("lastUpdated", { date: formatDay(found.updated, locale, "dayMonthYear") })}
@@ -71,7 +71,7 @@ export default async function LegalPage({ params }: { params: Promise<{ document
         <div className="flex flex-col gap-6">
           {found.sections.map((section) => (
             <section key={section.heading} className="flex flex-col gap-2">
-              <h2 className="text-lg font-semibold tracking-tight">{section.heading}</h2>
+              <h2 className="font-display text-lg font-bold tracking-tight">{section.heading}</h2>
               {section.body.map((paragraph) => (
                 <p key={paragraph} className="text-sm leading-relaxed">
                   {paragraph}

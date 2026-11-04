@@ -223,7 +223,7 @@ function GroundsPanel({
                   id="ground-slot"
                   value={slotMinutes}
                   onChange={(event) => setSlotMinutes(event.target.value)}
-                  className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                  className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
                 >
                   {[60, 90, 120].map((minutes) => (
                     <option key={minutes} value={minutes}>
@@ -736,7 +736,7 @@ function StaffPanel({
                 id="staff-role"
                 value={role}
                 onChange={(event) => setRole(event.target.value)}
-                className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
               >
                 <option value="cashier">{t("roleCashier")}</option>
                 <option value="manager">{t("roleManager")}</option>

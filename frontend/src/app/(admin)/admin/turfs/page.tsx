@@ -24,7 +24,7 @@ export default async function AdminTurfsPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">{t("heading")}</h1>
         <p className="text-muted-foreground text-sm">{t("body")}</p>
       </div>
       <nav className="flex flex-wrap gap-2 text-sm" aria-label={t("filter")}>
@@ -34,8 +34,8 @@ export default async function AdminTurfsPage({
             href={`/admin/turfs?status=${option}`}
             className={
               (status ?? "pending_review") === option
-                ? "bg-primary text-primary-foreground rounded-lg px-2.5 py-1 text-xs"
-                : "hover:bg-muted rounded-lg px-2.5 py-1 text-xs"
+                ? "bg-brand text-brand-foreground press rounded-full px-3 py-1.5 text-xs font-semibold"
+                : "hover:bg-muted press rounded-full px-3 py-1.5 text-xs"
             }
           >
             {t(`status.${option}`)}

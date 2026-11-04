@@ -28,7 +28,7 @@ export default async function CounterPage({ params }: { params: Promise<{ slug: 
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">{t("heading")}</h1>
           <p className="text-muted-foreground text-sm">{turf.data.name}</p>
         </div>
         <Button size="sm" variant="ghost" asChild>

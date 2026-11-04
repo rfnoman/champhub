@@ -121,7 +121,10 @@ export function ActivityBoard({
                 title={t("minutesOn", { minutes: value, week: key })}
               >
                 <span
-                  className={cn("w-full rounded-t", value > 0 ? "bg-primary" : "bg-muted")}
+                  className={cn(
+                    "duration-slow ease-out-quint w-full rounded-t transition-[height]",
+                    value > 0 ? "bg-brand" : "bg-muted",
+                  )}
                   style={{ height: `${Math.max(2, (value / tallest) * 100)}%` }}
                 />
               </li>
@@ -177,7 +180,7 @@ export function ActivityBoard({
                 id="activity-sport"
                 value={sport}
                 onChange={(event) => setSport(event.target.value)}
-                className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
               >
                 <option value="">{t("otherExercise")}</option>
                 {sports.map((item) => (

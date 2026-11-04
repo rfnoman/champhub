@@ -245,7 +245,7 @@ export function CartPanel({
                   id="cart-address"
                   value={addressId}
                   onChange={(event) => setAddressId(event.target.value)}
-                  className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                  className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
                 >
                   {known.map((address) => (
                     <option key={String(address.id)} value={String(address.id)}>
@@ -284,7 +284,7 @@ export function CartPanel({
                   id="cart-match"
                   value={matchId}
                   onChange={(event) => setMatchId(event.target.value)}
-                  className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                  className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
                 >
                   {matches.map((match) => (
                     <option key={String(match.id)} value={String(match.id)}>

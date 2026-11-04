@@ -26,7 +26,7 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
     <div className="flex flex-col gap-6" data-testid="order-detail">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="font-display text-2xl font-bold tracking-tight">
             {t("orderFrom", { source: data.source_name })}
           </h1>
           <p className="text-muted-foreground text-sm">

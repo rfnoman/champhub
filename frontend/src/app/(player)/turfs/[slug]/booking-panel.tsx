@@ -139,7 +139,7 @@ export function BookingPanel({
             id="ground"
             value={groundId}
             onChange={(event) => setGroundId(event.target.value)}
-            className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+            className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
           >
             {grounds.map((ground) => (
               <option key={ground.id} value={ground.id}>

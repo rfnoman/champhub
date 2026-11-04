@@ -25,7 +25,7 @@ export default async function SquadsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">{t("heading")}</h1>
           <p className="text-muted-foreground text-sm">{t("body")}</p>
         </div>
         <Button size="sm" asChild>
@@ -72,7 +72,7 @@ export default async function SquadsPage() {
             <li key={squad.id}>
               <Link
                 href={`/squads/${squad.slug}`}
-                className="bg-card hover:bg-muted/40 flex items-start justify-between gap-3 rounded-xl border p-4 shadow-sm transition-colors"
+                className="press glass-panel flex items-start justify-between gap-3 rounded-2xl p-4 transition-colors"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-base font-semibold">{squad.name}</span>

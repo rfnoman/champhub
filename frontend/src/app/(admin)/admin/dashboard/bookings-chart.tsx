@@ -37,7 +37,7 @@ export async function BookingsChart({ rows }: { rows: Row[] }) {
             {/* Confirmed sits inside the total, so the gap between them reads as the
                 bookings a turf never answered. */}
             <div
-              className="bg-primary absolute inset-x-0 bottom-0 rounded-t"
+              className="bg-brand absolute inset-x-0 bottom-0 rounded-t"
               style={{ height: `${row.total ? (row.confirmed / row.total) * 100 : 0}%` }}
             />
           </div>

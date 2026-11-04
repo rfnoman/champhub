@@ -87,7 +87,15 @@
     "navOrders": "Store orders",
     "navFinance": "Finance",
     "navDashboard": "Dashboard",
-    "navSupport": "Support"
+    "navSupport": "Support",
+    "navDashboardHint": "Bookings, revenue and active players for the pilot.",
+    "navTurfsHint": "Approve or reject turfs owners have submitted.",
+    "navSportsHint": "Sports owners have proposed, to approve or merge.",
+    "navConductHint": "Reports players have filed about a match.",
+    "navOrdersHint": "Store orders waiting to be packed and assigned.",
+    "navWarehouseHint": "Platform stock and what has been shipped out.",
+    "navFinanceHint": "Commissions, refunds and payouts owed to turfs.",
+    "navSupportHint": "Look up an account to answer a question about it."
   },
   "me": {
     "heading": "Backend session",
@@ -395,7 +403,8 @@
     "viewInventory": "Inventory",
     "openCounter": "Counter",
     "viewOrders": "Orders",
-    "viewFinance": "Finance"
+    "viewFinance": "Finance",
+    "navSettings": "Settings"
   },
   "adminTurfs": {
     "heading": "Turfs",

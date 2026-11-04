@@ -113,7 +113,9 @@ export default async function HomePage() {
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <span aria-hidden className="chalk-line mb-2 h-px w-full" />
-                <h3 className="font-display text-lg font-semibold tracking-tight">{step.title}</h3>
+                <h3 className="font-display font-display text-lg font-bold tracking-tight">
+                  {step.title}
+                </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{step.body}</p>
               </li>
             ))}

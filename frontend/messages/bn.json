@@ -87,7 +87,15 @@
     "navOrders": "স্টোরের অর্ডার",
     "navFinance": "হিসাব",
     "navDashboard": "ড্যাশবোর্ড",
-    "navSupport": "সহায়তা"
+    "navSupport": "সহায়তা",
+    "navDashboardHint": "পাইলটের বুকিং, আয় আর সক্রিয় খেলোয়াড়।",
+    "navTurfsHint": "মালিকদের জমা দেওয়া টার্ফ অনুমোদন বা বাতিল করুন।",
+    "navSportsHint": "মালিকদের প্রস্তাব করা খেলা — অনুমোদন বা একত্র করুন।",
+    "navConductHint": "ম্যাচ নিয়ে খেলোয়াড়দের করা অভিযোগ।",
+    "navOrdersHint": "প্যাক আর বরাদ্দের অপেক্ষায় থাকা স্টোর অর্ডার।",
+    "navWarehouseHint": "প্ল্যাটফর্মের স্টক আর কী কী পাঠানো হয়েছে।",
+    "navFinanceHint": "কমিশন, ফেরত আর টার্ফের পাওনা পরিশোধ।",
+    "navSupportHint": "প্রশ্নের উত্তর দিতে কোনো অ্যাকাউন্ট খুঁজে দেখুন।"
   },
   "me": {
     "heading": "ব্যাকএন্ড সেশন",
@@ -395,7 +403,8 @@
     "viewInventory": "ইনভেন্টরি",
     "openCounter": "কাউন্টার",
     "viewOrders": "অর্ডার",
-    "viewFinance": "হিসাব"
+    "viewFinance": "হিসাব",
+    "navSettings": "সেটিংস"
   },
   "adminTurfs": {
     "heading": "টার্ফ",

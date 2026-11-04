@@ -38,7 +38,9 @@ export default async function TurfBookingsPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="truncate text-2xl font-semibold tracking-tight">{turf.data.name}</h1>
+          <h1 className="font-display truncate text-2xl font-bold tracking-tight">
+            {turf.data.name}
+          </h1>
           <p className="text-muted-foreground text-sm">{t("body")}</p>
         </div>
         <Button variant="ghost" size="sm" asChild>

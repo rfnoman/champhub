@@ -18,13 +18,13 @@ export default function OfflinePage() {
     <PageContainer>
       <section className="mx-auto flex max-w-md flex-col gap-6 py-12 text-center">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">আপনি অফলাইনে আছেন</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">আপনি অফলাইনে আছেন</h1>
           <p className="text-muted-foreground">
             এই পেজটি দেখতে ইন্টারনেট দরকার। আপনার বুকিং বা অর্ডারের কিছুই হারায়নি।
           </p>
         </div>
         <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold tracking-tight">You are offline</h2>
+          <h2 className="font-display text-lg font-bold tracking-tight">You are offline</h2>
           <p className="text-muted-foreground text-sm">
             This page needs a connection. Nothing you booked or ordered has been lost.
           </p>

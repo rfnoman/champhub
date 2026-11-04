@@ -118,7 +118,7 @@ export function ProposalQueue({
 
                     <select
                       aria-label={t("mergeTarget")}
-                      className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                      className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
                       value={mergeTarget[proposal.id] ?? ""}
                       onChange={(event) =>
                         setMergeTarget((current) => ({

@@ -43,7 +43,7 @@ export default async function PaymentResultPage({
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6" data-testid="payment-result">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="font-display text-2xl font-bold tracking-tight">
           {paid ? t("doneHeading") : t("notDoneHeading")}
         </h1>
         <p className="text-muted-foreground text-sm">{paid ? t("doneBody") : t("notDoneBody")}</p>

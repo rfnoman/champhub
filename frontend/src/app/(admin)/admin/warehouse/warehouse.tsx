@@ -94,7 +94,7 @@ export function Warehouse({
               id="warehouse-category"
               value={categorySlug}
               onChange={(event) => setCategorySlug(event.target.value)}
-              className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+              className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
             >
               {categories.map((category) => (
                 <option key={category.slug} value={category.slug}>

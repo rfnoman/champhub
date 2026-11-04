@@ -112,7 +112,7 @@ export function RentalBoard({
                   id="rental-product"
                   value={productId}
                   onChange={(event) => setProductId(event.target.value)}
-                  className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                  className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
                 >
                   {stock.map((item) => (
                     <option key={String(item.id)} value={String(item.product.id)}>
@@ -127,7 +127,7 @@ export function RentalBoard({
                   id="rental-player"
                   value={playerId}
                   onChange={(event) => setPlayerId(event.target.value)}
-                  className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                  className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
                 >
                   <option value="">{t("pickPlayer")}</option>
                   {players.map((player) => (

@@ -97,7 +97,7 @@ export function ConductReportForm({
               id="report-player"
               value={playerId}
               onChange={(event) => setPlayerId(event.target.value)}
-              className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+              className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
             >
               {players.map((entry) => (
                 <option key={entry.id} value={String(entry.profile_id)}>
@@ -113,7 +113,7 @@ export function ConductReportForm({
               id="report-reason"
               value={reason}
               onChange={(event) => setReason(event.target.value as (typeof REASONS)[number])}
-              className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+              className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
             >
               {REASONS.map((value) => (
                 <option key={value} value={value}>

@@ -59,7 +59,7 @@ export async function PlayerProfileView({
         )}
 
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-semibold tracking-tight">{player.name}</h1>
+          <h1 className="font-display truncate text-2xl font-bold tracking-tight">{player.name}</h1>
           {player.area && <p className="text-muted-foreground text-sm">{player.area}</p>}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant="secondary">

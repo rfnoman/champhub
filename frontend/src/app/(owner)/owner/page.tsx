@@ -39,7 +39,7 @@ export default async function OwnerDashboardPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">{t("heading")}</h1>
           <p className="text-muted-foreground text-sm">{t("body")}</p>
         </div>
         <Button asChild size="sm">
@@ -88,7 +88,7 @@ export default async function OwnerDashboardPage() {
             <li key={turf.id}>
               <Link
                 href={`/owner/${turf.slug}`}
-                className="bg-card hover:bg-muted/40 block rounded-xl border p-4 shadow-sm transition-colors"
+                className="press glass-panel block rounded-2xl p-4 transition-colors"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">

@@ -25,7 +25,7 @@ export default async function PlayersPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">{t("heading")}</h1>
         <p className="text-muted-foreground text-sm">{t("body")}</p>
       </header>
 

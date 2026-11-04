@@ -9,6 +9,10 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        /* Tinted by the nearest `[data-sport]` ancestor, so a badge on a cricket card
+           is cobalt and the same component on a football card is green (D73). */
+        sport: "bg-sport/15 text-sport border-sport/30",
+        brand: "bg-brand/15 text-brand border-brand/30",
         secondary: "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         destructive:
           "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",

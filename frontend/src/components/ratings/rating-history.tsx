@@ -70,7 +70,7 @@ export async function RatingHistory({ changes }: { changes: RatingChange[] }) {
                 <span
                   className={cn(
                     "num text-sm font-semibold tabular-nums",
-                    change.delta > 0 && "text-emerald-600 dark:text-emerald-400",
+                    change.delta > 0 && "text-rating-elite",
                     change.delta < 0 && "text-destructive",
                   )}
                 >

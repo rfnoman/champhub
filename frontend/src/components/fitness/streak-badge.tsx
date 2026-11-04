@@ -17,7 +17,7 @@ export async function StreakBadge({ streak }: { streak: Streak }) {
         aria-hidden
         className={cn(
           "size-5",
-          streak.played_this_week ? "text-amber-500" : "text-muted-foreground",
+          streak.played_this_week ? "text-rating-fair" : "text-muted-foreground",
         )}
       />
       <span className="text-sm">

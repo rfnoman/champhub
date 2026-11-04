@@ -86,7 +86,7 @@ export function PayoutBoard({
               id="payout-turf"
               value={turf}
               onChange={(event) => setTurf(event.target.value)}
-              className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+              className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
             >
               {turfs.map((option) => (
                 <option key={option.slug} value={option.slug}>

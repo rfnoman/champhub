@@ -48,7 +48,7 @@ export async function WeekRing({
           strokeDasharray={`${filled} ${circumference - filled}`}
           className={cn(
             "stroke-current transition-[stroke-dasharray]",
-            clamped >= 100 ? "text-emerald-500" : "text-primary",
+            clamped >= 100 ? "text-rating-elite" : "text-brand",
           )}
         />
       </svg>

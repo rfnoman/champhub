@@ -86,7 +86,7 @@ export function PlayerLookup() {
               {person.phone && <span className="text-muted-foreground">{person.phone}</span>}
               <span className="flex flex-wrap gap-2 text-xs">
                 {!person.is_active && (
-                  <span className="rounded bg-amber-100 px-1.5 py-0.5 dark:bg-amber-900">
+                  <span className="bg-rating-fair/20 text-rating-fair rounded px-1.5 py-0.5">
                     {t("inactive")}
                   </span>
                 )}

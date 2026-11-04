@@ -312,7 +312,7 @@ export function MatchActions({
                 id="invitee"
                 value={invitee}
                 onChange={(event) => setInvitee(event.target.value)}
-                className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+                className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
               >
                 <option value="">{t("choosePlayer")}</option>
                 {invitable.map((member) => (

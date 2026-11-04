@@ -12,7 +12,7 @@ export function FormGuide({ form, label }: { form: string[]; label: string }) {
           title={result}
           className={cn(
             "flex size-5 items-center justify-center rounded text-[10px] font-bold text-white",
-            result === "win" && "bg-emerald-600",
+            result === "win" && "bg-rating-elite",
             result === "loss" && "bg-destructive",
             result === "draw" && "bg-muted-foreground",
           )}

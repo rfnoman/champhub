@@ -27,7 +27,7 @@ export default async function SquadPage({ params }: { params: Promise<{ slug: st
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{data.name}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">{data.name}</h1>
           <p className="text-muted-foreground text-sm">
             {data.area || t("noArea")} · {t("ledBy", { name: data.leader_name })}
           </p>

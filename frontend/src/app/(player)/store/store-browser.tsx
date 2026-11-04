@@ -201,7 +201,7 @@ export function StoreBrowser({
               id="store-source"
               value={source}
               onChange={(event) => setSource(event.target.value)}
-              className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+              className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
             >
               {sources.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -241,7 +241,7 @@ export function StoreBrowser({
             aria-label={t("tag")}
             value={tag}
             onChange={(event) => setTag(event.target.value)}
-            className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+            className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
           >
             <option value="">{t("anyTag")}</option>
             {["hydration", "recovery", "pre_match", "protein", "low_sugar", "vegan"].map(

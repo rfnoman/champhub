@@ -398,6 +398,31 @@
   color: var(--muted-foreground);
 }
 
+/* The native select, styled (DECISIONS D76).
+ *
+ * It stays a real `<select>` with real `<option>` children: on a cheap Android phone
+ * the OS picker is faster, renders Bengali in the system's own stack, honours the
+ * reader's text-size setting, cannot be clipped by the bottom tab bar, and costs zero
+ * JavaScript across the eighteen files that use one. It also keeps Playwright's
+ * `selectOption()` working, which four specs depend on.
+ *
+ * `appearance: none` plus a background-image chevron is what makes it match `Input`;
+ * the open list is the browser's own, which is the point.
+ */
+@utility field-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  padding-inline-end: 1.75rem;
+
+  &:focus-visible {
+    border-color: var(--ring);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+  }
+}
+
 /* Press physics (D79). `:active` applies only while held, so the *release* is what reads
    as spring-back — the overshoot lives on the base rule and the fast curve inside
    `:active`. Depth is the shadow collapsing, not just the scale. */

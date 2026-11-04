@@ -172,7 +172,7 @@ export function InventoryBoard({
                   <span
                     className={cn(
                       "num w-10 text-right",
-                      movement.qty_delta > 0 && "text-emerald-600 dark:text-emerald-400",
+                      movement.qty_delta > 0 && "text-rating-elite",
                       movement.qty_delta < 0 && "text-destructive",
                     )}
                   >
@@ -387,7 +387,7 @@ function AddProduct({
             id="product-category"
             value={categorySlug}
             onChange={(event) => setCategorySlug(event.target.value)}
-            className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+            className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
           >
             {categories.map((item) => (
               <option key={item.slug} value={item.slug}>
@@ -414,7 +414,7 @@ function AddProduct({
             id="product-kind"
             value={kind}
             onChange={(event) => setKind(event.target.value as "sale" | "rental")}
-            className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+            className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
           >
             <option value="sale">{t("forSale")}</option>
             <option value="rental">{t("forRent")}</option>

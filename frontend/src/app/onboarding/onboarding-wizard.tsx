@@ -161,7 +161,7 @@ export function OnboardingWizard({
         <p className="text-muted-foreground text-xs tracking-widest uppercase">
           {t("stepCounter", { current: stepIndex + 1, total: STEPS.length })}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">{t(`${step}.heading`)}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">{t(`${step}.heading`)}</h1>
         <p className="text-muted-foreground text-sm">{t(`${step}.body`)}</p>
         <div className="bg-muted mt-2 h-1 overflow-hidden rounded-full">
           <div

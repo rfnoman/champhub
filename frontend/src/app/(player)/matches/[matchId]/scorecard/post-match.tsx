@@ -150,7 +150,7 @@ export function PostMatchSheet({
                         aria-hidden
                         className={cn(
                           "size-5",
-                          chosen ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40",
+                          chosen ? "fill-rating-fair text-rating-fair" : "text-muted-foreground/40",
                         )}
                       />
                     </button>

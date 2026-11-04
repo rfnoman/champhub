@@ -18,7 +18,7 @@ export default async function MePage() {
   if (!userId) {
     return (
       <section className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">{t("heading")}</h1>
         <p className="text-muted-foreground">{t("signedOut")}</p>
       </section>
     );
@@ -32,7 +32,7 @@ export default async function MePage() {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("heading")}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">{t("heading")}</h1>
         <p className="text-muted-foreground max-w-prose">{t("body")}</p>
       </div>
 
