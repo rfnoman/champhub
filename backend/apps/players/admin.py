@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin, TabularInline
 
 from .models import (
     PlayerAttribute,
@@ -14,21 +15,21 @@ from .models import (
 )
 
 
-class PlayerSportInline(admin.TabularInline):
+class PlayerSportInline(TabularInline):
     model = PlayerSport
     extra = 0
     autocomplete_fields = ("sport",)
     fields = ("sport", "positions", "is_verified", "is_hidden")
 
 
-class PlayerAttributeInline(admin.TabularInline):
+class PlayerAttributeInline(TabularInline):
     model = PlayerAttribute
     extra = 0
     autocomplete_fields = ("attribute",)
     fields = ("attribute", "value", "source")
 
 
-class PlayerSportRatingInline(admin.TabularInline):
+class PlayerSportRatingInline(TabularInline):
     model = PlayerSportRating
     extra = 0
     autocomplete_fields = ("sport",)
@@ -49,7 +50,7 @@ class PlayerSportRatingInline(admin.TabularInline):
 
 
 @admin.register(PlayerProfile)
-class PlayerProfileAdmin(admin.ModelAdmin):
+class PlayerProfileAdmin(ModelAdmin):
     list_display = (
         "name",
         "area",
@@ -71,7 +72,7 @@ class PlayerProfileAdmin(admin.ModelAdmin):
 
 
 @admin.register(PlayerSkill)
-class PlayerSkillAdmin(admin.ModelAdmin):
+class PlayerSkillAdmin(ModelAdmin):
     list_display = ("profile", "sport_skill", "value", "source")
     list_filter = ("source", "sport_skill__sport")
     search_fields = ("profile__display_name", "sport_skill__label")
@@ -79,7 +80,7 @@ class PlayerSkillAdmin(admin.ModelAdmin):
 
 
 @admin.register(PlayerSportRating)
-class PlayerSportRatingAdmin(admin.ModelAdmin):
+class PlayerSportRatingAdmin(ModelAdmin):
     list_display = (
         "profile",
         "sport",

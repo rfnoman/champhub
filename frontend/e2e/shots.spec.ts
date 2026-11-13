@@ -1,6 +1,7 @@
 import { clerk } from "@clerk/testing/playwright";
 
 import { expect, requiresClerk, test } from "./support/fixtures";
+import { pickUsername } from "./support/onboarding";
 
 /**
  * Not a test — a screenshot harness for reviewing the Phase 12 design.
@@ -18,6 +19,7 @@ test.describe("design review", () => {
     test.setTimeout(300_000);
 
     await page.goto("/onboarding");
+    await pickUsername(page);
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByRole("button", { name: /Football/ }).click();
     await page.screenshot({ path: `${OUT}/30-onboarding.png`, fullPage: true });
@@ -30,7 +32,6 @@ test.describe("design review", () => {
       ["31-profile", "/profile"],
       ["32-turfs", "/turfs"],
       ["33-play", "/play"],
-      ["70-owner-align", "/owner"],
       ["33b-play-top", "/play"],
       ["34-home", "/home"],
       ["35-store", "/store"],

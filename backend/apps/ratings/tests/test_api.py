@@ -47,6 +47,30 @@ class TestPlayerSearch:
         names = [row["name"] for row in response.data["results"]]
         assert "Findable" in names
 
+    def test_q_matches_a_handle(self, client):
+        """Typed with the `@` or without it — both have to find them (DOMAIN §1b)."""
+        viewer = UserFactory()
+        other = get_or_create_profile(UserFactory(username="rafiq_hasan"))
+        other.display_name = "Someone Else"
+        other.save()
+        add_player_sport(profile=other, sport=Sport.objects.get(slug="football"))
+
+        client.force_authenticate(viewer)
+        for term in ("rafiq_has", "@rafiq_hasan"):
+            results = client.get("/api/v1/players/search", {"q": term}).data["results"]
+            assert [row["username"] for row in results] == ["rafiq_hasan"]
+
+    def test_a_result_carries_the_handle(self, client):
+        viewer = UserFactory()
+        add_player_sport(
+            profile=get_or_create_profile(UserFactory(username="rafiq_hasan")),
+            sport=Sport.objects.get(slug="football"),
+        )
+        client.force_authenticate(viewer)
+
+        row = client.get("/api/v1/players/search", {"sport": "football"}).data["results"][0]
+        assert row["handle"] == "@rafiq_hasan"
+
     def test_a_result_carries_no_contact_details(self, client):
         viewer = UserFactory()
         add_player_sport(

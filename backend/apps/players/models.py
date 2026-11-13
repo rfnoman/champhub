@@ -144,10 +144,15 @@ class PlayerProfile(BaseModel):
 
     @property
     def photo_url(self) -> str:
-        """Uploaded photo if there is one, otherwise the Clerk avatar."""
+        """The profile photo, then the account photo, then the Clerk avatar.
+
+        The middle link is new: the account-level photo an identity check asks for
+        (``User.photo``) is a photograph of this person too, so a player who uploaded one
+        in the owner app should not look faceless here.
+        """
         if self.photo:
             return self.photo.url
-        return self.user.image_url
+        return self.user.photo_url
 
     @property
     def effective_weight_kg(self):

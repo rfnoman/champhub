@@ -1,10 +1,12 @@
 import type { Page } from "@playwright/test";
 
 import { DEMO_TURFS, bookAFreeSlot } from "./support/booking";
+import { pickUsername } from "./support/onboarding";
 import { expect, requiresClerk, test } from "./support/fixtures";
 
 async function finishOnboarding(page: Page) {
   await page.goto("/onboarding");
+  await pickUsername(page);
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByRole("button", { name: /Football/ }).click();
   await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -38,12 +40,5 @@ test.describe("payments", () => {
 
     await expect(page.getByTestId("payout-list")).toHaveCount(0);
     await expect(page.getByTestId("platform-total")).toHaveCount(0);
-  });
-
-  test("a turf's finance page is for its owner only", async ({ signedInPage: page }) => {
-    await finishOnboarding(page);
-    const response = await page.goto("/owner/mirpur-turf-club/finance");
-
-    expect(response?.status()).toBe(404);
   });
 });

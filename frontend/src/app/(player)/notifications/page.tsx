@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { getServerApiClient } from "@/lib/api/server";
 import { Card, CardContent } from "@/components/ui/card";
+import { NotificationLink } from "@/components/layout/notification-link";
 
 export const metadata = { title: "Notifications · ChampHub" };
 
@@ -45,12 +45,12 @@ export default async function NotificationsPage() {
             return (
               <li key={item.id}>
                 {item.url ? (
-                  <Link
-                    href={item.url}
+                  <NotificationLink
+                    url={item.url}
                     className="bg-card hover:bg-muted/40 block rounded-lg border p-3 transition-colors"
                   >
                     {body}
-                  </Link>
+                  </NotificationLink>
                 ) : (
                   <div className="bg-card rounded-lg border p-3">{body}</div>
                 )}

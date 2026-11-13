@@ -5,9 +5,13 @@
 # It is written as compose because that is readable and runs on a single droplet, and it
 # maps one-to-one onto a container platform when that becomes worth doing.
 #
-# The three services share one image on purpose — same code, same dependencies, three
-# commands. Three images would be three things to keep in step, and the day they drift
-# is the day beat runs last week's business rules.
+# The three backend services share one image on purpose — same code, same dependencies,
+# three commands. Three images would be three things to keep in step, and the day they
+# drift is the day beat runs last week's business rules.
+#
+# The two frontends do *not* share an image: they are separate Next.js apps with
+# separate dependencies (DECISIONS D83), and each bakes its own origins in at build
+# time.
 
 name: champhub
 
@@ -62,11 +66,36 @@ services:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_OWNER_APP_URL: ${NEXT_PUBLIC_OWNER_APP_URL}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
         NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${NEXT_PUBLIC_SENTRY_ENVIRONMENT:-production}
         NEXT_PUBLIC_SENTRY_RELEASE: ${NEXT_PUBLIC_SENTRY_RELEASE:-}
     env_file: [.env.prod]
     ports: ["3000:3000"]
+    restart: unless-stopped
+    depends_on: [api]
+
+  # The owner app (DECISIONS D83): same API, same Clerk instance, its own origin.
+  #
+  # It must be served from a host that shares a registrable domain with `web` —
+  # `owner.champhub.com` beside `champhub.com` — or the Clerk session does not travel
+  # and an owner has to sign in twice. Whatever host it ends up on also has to appear in
+  # the backend's CLERK_AUTHORIZED_PARTIES and CORS_ALLOWED_ORIGINS, or every call it
+  # makes is a 401.
+  owner:
+    image: ${OWNER_IMAGE:-champhub-owner:latest}
+    build:
+      context: ./owner-frontend
+      args:
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_OWNER_APP_URL}
+        NEXT_PUBLIC_PLAYER_APP_URL: ${NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+        NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${NEXT_PUBLIC_SENTRY_ENVIRONMENT:-production}
+        NEXT_PUBLIC_SENTRY_RELEASE: ${NEXT_PUBLIC_SENTRY_RELEASE:-}
+    env_file: [.env.prod]
+    ports: ["3001:3001"]
     restart: unless-stopped
     depends_on: [api]
 

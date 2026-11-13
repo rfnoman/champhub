@@ -26,6 +26,10 @@ export type PlayerAttributeValue = Schemas["PlayerAttribute"];
 export type PlayerSkillValue = Schemas["PlayerSkill"];
 
 export type User = Schemas["User"];
+export type IdentityVerification = Schemas["IdentityVerification"];
+export type AdminIdentityVerification = Schemas["AdminIdentityVerification"];
+export type IdentityStatus = Schemas["IdentityStatusEnum"];
+export type IdentityDocumentType = Schemas["IdentityDocumentTypeEnum"];
 
 export type Turf = Schemas["TurfSummary"];
 export type TurfDetail = Schemas["TurfDetail"];
@@ -121,6 +125,10 @@ export type PlayerCardProfile = {
   area?: string;
   bio?: string;
   reliability_score: number;
+  /** `@rafiq_hasan`, or empty for an account with no handle yet (DOMAIN §1b). */
+  handle?: string;
+  /** Optional: a roster row or a search result carries a name and a photo, not this. */
+  is_identity_verified?: boolean;
   attributes: readonly PlayerAttributeValue[];
   sport_cards: readonly PlayerSportCard[];
 };

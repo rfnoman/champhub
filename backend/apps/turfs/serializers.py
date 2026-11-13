@@ -208,6 +208,7 @@ class OwnerTurfSerializer(TurfDetailSerializer):
 
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     my_role = serializers.SerializerMethodField()
+    owner_identity_status = serializers.SerializerMethodField()
 
     class Meta(TurfDetailSerializer.Meta):
         fields = [
@@ -219,6 +220,7 @@ class OwnerTurfSerializer(TurfDetailSerializer):
             "reviewed_at",
             "auto_confirm_enabled",
             "my_role",
+            "owner_identity_status",
         ]
 
     @extend_schema_field(serializers.CharField(allow_null=True))
@@ -235,6 +237,18 @@ class OwnerTurfSerializer(TurfDetailSerializer):
             None,
         )
         return membership.role if membership else None
+
+    @extend_schema_field(serializers.CharField())
+    def get_owner_identity_status(self, obj) -> str:
+        """Whether a verified person stands behind this venue (DOMAIN §1a).
+
+        On the owner's own view it is why the registration page can say "we still need
+        your NID"; in the admin queue it is the thing a reviewer should look at before
+        approving a turf they have never visited.
+        """
+        from apps.turfs.services import owner_identity_status
+
+        return owner_identity_status(obj)
 
 
 class TurfWriteSerializer(serializers.ModelSerializer):

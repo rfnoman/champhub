@@ -1,10 +1,11 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 
 from .models import CommissionPlan, LedgerEntry, Payment, Payout, Refund
 
 
 @admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
+class PaymentAdmin(ModelAdmin):
     list_display = ("created_at", "method", "kind", "amount", "status", "booking", "order")
     list_filter = ("method", "status", "kind")
     search_fields = ("provider_txn_id", "bank_txn_id", "reference")
@@ -15,7 +16,7 @@ class PaymentAdmin(admin.ModelAdmin):
 
 
 @admin.register(Refund)
-class RefundAdmin(admin.ModelAdmin):
+class RefundAdmin(ModelAdmin):
     list_display = ("created_at", "payment", "amount", "status", "settled_at")
     list_filter = ("status",)
     raw_id_fields = ("payment", "requested_by")
@@ -23,7 +24,7 @@ class RefundAdmin(admin.ModelAdmin):
 
 
 @admin.register(LedgerEntry)
-class LedgerEntryAdmin(admin.ModelAdmin):
+class LedgerEntryAdmin(ModelAdmin):
     list_display = ("occurred_on", "account", "turf", "type", "amount", "note")
     list_filter = ("account", "type", "turf")
     search_fields = ("note",)
@@ -40,14 +41,14 @@ class LedgerEntryAdmin(admin.ModelAdmin):
 
 
 @admin.register(CommissionPlan)
-class CommissionPlanAdmin(admin.ModelAdmin):
+class CommissionPlanAdmin(ModelAdmin):
     list_display = ("turf", "booking_percent", "sales_percent", "monthly_subscription", "is_active")
     list_filter = ("is_active",)
     raw_id_fields = ("turf",)
 
 
 @admin.register(Payout)
-class PayoutAdmin(admin.ModelAdmin):
+class PayoutAdmin(ModelAdmin):
     list_display = ("turf", "period_start", "period_end", "amount", "status", "sent_at")
     list_filter = ("status", "turf")
     raw_id_fields = ("turf", "sent_by")

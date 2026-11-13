@@ -1,5 +1,7 @@
 import type { Page } from "@playwright/test";
 
+import { ownerUrl, requiresOwnerApp } from "./support/apps";
+import { pickUsername } from "./support/onboarding";
 import { DEMO_TURFS, bookAFreeSlot } from "./support/booking";
 import { apiBaseUrl } from "./support/clerk-users";
 import { expect, requiresClerk, test } from "./support/fixtures";
@@ -33,6 +35,7 @@ async function finishOnboarding(page: Page, locale: "en" | "bn" = "en") {
   const words = WORDS[locale];
 
   await page.goto("/onboarding");
+  await pickUsername(page);
   await page.getByRole("button", { name: words.next, exact: true }).click();
   await page.getByRole("button", { name: words.football }).click();
   await page.getByRole("button", { name: words.next, exact: true }).click();
@@ -136,11 +139,15 @@ test.describe("launch journeys", () => {
   });
 
   test("1. an owner lists a turf and an admin sees it in the review queue", async ({ browser }) => {
+    // This journey crosses both apps: listing a turf is the owner app's, reviewing it
+    // is this one's (DECISIONS D83). One Clerk session covers both — same registrable
+    // domain, so the cookie travels.
+    await requiresOwnerApp();
     const staff = await openAsStaff(browser);
 
     try {
-      // The owner's half.
-      await staff.goto("/owner/new");
+      // The owner's half, in the owner app.
+      await staff.goto(ownerUrl("/new"));
       const name = `Journey Turf ${Date.now()}`;
       await staff.getByLabel("Turf name").fill(name);
       await staff.getByLabel("Address").fill("Road 7, Dhanmondi, Dhaka");
@@ -154,11 +161,11 @@ test.describe("launch journeys", () => {
 
       // A new turf starts as a draft and is not visible to players — which is the rule
       // this journey exists to prove, not an implementation detail.
-      await expect(staff).toHaveURL(/\/owner\/journey-turf/);
+      await expect(staff).toHaveURL(/\/turfs\/journey-turf/);
       await expect(staff.getByText(/Draft/i).first()).toBeVisible();
 
-      // The admin's half: the same person here, because the seeded account holds both
-      // roles — but the *gate* is real, and an ordinary player hits a 404.
+      // The admin's half, back in this app: the same person, because the seeded account
+      // holds both roles — but the *gate* is real, and an ordinary player hits a 404.
       await staff.goto("/admin/turfs");
       await expect(staff.getByRole("heading", { level: 1 })).toBeVisible();
     } finally {
@@ -234,14 +241,19 @@ test.describe("launch journeys", () => {
     // worth testing is that they stay that way: a player ordering water for delivery
     // must not move the turf's bananas, and a cashier selling bananas must not move the
     // warehouse (D48, and the Phase 08 fulfilment split).
+    // The cashier's half of this one lives in the owner app (DECISIONS D83); the
+    // player's half is here, and the point of the journey is that the two do not touch
+    // each other's stock.
+    await requiresOwnerApp();
     const staff = await openAsStaff(browser);
     const PRODUCT = "Banana";
     const row = `tr[data-product="${PRODUCT}"]`;
+    const shelf = ownerUrl("/turfs/dhanmondi-arena/inventory");
 
     try {
       await finishOnboarding(player);
 
-      await staff.goto("/owner/dhanmondi-arena/inventory");
+      await staff.goto(shelf);
       await expect(staff.locator(row).getByTestId("on-hand")).toBeVisible();
       const before = Number(await staff.locator(row).getByTestId("on-hand").innerText());
 
@@ -263,17 +275,17 @@ test.describe("launch journeys", () => {
       await expect(player.getByTestId("order-status")).toHaveText("Placed");
 
       // The turf's shelf is untouched by that order.
-      await staff.goto("/owner/dhanmondi-arena/inventory");
+      await staff.goto(shelf);
       await expect(staff.locator(row).getByTestId("on-hand")).toHaveText(String(before));
 
       // The cashier's half: cash at the counter is still inventory.
-      await staff.goto("/owner/dhanmondi-arena/counter");
+      await staff.goto(ownerUrl("/turfs/dhanmondi-arena/counter"));
       await staff.locator(`[data-product="${PRODUCT}"]`).click();
       await expect(staff.getByTestId("pos-total")).toContainText("৳");
       await staff.getByRole("button", { name: "Take payment" }).click();
       await expect(staff.getByText(/Sold ৳/)).toBeVisible();
 
-      await staff.goto("/owner/dhanmondi-arena/inventory");
+      await staff.goto(shelf);
       await expect(staff.locator(row).getByTestId("on-hand")).toHaveText(String(before - 1));
     } finally {
       await staff.context().close();

@@ -17,7 +17,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.text import slugify
 
-from apps.core.utils import now
+from apps.core.utils import now, setting
 
 from .availability import uncovered_minutes
 from .models import Ground, Turf, TurfMembership
@@ -119,10 +119,69 @@ def submit_turf_for_review(*, turf: Turf) -> Turf:
     return turf
 
 
+def turf_owners(turf: Turf) -> list:
+    """The accounts that own this turf — active ``owner`` memberships (DOMAIN §1).
+
+    A turf has no owner column: ownership is a membership, so one person can own several
+    turfs and one turf can be co-owned. Filtered in Python rather than with a query, so
+    a caller that prefetched ``memberships__user__identity`` pays nothing.
+    """
+    return [
+        membership.user
+        for membership in turf.memberships.all()
+        if membership.user_id
+        and membership.role == TurfMembership.Role.OWNER
+        and membership.status == TurfMembership.Status.ACTIVE
+    ]
+
+
+def owner_identity_status(turf: Turf) -> str:
+    """The best identity status among this turf's owners, for the review queue.
+
+    "Best" because a co-owned turf where one owner is verified has met the bar — the
+    reviewer wants to know whether there is a verified person behind the venue, not to
+    audit every membership.
+    """
+    from apps.accounts.models import IdentityStatus
+
+    statuses = {
+        getattr(getattr(user, "identity", None), "status", IdentityStatus.DRAFT)
+        for user in turf_owners(turf)
+    }
+    for candidate in (
+        IdentityStatus.APPROVED,
+        IdentityStatus.SUBMITTED,
+        IdentityStatus.REJECTED,
+        IdentityStatus.DRAFT,
+    ):
+        if candidate in statuses:
+            return candidate
+    return IdentityStatus.DRAFT
+
+
 @transaction.atomic
 def approve_turf(*, turf: Turf, reviewer) -> Turf:
-    """``pending_review|rejected|suspended -> approved``: the turf becomes public."""
+    """``pending_review|rejected|suspended -> approved``: the turf becomes public.
+
+    Optionally gated on the owner having a verified identity (DOMAIN §1a). Off by
+    default — turning it on is a business decision, not a code one — because switching
+    it on in an existing deployment freezes every turf whose owner registered before
+    identity checks existed.
+    """
     _require_status(turf, (Turf.Status.PENDING_REVIEW, Turf.Status.REJECTED, Turf.Status.SUSPENDED))
+
+    if setting("IDENTITY_REQUIRED_FOR_TURF_APPROVAL", False):
+        from apps.accounts.models import IdentityStatus
+
+        if owner_identity_status(turf) != IdentityStatus.APPROVED:
+            raise ValidationError(
+                {
+                    "owner_identity": (
+                        "This turf's owner has not been verified yet. Approve their "
+                        "identity check first, or ask them to send one."
+                    )
+                }
+            )
 
     turf.status = Turf.Status.APPROVED
     turf.rejection_reason = ""

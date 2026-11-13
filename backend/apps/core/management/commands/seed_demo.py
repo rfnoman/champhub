@@ -12,9 +12,19 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from apps.accounts.models import IdentityDocumentType
+from apps.accounts.services import (
+    approve_identity,
+    get_or_create_identity,
+    reject_identity,
+    save_identity_documents,
+    set_account_photo,
+    submit_identity,
+)
 from apps.players.services import complete_onboarding
 from apps.sports.catalogue import sync_catalogue
 from apps.sports.models import SportFormat
@@ -22,6 +32,18 @@ from apps.turfs.catalogue import sync_amenities
 from apps.turfs.demo import DEMO_TURFS, price_decimal
 from apps.turfs.models import Amenity, OperatingHours, PriceRule, Turf, TurfMembership
 from apps.turfs.services import activate_ground, approve_turf, create_ground, create_turf
+
+
+def demo_image(name: str, colour: tuple[int, int, int] = (28, 110, 70)) -> ContentFile:
+    """A small real JPEG, built in memory. `ImageField` refuses anything Pillow cannot open."""
+    import io
+
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (480, 300), colour).save(buffer, format="JPEG", quality=70)
+    return ContentFile(buffer.getvalue(), name=name)
+
 
 #: Demo players, chosen to exercise the profile card: a multi-sport player, a keeper
 #: whose excluded skill must not drag the overall down, and a cricketer.
@@ -114,6 +136,7 @@ class Command(BaseCommand):
         self.seed_sports_catalogue()
         self.seed_demo_players()
         self.seed_turfs()
+        self.seed_identity_verifications()
         self.seed_bookings()
         self.seed_squads_and_matches()
         self.seed_inventory()
@@ -161,6 +184,11 @@ class Command(BaseCommand):
                 },
             )
             data = {
+                # Onboarding requires a handle (DOMAIN §1b), so the seed picks the one a
+                # person would: their own name, lowercased. Re-running the seed re-sets
+                # the same handle on the same account, which `set_username` treats as a
+                # no-op rather than as "taken".
+                "username": f"{spec['first_name']}_{spec['last_name']}".lower(),
                 "display_name": f"{spec['first_name']} {spec['last_name']}",
                 "area": spec["area"],
                 "preferred_side": spec["preferred_side"],
@@ -286,6 +314,76 @@ class Command(BaseCommand):
                 f"Turf {turf.name} ({turf.area}): "
                 f"{turf.grounds.count()} ground(s), status {turf.status}"
             )
+
+    def seed_identity_verifications(self) -> None:
+        """One identity check in each state, so no review screen starts empty (DOMAIN §1a).
+
+        The images are generated here rather than committed to the repository: a demo
+        fixture that *looks* like a real NID is a thing somebody eventually mistakes for
+        one, and a flat colour tile carries the flow just as well.
+        """
+        User = get_user_model()
+        admin = User.objects.get(clerk_id="seed_platform_admin")
+
+        plan = [
+            # (clerk_id, document, number, how far it got)
+            (
+                "seed_owner_dhanmondi-arena",
+                IdentityDocumentType.NID,
+                "1990123456789",
+                "approved",
+            ),
+            (
+                "seed_owner_mirpur-turf-club",
+                IdentityDocumentType.PASSPORT,
+                "BX0912345",
+                "submitted",
+            ),
+            (
+                "seed_player_rafi",
+                IdentityDocumentType.DRIVING_LICENCE,
+                "DK0123456789",
+                "submitted",
+            ),
+            (
+                "seed_player_nabila",
+                IdentityDocumentType.BIRTH_CERTIFICATE,
+                "20051234567890123",
+                "rejected",
+            ),
+        ]
+
+        for clerk_id, document_type, number, outcome in plan:
+            user = User.objects.filter(clerk_id=clerk_id).first()
+            if user is None:
+                continue
+
+            verification = get_or_create_identity(user)
+            if verification.status != "draft":
+                continue  # Already seeded; re-running must not reset somebody's state.
+
+            if not user.photo:
+                set_account_photo(user=user, photo=demo_image(f"{clerk_id}-photo.jpg"))
+            save_identity_documents(
+                user=user,
+                data={
+                    "document_type": document_type,
+                    "document_number": number,
+                    "document_front": demo_image(f"{clerk_id}-front.jpg"),
+                },
+            )
+            verification = submit_identity(user=user)
+
+            if outcome == "approved":
+                approve_identity(verification=verification, reviewer=admin)
+            elif outcome == "rejected":
+                reject_identity(
+                    verification=verification,
+                    reviewer=admin,
+                    reason="The number on the certificate is not readable. Try again in daylight.",
+                )
+
+            self.stdout.write(f"Identity check for {user.email}: {outcome}")
 
     def seed_bookings(self) -> None:
         """One booking in each interesting state, so no screen starts empty.

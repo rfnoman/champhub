@@ -414,7 +414,8 @@ def _notify_source(order: Order) -> None:
                 role__in=TURF_STAFF_ROLES,
             ).select_related("user")
         ]
-        url = f"/owner/{order.location.turf.slug}/orders"
+        # Absolute: a turf's order queue lives in the owner app (DECISIONS D83).
+        url = f"{settings.OWNER_APP_BASE_URL}/turfs/{order.location.turf.slug}/orders"
     else:
         recipients = list(User.objects.filter(is_platform_admin=True))
         url = "/admin/orders"

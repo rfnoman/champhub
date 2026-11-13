@@ -47,6 +47,7 @@ export function MatchActions({
   const [message, setMessage] = useState("");
   const [addToSquad, setAddToSquad] = useState(false);
   const [invitee, setInvitee] = useState("");
+  const [handle, setHandle] = useState("");
 
   async function run(key: string, call: () => Promise<{ error?: unknown }>) {
     setBusy(key);
@@ -295,7 +296,7 @@ export function MatchActions({
       )}
 
       {/* --- inviting ----------------------------------------------------------- */}
-      {invitable.length > 0 && match.needed > 0 && (
+      {(match.is_organiser || match.squad) && match.needed > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="label-sm">{t("invitePlayer")}</CardTitle>
@@ -303,40 +304,81 @@ export function MatchActions({
               {match.is_organiser ? t("inviteHintOrganiser") : t("inviteHintMember")}
             </p>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-end gap-2">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="invitee" className="text-xs">
-                {t("player")}
-              </Label>
-              <select
-                id="invitee"
-                value={invitee}
-                onChange={(event) => setInvitee(event.target.value)}
-                className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
+          <CardContent className="flex flex-col gap-4">
+            {/* By handle first: a squad-mate is a pick from a list, but the player
+                somebody was told about in a group chat is only ever an @handle
+                (DOMAIN §1b) — and that is anybody on ChampHub, not just a squad-mate. */}
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="invite-handle" className="text-xs">
+                  {t("inviteByHandle")}
+                </Label>
+                <Input
+                  id="invite-handle"
+                  value={handle}
+                  onChange={(event) => setHandle(event.target.value)}
+                  placeholder={t("handlePlaceholder")}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  spellCheck={false}
+                  maxLength={21}
+                  className="w-48"
+                />
+              </div>
+              <Button
+                size="sm"
+                disabled={!handle.trim() || busy === "invite-handle"}
+                onClick={async () => {
+                  const ok = await run("invite-handle", () =>
+                    api.POST("/api/v1/matches/{id}/invite", {
+                      params: matchPath,
+                      body: { username: handle.trim() } as never,
+                    }),
+                  );
+                  if (ok) setHandle("");
+                }}
               >
-                <option value="">{t("choosePlayer")}</option>
-                {invitable.map((member) => (
-                  <option key={member.id} value={member.profile_id ?? ""}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
+                {t("sendInvite")}
+              </Button>
             </div>
-            <Button
-              size="sm"
-              disabled={!invitee || busy === "invite-player"}
-              onClick={async () => {
-                const ok = await run("invite-player", () =>
-                  api.POST("/api/v1/matches/{id}/invite", {
-                    params: matchPath,
-                    body: { player_id: invitee } as never,
-                  }),
-                );
-                if (ok) setInvitee("");
-              }}
-            >
-              {t("sendInvite")}
-            </Button>
+
+            {invitable.length > 0 && (
+              <div className="flex flex-wrap items-end gap-2 border-t pt-4">
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="invitee" className="text-xs">
+                    {t("player")}
+                  </Label>
+                  <select
+                    id="invitee"
+                    value={invitee}
+                    onChange={(event) => setInvitee(event.target.value)}
+                    className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
+                  >
+                    <option value="">{t("choosePlayer")}</option>
+                    {invitable.map((member) => (
+                      <option key={member.id} value={member.profile_id ?? ""}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={!invitee || busy === "invite-player"}
+                  onClick={async () => {
+                    const ok = await run("invite-player", () =>
+                      api.POST("/api/v1/matches/{id}/invite", {
+                        params: matchPath,
+                        body: { player_id: invitee } as never,
+                      }),
+                    );
+                    if (ok) setInvitee("");
+                  }}
+                >
+                  {t("sendInvite")}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

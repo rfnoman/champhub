@@ -33,6 +33,7 @@ coverage.xml
 db.sqlite3
 db.sqlite3-journal
 /backend/media/
+/backend/private-media/
 /backend/staticfiles/
 celerybeat-schedule*
 
@@ -51,6 +52,11 @@ next-env.d.ts
 /frontend/blob-report/
 /frontend/playwright/.cache/
 /frontend/coverage/
+/owner-frontend/test-results/
+/owner-frontend/playwright-report/
+/owner-frontend/blob-report/
+/owner-frontend/playwright/.cache/
+/owner-frontend/coverage/
 
 # ---- Dev runner ----
 /.logs/
@@ -60,8 +66,9 @@ next-env.d.ts
 .vscode/*
 !.vscode/extensions.json
 
-# Playwright/Next artifacts inside frontend
+# Playwright/Next artifacts inside the two frontends
 /frontend/.next/
+/owner-frontend/.next/
 
 # Scratch output from local verification runs (screenshots, snapshots).
 /.tmp/

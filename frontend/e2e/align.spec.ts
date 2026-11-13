@@ -1,4 +1,5 @@
 import { expect, requiresClerk, test } from "./support/fixtures";
+import { pickUsername } from "./support/onboarding";
 import type { Page } from "@playwright/test";
 
 /**
@@ -39,27 +40,36 @@ test.describe("column alignment", () => {
     expect(edges.footer, "footer vs content").toBe(edges.content);
   });
 
-  test("the signed-in widths line up too", async ({ signedInPage: page }) => {
+  test.describe("signed in", () => {
+    // At describe scope, not inside the test: `requiresClerk` is a `test.skip`, and the
+    // signed-in fixture runs *before* the test body — so a call in the body skipped
+    // nothing and the run failed inside the fixture with "CLERK_SECRET_KEY is required".
     requiresClerk();
-    test.setTimeout(240_000);
 
-    await page.goto("/onboarding");
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await page.getByRole("button", { name: /Football/ }).click();
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await page.getByRole("button", { name: "Finish" }).click();
-    await expect(page).toHaveURL(/profile/);
+    test("the signed-in widths line up too", async ({ signedInPage: page }) => {
+      test.setTimeout(240_000);
 
-    // `/profile` is the default column and `/owner` the wide one, so this covers both
-    // branches of the `:has()` rule as well as the default.
-    for (const path of ["/profile", "/owner"]) {
-      await page.goto(path);
+      await page.goto("/onboarding");
+      await pickUsername(page);
+      await page.getByRole("button", { name: "Next", exact: true }).click();
+      await page.getByRole("button", { name: /Football/ }).click();
+      await page.getByRole("button", { name: "Next", exact: true }).click();
+      await page.getByRole("button", { name: "Next", exact: true }).click();
+      await page.getByRole("button", { name: "Finish" }).click();
+      await expect(page).toHaveURL(/profile/);
+
+      // `/profile` is the default column. The `wide` branch of the `:has()` rule used to
+      // be covered here by `/owner`, which has moved to its own app (DECISIONS D83) —
+      // `owner-frontend/e2e/align.spec.ts` asserts it there, where every page is wide.
+      // It cannot be covered by `/admin` instead: this fixture is a brand-new player, so
+      // that is a 404 rendered in the default column, which would pass while testing
+      // nothing.
+      await page.goto("/profile");
       await page.waitForTimeout(600);
       const edges = await columnEdges(page);
-      expect(edges.content, `${path}: no page column found`).not.toBeNull();
-      expect(edges.header, `${path}: header vs content`).toBe(edges.content);
-      expect(edges.footer, `${path}: footer vs content`).toBe(edges.content);
-    }
+      expect(edges.content, "no page column found").not.toBeNull();
+      expect(edges.header, "header vs content").toBe(edges.content);
+      expect(edges.footer, "footer vs content").toBe(edges.content);
+    });
   });
 });

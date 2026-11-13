@@ -1,4 +1,5 @@
 import { apiBaseUrl } from "./support/clerk-users";
+import { pickUsername } from "./support/onboarding";
 import { expect, requiresClerk, test } from "./support/fixtures";
 
 /** Settings and the public player card, once a player is onboarded. */
@@ -7,6 +8,7 @@ test.describe("profile", () => {
 
   test.beforeEach(async ({ signedInPage: page }) => {
     await page.goto("/onboarding");
+    await pickUsername(page);
     await page.getByLabel("Area").fill("Banani");
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByRole("button", { name: /Badminton/ }).click();

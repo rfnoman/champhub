@@ -91,12 +91,18 @@ describe("message catalogues", () => {
     // what it may not do is carry no Bengali at all where the English has words.
     const bengali = /[\u0980-\u09FF]/;
     const latinLetter = /[A-Za-z]/;
+    // An example @handle is the exception, and by rule rather than by neglect: a
+    // username may only contain lowercase English letters, digits and underscores
+    // (DOMAIN §1b), so "rafiq_hasan" is the same string in both catalogues and a
+    // Bengali rendering of it would be a username nobody could claim.
+    const handleExample = /^[a-z][a-z0-9_]*$/;
 
     const untranslated = flatKeys(en).filter((key) => {
       const source = lookup(en, key);
       const target = lookup(bn, key);
       if (typeof source !== "string" || typeof target !== "string") return false;
       // Placeholders and `select` option names stay English by design.
+      if (handleExample.test(source) && source === target) return false;
       const prose = source.replace(/\{(\w+), (?:plural|select),/g, "").replace(/\{[^{}]*\}/g, "");
       return latinLetter.test(prose) && !bengali.test(target);
     });

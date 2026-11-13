@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin, TabularInline
 
 from .models import (
     JoinRequest,
@@ -12,14 +13,14 @@ from .models import (
 )
 
 
-class SquadMembershipInline(admin.TabularInline):
+class SquadMembershipInline(TabularInline):
     model = SquadMembership
     extra = 0
     autocomplete_fields = ("player",)
 
 
 @admin.register(Squad)
-class SquadAdmin(admin.ModelAdmin):
+class SquadAdmin(ModelAdmin):
     list_display = ("name", "leader", "area", "accepts_public_requests", "member_count")
     list_filter = ("accepts_public_requests", "area")
     search_fields = ("name", "slug", "leader__email")
@@ -33,13 +34,13 @@ class SquadAdmin(admin.ModelAdmin):
         return obj.member_count
 
 
-class MatchPlayerInline(admin.TabularInline):
+class MatchPlayerInline(TabularInline):
     model = MatchPlayer
     extra = 0
     autocomplete_fields = ("player",)
 
 
-class JoinRequestInline(admin.TabularInline):
+class JoinRequestInline(TabularInline):
     model = JoinRequest
     extra = 0
     autocomplete_fields = ("player", "decided_by")
@@ -47,7 +48,7 @@ class JoinRequestInline(admin.TabularInline):
 
 
 @admin.register(Match)
-class MatchAdmin(admin.ModelAdmin):
+class MatchAdmin(ModelAdmin):
     list_display = ("__str__", "visibility", "status", "capacity", "roster_count", "squad")
     list_filter = ("status", "visibility", "sport")
     search_fields = ("booking__id", "squad__name")
@@ -62,7 +63,7 @@ class MatchAdmin(admin.ModelAdmin):
 
 
 @admin.register(JoinRequest)
-class JoinRequestAdmin(admin.ModelAdmin):
+class JoinRequestAdmin(ModelAdmin):
     list_display = ("match", "player", "status", "decided_by", "decided_at")
     list_filter = ("status",)
     search_fields = ("player__email",)
@@ -70,7 +71,7 @@ class JoinRequestAdmin(admin.ModelAdmin):
 
 
 @admin.register(MatchInvite)
-class MatchInviteAdmin(admin.ModelAdmin):
+class MatchInviteAdmin(ModelAdmin):
     list_display = ("match", "invited_player", "invited_by", "status", "decided_at")
     list_filter = ("status",)
     search_fields = ("invited_player__email",)
@@ -78,7 +79,7 @@ class MatchInviteAdmin(admin.ModelAdmin):
 
 
 @admin.register(SquadInvite)
-class SquadInviteAdmin(admin.ModelAdmin):
+class SquadInviteAdmin(ModelAdmin):
     list_display = ("squad", "player", "invited_by", "status", "decided_at")
     list_filter = ("status",)
     search_fields = ("player__email", "squad__name")
@@ -86,7 +87,7 @@ class SquadInviteAdmin(admin.ModelAdmin):
 
 
 @admin.register(SquadMembership)
-class SquadMembershipAdmin(admin.ModelAdmin):
+class SquadMembershipAdmin(ModelAdmin):
     list_display = ("squad", "player", "role", "status", "joined_at")
     list_filter = ("role", "status")
     search_fields = ("player__email", "squad__name")

@@ -5,6 +5,7 @@
 #   ./scripts/dev.sh                 everything
 #   ./scripts/dev.sh --no-worker     skip Celery (nothing schedules work until Phase 03)
 #   ./scripts/dev.sh --backend       API only
+#   ./scripts/dev.sh --no-owner      skip the owner app
 #   ./scripts/dev.sh --help          all options
 #
 # Ctrl+C stops every process it started. Containers are left running on purpose —
@@ -19,12 +20,16 @@ LOG_DIR="$ROOT_DIR/.logs"
 
 BACKEND_PORT="${BACKEND_PORT:-8000}"
 FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+# The owner app (DECISIONS D83). Its origin has to match the backend's
+# CLERK_AUTHORIZED_PARTIES, or every API call from it is a 401.
+OWNER_PORT="${OWNER_PORT:-3001}"
 REQUIRED_NODE_MAJOR=24
 
 RUN_INFRA=1
 RUN_BACKEND=1
 RUN_WORKER=1
 RUN_FRONTEND=1
+RUN_OWNER=1
 RUN_MIGRATE=1
 CLERK_KEY_OK=1
 
@@ -53,18 +58,20 @@ ${C_BOLD}ChampHub dev runner${C_RESET}
 Usage: ./scripts/dev.sh [options]
 
 Options:
-  --backend            Django only (implies --no-worker --no-frontend)
-  --frontend           Next.js only (implies --no-infra --no-backend --no-worker)
+  --backend            Django only (implies --no-worker --no-frontend --no-owner)
+  --frontend           The two Next.js apps only (implies --no-infra --no-backend --no-worker)
   --no-infra           Do not touch Docker; assume Postgres and Redis are up
   --no-backend         Do not start Django
   --no-worker          Do not start the Celery worker and beat
-  --no-frontend        Do not start Next.js
+  --no-frontend        Do not start the player app
+  --no-owner           Do not start the owner app
   --no-migrate         Skip 'manage.py migrate' on startup
   -h, --help           Show this message
 
 Environment:
   BACKEND_PORT         Django port (default 8000)
-  FRONTEND_PORT        Next.js port (default 3000)
+  FRONTEND_PORT        Player app port (default 3000)
+  OWNER_PORT           Owner app port (default 3001)
   NO_COLOR             Disable coloured output
 
 Logs are mirrored to .logs/<service>.log while the script runs.
@@ -73,12 +80,13 @@ EOF
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --backend) RUN_WORKER=0; RUN_FRONTEND=0 ;;
+    --backend) RUN_WORKER=0; RUN_FRONTEND=0; RUN_OWNER=0 ;;
     --frontend) RUN_INFRA=0; RUN_BACKEND=0; RUN_WORKER=0; RUN_MIGRATE=0 ;;
     --no-infra) RUN_INFRA=0 ;;
     --no-backend) RUN_BACKEND=0 ;;
     --no-worker) RUN_WORKER=0 ;;
     --no-frontend) RUN_FRONTEND=0 ;;
+    --no-owner) RUN_OWNER=0 ;;
     --no-migrate) RUN_MIGRATE=0 ;;
     -h|--help) usage; exit 0 ;;
     *) fail "Unknown option: $1"; echo; usage; exit 2 ;;
@@ -189,7 +197,7 @@ if [ "$RUN_BACKEND" -eq 1 ] || [ "$RUN_MIGRATE" -eq 1 ] || [ "$RUN_WORKER" -eq 1
   }
 fi
 
-if [ "$RUN_FRONTEND" -eq 1 ]; then
+if [ "$RUN_FRONTEND" -eq 1 ] || [ "$RUN_OWNER" -eq 1 ]; then
   command -v node >/dev/null 2>&1 || die "node is not installed. Run: brew install node@24"
 
   node_major="$(node -v | sed 's/^v\([0-9]*\).*/\1/')"
@@ -198,22 +206,29 @@ if [ "$RUN_FRONTEND" -eq 1 ]; then
     warn "Run: brew install node@24 && brew link --overwrite node@24"
   fi
 
-  [ -d "$ROOT_DIR/frontend/node_modules" ] || die \
-    "frontend/node_modules is missing. Run: cd frontend && npm install"
+  # Both apps are checked the same way; the owner app needs the *same* Clerk keys,
+  # because an owner is one account with a role, not a second kind of user.
+  for app in frontend owner-frontend; do
+    [ "$app" = "frontend" ] && [ "$RUN_FRONTEND" -eq 0 ] && continue
+    [ "$app" = "owner-frontend" ] && [ "$RUN_OWNER" -eq 0 ] && continue
 
-  [ -f "$ROOT_DIR/frontend/.env.local" ] || {
-    warn "frontend/.env.local is missing; creating it from .env.local.example"
-    cp "$ROOT_DIR/frontend/.env.local.example" "$ROOT_DIR/frontend/.env.local"
-  }
+    [ -d "$ROOT_DIR/$app/node_modules" ] || die \
+      "$app/node_modules is missing. Run: cd $app && npm install"
 
-  # Clerk refuses to initialise without a publishable key, so the app would 500 on
-  # every page. Worth saying plainly up front rather than letting it look like a bug.
-  if ! grep -qE '^NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_' "$ROOT_DIR/frontend/.env.local"; then
-    CLERK_KEY_OK=0
-    warn "No Clerk publishable key in frontend/.env.local — every page will return 500."
-    warn "Add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY from"
-    warn "https://dashboard.clerk.com -> API keys (see README.md). The API works regardless."
-  fi
+    [ -f "$ROOT_DIR/$app/.env.local" ] || {
+      warn "$app/.env.local is missing; creating it from .env.local.example"
+      cp "$ROOT_DIR/$app/.env.local.example" "$ROOT_DIR/$app/.env.local"
+    }
+
+    # Clerk refuses to initialise without a publishable key, so the app would 500 on
+    # every page. Worth saying plainly up front rather than letting it look like a bug.
+    if ! grep -qE '^NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_' "$ROOT_DIR/$app/.env.local"; then
+      CLERK_KEY_OK=0
+      warn "No Clerk publishable key in $app/.env.local — every page will return 500."
+      warn "Add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY from"
+      warn "https://dashboard.clerk.com -> API keys (see README.md). The API works regardless."
+    fi
+  done
 fi
 
 if [ "$RUN_BACKEND" -eq 1 ] && port_in_use "$BACKEND_PORT"; then
@@ -221,6 +236,9 @@ if [ "$RUN_BACKEND" -eq 1 ] && port_in_use "$BACKEND_PORT"; then
 fi
 if [ "$RUN_FRONTEND" -eq 1 ] && port_in_use "$FRONTEND_PORT"; then
   die "Port $FRONTEND_PORT is already in use. Stop that process or set FRONTEND_PORT."
+fi
+if [ "$RUN_OWNER" -eq 1 ] && port_in_use "$OWNER_PORT"; then
+  die "Port $OWNER_PORT is already in use. Stop that process or set OWNER_PORT."
 fi
 
 ok "prerequisites satisfied"
@@ -303,6 +321,11 @@ if [ "$RUN_FRONTEND" -eq 1 ]; then
     npm run dev -- --port "$FRONTEND_PORT"
 fi
 
+if [ "$RUN_OWNER" -eq 1 ]; then
+  start_service "owner" "$C_YELLOW" "$ROOT_DIR/owner-frontend" \
+    npm run dev -- --port "$OWNER_PORT"
+fi
+
 [ ${#PIDS[@]} -eq 0 ] && die "Nothing to run with those options."
 
 # ---------------------------------------------------------------------------
@@ -323,8 +346,20 @@ if [ "$RUN_FRONTEND" -eq 1 ]; then
   fi
 fi
 
+if [ "$RUN_OWNER" -eq 1 ]; then
+  if [ "$CLERK_KEY_OK" -eq 1 ]; then
+    # Every page of the owner app is behind auth.protect(), so the root redirects to
+    # /sign-in — a 307 that `curl -f` treats as success, which is the readiness signal.
+    wait_for_http "http://127.0.0.1:$OWNER_PORT/sign-in" "Owner" 90
+  else
+    wait_for_http "http://127.0.0.1:$OWNER_PORT/sign-in" "Owner" 10 \
+      || warn "The owner app is listening but every page errors until the Clerk keys are set."
+  fi
+fi
+
 printf '\n%s%sChampHub is running%s\n' "$C_BOLD" "$C_GREEN" "$C_RESET"
 [ "$RUN_FRONTEND" -eq 1 ] && printf '  app      http://localhost:%s\n' "$FRONTEND_PORT"
+[ "$RUN_OWNER" -eq 1 ] && printf '  owner    http://localhost:%s\n' "$OWNER_PORT"
 if [ "$RUN_BACKEND" -eq 1 ]; then
   printf '  health   http://127.0.0.1:%s/api/v1/health\n' "$BACKEND_PORT"
   printf '  docs     http://127.0.0.1:%s/api/v1/docs/\n' "$BACKEND_PORT"

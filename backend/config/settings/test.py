@@ -5,6 +5,9 @@ and fake Clerk credentials so auth/webhook tests exercise real verification code
 against locally generated keys instead of reaching clerk.com.
 """
 
+import tempfile
+from pathlib import Path
+
 from .base import *
 
 DEBUG = False
@@ -36,3 +39,18 @@ CLERK_WEBHOOK_SIGNING_SECRET = "whsec_dGVzdHNlY3JldHRlc3RzZWNyZXR0ZXN0"
 CLERK_AUTHORIZED_PARTIES = ["http://localhost:3000"]
 
 LOGGING = {"version": 1, "disable_existing_loggers": False, "root": {"handlers": []}}
+
+# Uploads go to a temporary directory, not into the working tree. Identity tests write
+# real files through real storage — the private store is half the point of the feature,
+# so faking it out would test nothing — and they must not leave scans of anything in
+# `backend/private-media/`.
+_TEST_MEDIA = Path(tempfile.mkdtemp(prefix="champhub-test-media-"))
+MEDIA_ROOT = _TEST_MEDIA / "public"
+PRIVATE_MEDIA_ROOT = str(_TEST_MEDIA / "private")
+STORAGES = {
+    **STORAGES,
+    "private": {
+        "BACKEND": "apps.core.storage.PrivateFileSystemStorage",
+        "OPTIONS": {"location": PRIVATE_MEDIA_ROOT},
+    },
+}

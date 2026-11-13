@@ -425,7 +425,9 @@ def check_low_stock(*, item: StockItem) -> bool:
     notify_many(
         users=staff,
         kind=NotificationKind.STOCK_LOW,
-        url=f"/owner/{item.location.turf.slug}/inventory",
+        # Absolute: the shelf lives in the owner app (DECISIONS D83), which is not the
+        # app a player reads notifications in.
+        url=f"{settings.OWNER_APP_BASE_URL}/turfs/{item.location.turf.slug}/inventory",
         product=item.product.name,
         available=item.available,
         turf=item.location.turf.name,

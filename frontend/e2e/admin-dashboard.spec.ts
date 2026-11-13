@@ -11,13 +11,15 @@ import { expect, requiresClerk, test } from "./support/fixtures";
 test.describe("admin surface", () => {
   requiresClerk();
 
-  for (const path of ["/admin/dashboard", "/admin/support"]) {
+  for (const path of ["/admin/dashboard", "/admin/support", "/admin/identity"]) {
     test(`${path} is not reachable by an ordinary player`, async ({ signedInPage: page }) => {
       await page.goto(path);
 
       // The layout answers `notFound()` for a non-admin, so the page itself never
       // renders — which is what has to hold.
-      await expect(page.getByRole("heading", { name: /How it's going|Support/ })).toHaveCount(0);
+      await expect(
+        page.getByRole("heading", { name: /How it's going|Support|Identity checks/ }),
+      ).toHaveCount(0);
       await expect(page.getByText(/404|not found/i).first()).toBeVisible();
     });
   }

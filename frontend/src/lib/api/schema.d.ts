@@ -115,6 +115,126 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * Set my account photo
+         * @description Multipart. The account photograph is shown wherever this person appears and is what a reviewer compares against their identity document.
+         */
+        patch: operations["me_photo"];
+        trace?: never;
+    };
+    "/api/v1/me/username": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set my username
+         * @description The @handle other people invite by (DOMAIN §1b). Lowercase letters, digits and underscores, starting with a letter; a leading `@` and any capitals are normalised away. Changing it frees the old handle for somebody else.
+         */
+        put: operations["me_set_username"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/usernames/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Is this username free?
+         * @description "Can I have this one?", for a form to ask while somebody types.
+         *
+         *     Throttled, and for a reason worth stating: this endpoint answers "does an account
+         *     exist with this handle" for any handle, which is exactly what walking a dictionary
+         *     through it would be for. A handle is public by design — it is printed on a profile
+         *     and pasted into chats — so the limit is on the *rate*, not on the answer.
+         *
+         *     Someone's own current handle comes back available, so re-submitting a form that was
+         *     never edited is not an error.
+         */
+        get: operations["username_check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My identity verification
+         * @description Creates an empty draft on first access, so this never 404s.
+         */
+        get: operations["my_identity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Save my identity documents
+         * @description Multipart. Allowed while the check is a draft or was rejected; a submitted or approved one is frozen.
+         */
+        patch: operations["my_identity_update"];
+        trace?: never;
+    };
+    "/api/v1/me/identity/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit my identity for review
+         * @description Send the check to the review queue.
+         */
+        post: operations["my_identity_submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/identity/files/{field}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One of my identity documents
+         * @description One of my own document images, streamed back to me.
+         *
+         *     Worth having even though the uploader already has the file: it is how the form shows
+         *     what is currently on record, and the alternative — a public URL — is the thing this
+         *     whole arrangement exists to avoid.
+         */
+        get: operations["my_identity_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -132,6 +252,141 @@ export interface paths {
          * @description Handles `user.created`, `user.updated` and `user.deleted`. Verified with svix using `CLERK_WEBHOOK_SIGNING_SECRET`.
          */
         post: operations["clerk_webhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/identity-verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Identity verification queue
+         * @description The reviewer's side (DOMAIN §1a).
+         *
+         *     Platform admins only — and the file endpoint logs every read at WARNING, because
+         *     "who looked at this person's passport" is a question that has to have an answer.
+         */
+        get: operations["admin_identity_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/identity-verifications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One identity check
+         * @description The reviewer's side (DOMAIN §1a).
+         *
+         *     Platform admins only — and the file endpoint logs every read at WARNING, because
+         *     "who looked at this person's passport" is a question that has to have an answer.
+         */
+        get: operations["admin_identity_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/identity-verifications/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve an identity check
+         * @description The reviewer's side (DOMAIN §1a).
+         *
+         *     Platform admins only — and the file endpoint logs every read at WARNING, because
+         *     "who looked at this person's passport" is a question that has to have an answer.
+         */
+        post: operations["admin_identity_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/identity-verifications/{id}/files/{field}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A submitted document
+         * @description The reviewer's side (DOMAIN §1a).
+         *
+         *     Platform admins only — and the file endpoint logs every read at WARNING, because
+         *     "who looked at this person's passport" is a question that has to have an answer.
+         */
+        get: operations["admin_identity_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/identity-verifications/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject an identity check
+         * @description The reviewer's side (DOMAIN §1a).
+         *
+         *     Platform admins only — and the file endpoint logs every read at WARNING, because
+         *     "who looked at this person's passport" is a question that has to have an answer.
+         */
+        post: operations["admin_identity_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/identity-verifications/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw a verification
+         * @description For an approved check that later turns out not to hold.
+         */
+        post: operations["admin_identity_revoke"];
         delete?: never;
         options?: never;
         head?: never;
@@ -402,6 +657,41 @@ export interface paths {
          *     ``discoverable`` gates *search* only — a direct link still resolves (DOMAIN §3).
          */
         get: operations["players_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/players/by-username/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A player's public profile, by username
+         * @description The same card, found by handle (DOMAIN §1b).
+         *
+         *     This is what makes a handle worth having: somebody says "@rafiq_hasan" in a group
+         *     chat and the person reading it can open the profile, invite them, or both, without
+         *     anybody having to exchange an id.
+         *
+         *     Two deliberate choices:
+         *
+         *     * **It ignores ``discoverable``.** Handing out a handle is the opposite of hiding,
+         *       and this behaves exactly like the direct profile link it is a prettier form of.
+         *     * **404 when there is no account**, and the same 404 when the handle is malformed —
+         *       "no player with that username" is the only honest answer to both, and splitting
+         *       them would turn the endpoint into a validator for guessing.
+         *
+         *     Throttled with the player directory, because walking handles through it would be a
+         *     way to enumerate accounts.
+         */
+        get: operations["players_retrieve_by_username"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3455,6 +3745,44 @@ export interface components {
             delta: number;
             reason: string;
         };
+        /**
+         * @description The reviewer's view: who it is, and the number in full.
+         *
+         *     The number is unmasked here and nowhere else. Comparing it against the document in
+         *     the photograph is the review, so masking it would leave an admin approving a picture
+         *     they cannot read the details of.
+         */
+        AdminIdentityVerification: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly status: components["schemas"]["IdentityStatusEnum"];
+            readonly status_label: string;
+            /** Document */
+            readonly document_type: components["schemas"]["IdentityDocumentTypeEnum"];
+            readonly document_type_label: string;
+            readonly document_number: string;
+            readonly photo_url: string;
+            readonly has_photo: boolean;
+            readonly has_document_front: boolean;
+            readonly has_document_back: boolean;
+            readonly is_editable: boolean;
+            /**
+             * Reviewer's note
+             * @description Why it was rejected. The person reads this, so it has to be actionable.
+             */
+            readonly review_note: string;
+            /** Format: date-time */
+            readonly submitted_at: string | null;
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+            /** Format: uuid */
+            readonly user_id: string;
+            readonly person: string;
+            /** Format: email */
+            readonly email: string;
+            readonly phone: string;
+            readonly reviewed_by_name: string;
+        };
         Amenity: {
             /** Format: uuid */
             readonly id: string;
@@ -3998,12 +4326,77 @@ export interface components {
             workers: number | null;
             version: string;
         };
+        /** @description A reviewer's note. Required for a rejection; the service enforces that. */
+        IdentityDecisionRequest: {
+            reason?: string;
+        };
+        /**
+         * @description * `nid` - National ID (NID)
+         *     * `driving_licence` - Driving licence
+         *     * `birth_certificate` - Birth certificate
+         *     * `passport` - Passport
+         * @enum {string}
+         */
+        IdentityDocumentTypeEnum: "nid" | "driving_licence" | "birth_certificate" | "passport";
+        /**
+         * @description * `draft` - Not submitted
+         *     * `submitted` - Awaiting review
+         *     * `approved` - Verified
+         *     * `rejected` - Rejected
+         * @enum {string}
+         */
+        IdentityStatusEnum: "draft" | "submitted" | "approved" | "rejected";
+        /**
+         * @description What a person may see about their own identity check.
+         *
+         *     Never the files and never the whole document number — there is no reason to render
+         *     either back to the browser, and a payload that carries them is a payload that can
+         *     leak. ``has_document_front``/``has_document_back`` say what was uploaded; the
+         *     pictures themselves are streamed one request at a time by `IdentityFileView`.
+         */
+        IdentityVerification: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly status: components["schemas"]["IdentityStatusEnum"];
+            readonly status_label: string;
+            /** Document */
+            readonly document_type: components["schemas"]["IdentityDocumentTypeEnum"];
+            readonly document_type_label: string;
+            readonly document_number: string;
+            readonly photo_url: string;
+            readonly has_photo: boolean;
+            readonly has_document_front: boolean;
+            readonly has_document_back: boolean;
+            readonly is_editable: boolean;
+            /**
+             * Reviewer's note
+             * @description Why it was rejected. The person reads this, so it has to be actionable.
+             */
+            readonly review_note: string;
+            /** Format: date-time */
+            readonly submitted_at: string | null;
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+        };
+        /**
+         * @description Who to invite: a profile id, or a handle (DOMAIN §1b).
+         *
+         *     Two ways in because they come from two places. A pick out of search or a roster has
+         *     the profile id already; somebody typing "@rafiq_hasan" out of a group chat has a
+         *     handle and nothing else, and making them find the player first would defeat the
+         *     point of handles.
+         *
+         *     Exactly one is required. Accepting both and preferring one would quietly ignore half
+         *     of what was sent, which is how a UI ends up inviting the wrong person.
+         */
         InvitePlayerRequest: {
             /**
              * Format: uuid
              * @description The player's profile id.
              */
-            player_id: string;
+            player_id?: string;
+            /** @description The player's @handle, instead of `player_id`. A leading `@` is fine. */
+            username?: string;
             message?: string;
         };
         JoinRequest: {
@@ -4309,9 +4702,12 @@ export interface components {
          *     * `hydration` - Hydration reminder
          *     * `recovery` - Recovery tip
          *     * `weekly_recap` - Your week
+         *     * `identity_submitted` - Identity check to review
+         *     * `identity_approved` - Identity verified
+         *     * `identity_rejected` - Identity check needs more
          * @enum {string}
          */
-        NotificationKindEnum: "booking_created" | "booking_pending_confirmation" | "booking_confirmed" | "booking_expired" | "booking_cancelled" | "booking_paid" | "booking_no_show" | "booking_completed" | "booking_reminder" | "squad_invite" | "squad_joined" | "match_added" | "match_removed" | "match_player_left" | "match_join_request" | "match_join_approved" | "match_join_declined" | "match_invite" | "match_invite_proposed" | "match_invite_accepted" | "match_invite_declined" | "scorecard_submitted" | "scorecard_disputed" | "scorecard_locked" | "motm_awarded" | "stock_low" | "rental_out" | "rental_overdue" | "order_placed" | "order_accepted" | "order_ready" | "order_assigned" | "order_delivered" | "order_cancelled" | "order_cutoff_soon" | "match_day" | "hydration" | "recovery" | "weekly_recap";
+        NotificationKindEnum: "booking_created" | "booking_pending_confirmation" | "booking_confirmed" | "booking_expired" | "booking_cancelled" | "booking_paid" | "booking_no_show" | "booking_completed" | "booking_reminder" | "squad_invite" | "squad_joined" | "match_added" | "match_removed" | "match_player_left" | "match_join_request" | "match_join_approved" | "match_join_declined" | "match_invite" | "match_invite_proposed" | "match_invite_accepted" | "match_invite_declined" | "scorecard_submitted" | "scorecard_disputed" | "scorecard_locked" | "motm_awarded" | "stock_low" | "rental_out" | "rental_overdue" | "order_placed" | "order_accepted" | "order_ready" | "order_assigned" | "order_delivered" | "order_cancelled" | "order_cutoff_soon" | "match_day" | "hydration" | "recovery" | "weekly_recap" | "identity_submitted" | "identity_approved" | "identity_rejected";
         /** @description The nutrition panel, kept together so the UI can hide it in one go. */
         Nutrition: {
             serving_size: string;
@@ -4328,6 +4724,7 @@ export interface components {
         };
         /** @description The wizard payload. Field-level validation only; rules live in the service. */
         OnboardingRequest: {
+            username: string;
             display_name?: string;
             /** Format: date */
             date_of_birth?: string | null;
@@ -4524,6 +4921,22 @@ export interface components {
              */
             auto_confirm_enabled?: boolean;
             readonly my_role: string | null;
+            readonly owner_identity_status: string;
+        };
+        PaginatedAdminIdentityVerificationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminIdentityVerification"][];
         };
         PaginatedClosureList: {
             /** @example 123 */
@@ -4720,6 +5133,11 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["TurfSummary"][];
         };
+        /** @description Multipart write of the account photograph, and nothing else. */
+        PatchedAccountPhotoRequest: {
+            /** Format: binary */
+            photo?: string;
+        };
         PatchedClosureRequest: {
             /**
              * Format: uuid
@@ -4750,6 +5168,24 @@ export interface components {
             slot_minutes?: components["schemas"]["SlotMinutesEnum"];
             notes?: string;
             sport_format_ids?: string[];
+        };
+        /** @description PATCH of the draft. Multipart, because two of the four fields are files. */
+        PatchedIdentityDocumentWriteRequest: {
+            /** Document */
+            document_type?: components["schemas"]["IdentityDocumentTypeEnum"] | components["schemas"]["BlankEnum"];
+            /** @description Shown whole to reviewers only; masked everywhere else. */
+            document_number?: string;
+            /**
+             * Document (front)
+             * Format: binary
+             */
+            document_front?: string | null;
+            /**
+             * Document (back)
+             * Format: binary
+             * @description Optional. An NID and a driving licence carry the address on the back.
+             */
+            document_back?: string | null;
         };
         PatchedOperatingHoursRequest: {
             weekday?: components["schemas"]["WeekdayEnum"];
@@ -5223,9 +5659,12 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             readonly name: string;
+            readonly username: string;
+            readonly handle: string;
             /** @description Shown on the match board and scorecards. Defaults to the Clerk name. */
             readonly display_name: string;
             readonly photo_url: string;
+            readonly is_identity_verified: boolean;
             /** Format: date */
             readonly date_of_birth: string | null;
             readonly gender: components["schemas"]["PlayerGenderEnum"];
@@ -5261,9 +5700,12 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             readonly name: string;
+            readonly username: string;
+            readonly handle: string;
             /** @description Shown on the match board and scorecards. Defaults to the Clerk name. */
             readonly display_name: string;
             readonly photo_url: string;
+            readonly is_identity_verified: boolean;
             readonly gender: components["schemas"]["PlayerGenderEnum"];
             /** Height (cm) */
             readonly height_cm: number | null;
@@ -5538,9 +5980,12 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             readonly name: string;
+            readonly username: string;
+            readonly handle: string;
             /** @description Shown on the match board and scorecards. Defaults to the Clerk name. */
             readonly display_name: string;
             readonly photo_url: string;
+            readonly is_identity_verified: boolean;
             readonly gender: components["schemas"]["PlayerGenderEnum"];
             /** Height (cm) */
             readonly height_cm: number | null;
@@ -6534,6 +6979,8 @@ export interface components {
              * @description Clerk's user id; the `sub` claim of a session token.
              */
             readonly clerk_id: string;
+            readonly username: string;
+            readonly handle: string;
             /**
              * Email address
              * Format: email
@@ -6552,6 +6999,9 @@ export interface components {
              * Format: uri
              */
             readonly image_url: string;
+            readonly photo_url: string;
+            readonly identity_status: components["schemas"]["IdentityStatusEnum"];
+            readonly is_identity_verified: boolean;
             /**
              * Platform admin
              * @description Approves turfs and sports, handles disputes and conduct reports.
@@ -6564,6 +7014,26 @@ export interface components {
             readonly is_active: boolean;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        /**
+         * @description The answer to "can I have this one?".
+         *
+         *     `username` is the *normalised* handle, so a form can show what would actually be
+         *     stored, and `reason` is the one sentence to put under the field when it cannot.
+         */
+        UsernameAvailability: {
+            username: string;
+            available: boolean;
+            reason: string;
+        };
+        /**
+         * @description ``PUT /me/username``. One field, and the rules live in the service.
+         *
+         *     `max_length` is generous by one character so a pasted ``@rafiq`` is normalised
+         *     rather than rejected for being a character too long.
+         */
+        UsernameWriteRequest: {
+            username: string;
         };
         VoidSaleRequest: {
             reason?: string;
@@ -6756,6 +7226,168 @@ export interface operations {
             };
         };
     };
+    me_photo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["PatchedAccountPhotoRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    me_set_username: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UsernameWriteRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["UsernameWriteRequest"];
+                "multipart/form-data": components["schemas"]["UsernameWriteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    username_check: {
+        parameters: {
+            query: {
+                /** @description The handle to test. A leading `@` and capitals are ignored. */
+                username: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsernameAvailability"];
+                };
+            };
+        };
+    };
+    my_identity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityVerification"];
+                };
+            };
+        };
+    };
+    my_identity_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["PatchedIdentityDocumentWriteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityVerification"];
+                };
+            };
+        };
+    };
+    my_identity_submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityVerification"];
+                };
+            };
+        };
+    };
+    my_identity_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                field: "document_back" | "document_front";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": string;
+                };
+            };
+        };
+    };
     clerk_webhook: {
         parameters: {
             query?: never;
@@ -6779,6 +7411,163 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookRejected"];
+                };
+            };
+        };
+    };
+    admin_identity_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description Name, email or document number. */
+                q?: string;
+                /** @description Defaults to `submitted`. */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminIdentityVerificationList"];
+                };
+            };
+        };
+    };
+    admin_identity_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this identity verification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminIdentityVerification"];
+                };
+            };
+        };
+    };
+    admin_identity_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this identity verification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["IdentityDecisionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["IdentityDecisionRequest"];
+                "multipart/form-data": components["schemas"]["IdentityDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminIdentityVerification"];
+                };
+            };
+        };
+    };
+    admin_identity_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                field: "document_back" | "document_front";
+                /** @description A UUID string identifying this identity verification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": string;
+                };
+            };
+        };
+    };
+    admin_identity_reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this identity verification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["IdentityDecisionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["IdentityDecisionRequest"];
+                "multipart/form-data": components["schemas"]["IdentityDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminIdentityVerification"];
+                };
+            };
+        };
+    };
+    admin_identity_revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this identity verification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["IdentityDecisionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["IdentityDecisionRequest"];
+                "multipart/form-data": components["schemas"]["IdentityDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminIdentityVerification"];
                 };
             };
         };
@@ -7147,6 +7936,27 @@ export interface operations {
             header?: never;
             path: {
                 player_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPlayerProfile"];
+                };
+            };
+        };
+    };
+    players_retrieve_by_username: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
             };
             cookie?: never;
         };
@@ -8928,7 +9738,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["InvitePlayerRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["InvitePlayerRequest"];
@@ -9130,7 +9940,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["InvitePlayerRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["InvitePlayerRequest"];
@@ -9601,7 +10411,7 @@ export interface operations {
                 played_at_turf?: string;
                 /** @description Only with `sport`. */
                 position?: string;
-                /** @description Name fragment. */
+                /** @description Name or @username fragment. */
                 q?: string;
                 rating_max?: number;
                 rating_min?: number;

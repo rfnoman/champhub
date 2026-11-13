@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from django.conf import settings
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from apps.accounts.usernames import MAX_LENGTH as USERNAME_MAX_LENGTH
 from apps.sports.models import Sport
 from apps.sports.serializers import SportSummarySerializer
 
@@ -50,7 +52,10 @@ class PlayerProfileSerializer(serializers.ModelSerializer):
     """The public player card (DOMAIN §3)."""
 
     name = serializers.CharField(read_only=True)
+    username = serializers.SerializerMethodField()
+    handle = serializers.CharField(source="user.handle", read_only=True)
     photo_url = serializers.CharField(read_only=True)
+    is_identity_verified = serializers.SerializerMethodField()
     weight_is_estimated = serializers.BooleanField(read_only=True)
     attributes = PlayerAttributeSerializer(many=True, read_only=True)
     sport_cards = PlayerSportCardSerializer(many=True, read_only=True)
@@ -60,8 +65,11 @@ class PlayerProfileSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "username",
+            "handle",
             "display_name",
             "photo_url",
+            "is_identity_verified",
             "date_of_birth",
             "gender",
             "height_cm",
@@ -78,6 +86,29 @@ class PlayerProfileSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(serializers.CharField())
+    def get_username(self, obj) -> str:
+        """The handle, without the ``@`` — ``handle`` is the same thing with it.
+
+        Both, because the two readers want different things: a link builder wants the
+        bare handle for a URL, and everything that renders it next to a name wants the
+        ``@`` and should not be stitching strings together to get one. Empty, never
+        null, for an account that has not chosen one (DOMAIN §1b).
+        """
+        return obj.user.username or ""
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_identity_verified(self, obj) -> bool:
+        """Whether a real document has been checked against this person (DOMAIN §1a).
+
+        Public on purpose, and only as a boolean: strangers are about to agree to meet
+        each other on a pitch, and "this account was identity-checked" is exactly the
+        kind of thing that is worth knowing beforehand. Nothing about *which* document,
+        or its number, ever leaves the reviewer's screen.
+        """
+        verification = getattr(obj.user, "identity", None)
+        return bool(verification and verification.is_verified)
 
 
 class PublicPlayerProfileSerializer(PlayerProfileSerializer):
@@ -128,6 +159,10 @@ class OnboardingSportSerializer(serializers.Serializer):
 class OnboardingSerializer(serializers.Serializer):
     """The wizard payload. Field-level validation only; rules live in the service."""
 
+    # Required, and the only required field outside `sports`: a player who finishes
+    # onboarding without a handle cannot be invited by one, and nothing later in the app
+    # would ever ask them for it (DECISIONS D93).
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH + 1)
     display_name = serializers.CharField(max_length=80, required=False, allow_blank=True)
     date_of_birth = serializers.DateField(required=False, allow_null=True)
     gender = serializers.ChoiceField(

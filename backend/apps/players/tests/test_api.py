@@ -16,6 +16,7 @@ pytestmark = pytest.mark.django_db
 CAP = settings.SELF_ASSESSED_RATING_CAP
 
 ONBOARDING = {
+    "username": "rafi_ahmed",
     "display_name": "Rafi",
     "area": "Dhanmondi",
     "preferred_side": "right",
@@ -231,6 +232,41 @@ class TestPublicPlayerCard:
 
         client.force_authenticate(UserFactory())
         assert client.get(f"/api/v1/players/{profile.id}").status_code == 200
+
+    def test_it_resolves_by_handle(self, client, user):
+        """What a shared "@rafiq_ahmed" has to do (DOMAIN §1b)."""
+        complete_onboarding(user=user, data=ONBOARDING)
+        client.force_authenticate(UserFactory())
+
+        response = client.get("/api/v1/players/by-username/Rafi_Ahmed")
+        assert response.status_code == 200
+        assert response.data["username"] == "rafi_ahmed"
+        assert response.data["handle"] == "@rafi_ahmed"
+        assert response.data["name"] == "Rafi"
+
+    def test_a_handle_resolves_a_player_who_is_not_discoverable(self, client, user):
+        """Same rule as the direct link it is a prettier form of."""
+        profile = complete_onboarding(user=user, data=ONBOARDING)
+        profile.discoverable = False
+        profile.save(update_fields=["discoverable"])
+
+        client.force_authenticate(UserFactory())
+        assert client.get("/api/v1/players/by-username/rafi_ahmed").status_code == 200
+
+    def test_an_unclaimed_handle_is_a_404(self, client, user):
+        client.force_authenticate(user)
+        assert client.get("/api/v1/players/by-username/nobody_here").status_code == 404
+
+    def test_a_malformed_handle_is_the_same_404(self, client, user):
+        """Not a 400: splitting the two would make this a validator for guessing."""
+        client.force_authenticate(user)
+        assert client.get("/api/v1/players/by-username/not-a-handle").status_code == 404
+
+    def test_an_account_with_no_profile_is_a_404_not_a_500(self, client, user):
+        """A turf owner may have a handle and have never onboarded as a player."""
+        owner = UserFactory(username="turf_owner_1")
+        client.force_authenticate(user)
+        assert client.get(f"/api/v1/players/by-username/{owner.username}").status_code == 404
 
     def test_hides_private_fields(self, client, user):
         profile = complete_onboarding(

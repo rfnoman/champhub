@@ -5,6 +5,7 @@ from __future__ import annotations
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin, TabularInline
 
 from .models import (
     Amenity,
@@ -20,13 +21,13 @@ from .services import approve_turf, suspend_turf
 
 
 @admin.register(Amenity)
-class AmenityAdmin(admin.ModelAdmin):
+class AmenityAdmin(ModelAdmin):
     list_display = ("label", "key", "icon", "order")
     search_fields = ("label", "key")
     ordering = ("order",)
 
 
-class GroundInline(admin.TabularInline):
+class GroundInline(TabularInline):
     model = Ground
     extra = 0
     show_change_link = True
@@ -34,17 +35,17 @@ class GroundInline(admin.TabularInline):
     readonly_fields = ("is_active",)
 
 
-class OperatingHoursInline(admin.TabularInline):
+class OperatingHoursInline(TabularInline):
     model = OperatingHours
     extra = 0
 
 
-class TurfPhotoInline(admin.TabularInline):
+class TurfPhotoInline(TabularInline):
     model = TurfPhoto
     extra = 0
 
 
-class TurfMembershipInline(admin.TabularInline):
+class TurfMembershipInline(TabularInline):
     model = TurfMembership
     extra = 0
     fk_name = "turf"
@@ -54,7 +55,7 @@ class TurfMembershipInline(admin.TabularInline):
 
 
 @admin.register(Turf)
-class TurfAdmin(admin.ModelAdmin):
+class TurfAdmin(ModelAdmin):
     list_display = ("name", "area", "city", "status", "ground_count", "submitted_at")
     list_filter = ("status", "city", "area")
     search_fields = ("name", "area", "address", "slug")
@@ -91,13 +92,13 @@ class TurfAdmin(admin.ModelAdmin):
         self._run(request, queryset, suspend_turf, reason="Suspended from the admin.")
 
 
-class PriceRuleInline(admin.TabularInline):
+class PriceRuleInline(TabularInline):
     model = PriceRule
     extra = 0
 
 
 @admin.register(Ground)
-class GroundAdmin(admin.ModelAdmin):
+class GroundAdmin(ModelAdmin):
     list_display = ("name", "turf", "surface", "max_players", "slot_minutes", "is_active")
     list_filter = ("is_active", "surface", "turf__area")
     search_fields = ("name", "turf__name")
@@ -108,7 +109,7 @@ class GroundAdmin(admin.ModelAdmin):
 
 
 @admin.register(TurfMembership)
-class TurfMembershipAdmin(admin.ModelAdmin):
+class TurfMembershipAdmin(ModelAdmin):
     list_display = ("turf", "user", "invited_email", "role", "status", "accepted_at")
     list_filter = ("role", "status")
     search_fields = ("turf__name", "user__email", "invited_email")
@@ -116,14 +117,14 @@ class TurfMembershipAdmin(admin.ModelAdmin):
 
 
 @admin.register(Closure)
-class ClosureAdmin(admin.ModelAdmin):
+class ClosureAdmin(ModelAdmin):
     list_display = ("turf", "ground", "starts_at", "ends_at", "reason")
     list_filter = ("turf",)
     autocomplete_fields = ("turf", "ground")
 
 
 @admin.register(PriceRule)
-class PriceRuleAdmin(admin.ModelAdmin):
+class PriceRuleAdmin(ModelAdmin):
     list_display = ("ground", "label", "start_time", "end_time", "price")
     list_filter = ("ground__turf", "label")
     autocomplete_fields = ("ground",)

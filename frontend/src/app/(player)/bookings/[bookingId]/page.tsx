@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { getServerApiClient } from "@/lib/api/server";
+import { canCancel } from "@/lib/bookings";
 import { BookingStatusBadge } from "@/components/booking/booking-status";
 import { BookingTime, DhakaMoment } from "@/components/booking/booking-time";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +19,9 @@ export default async function BookingPage({ params }: { params: Promise<{ bookin
   const { bookingId } = await params;
 
   const api = await getServerApiClient();
-  const [booking, myTurfs] = await Promise.all([
-    api.GET("/api/v1/bookings/{id}", { params: { path: { id: bookingId } } }),
-    api.GET("/api/v1/me/turfs"),
-  ]);
+  const booking = await api.GET("/api/v1/bookings/{id}", {
+    params: { path: { id: bookingId } },
+  });
 
   if (!booking.data) notFound();
   const data = booking.data;
@@ -34,9 +34,6 @@ export default async function BookingPage({ params }: { params: Promise<{ bookin
   });
   const advancePercent = turf.data?.advance_percent ?? 0;
   const advanceAmount = ((Number(data.price) * advancePercent) / 100).toFixed(2);
-
-  // The API decides what staff may do; this only decides which buttons to render.
-  const isStaff = (myTurfs.data?.results ?? []).some((turf) => turf.slug === data.turf_slug);
 
   return (
     <div className="flex flex-col gap-6">
@@ -102,14 +99,16 @@ export default async function BookingPage({ params }: { params: Promise<{ bookin
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="label-sm">{t("actions")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BookingActions booking={data} isStaff={isStaff} />
-        </CardContent>
-      </Card>
+      {canCancel(data) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="label-sm">{t("actions")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BookingActions booking={data} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

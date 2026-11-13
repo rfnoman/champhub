@@ -45,6 +45,13 @@ def public_turfs() -> QuerySet[Turf]:
     return _with_related(Turf.objects.filter(status=Turf.Status.APPROVED), only_active_grounds=True)
 
 
+#: What the owner/admin serializer reads beyond the public one: who works here, and
+#: whether the owner behind the venue has been identity-checked (DOMAIN §1a). Left out
+#: of the public selectors on purpose — a player's turf list has no business loading
+#: anybody's membership rows.
+_OWNER_VIEW_PREFETCH = ("memberships__user__identity",)
+
+
 def turfs_for_staff(user) -> QuerySet[Turf]:
     """Every turf this user works at, whatever its status, with every ground."""
     if not user or not user.is_authenticated:
@@ -54,19 +61,25 @@ def turfs_for_staff(user) -> QuerySet[Turf]:
             memberships__user=user, memberships__status=TurfMembership.Status.ACTIVE
         ).distinct(),
         only_active_grounds=False,
-    )
+    ).prefetch_related(*_OWNER_VIEW_PREFETCH)
 
 
 def review_queue() -> QuerySet[Turf]:
     """What an admin has to look at, oldest submission first."""
-    return _with_related(
-        Turf.objects.filter(status=Turf.Status.PENDING_REVIEW), only_active_grounds=False
-    ).order_by("submitted_at")
+    return (
+        _with_related(
+            Turf.objects.filter(status=Turf.Status.PENDING_REVIEW), only_active_grounds=False
+        )
+        .prefetch_related(*_OWNER_VIEW_PREFETCH)
+        .order_by("submitted_at")
+    )
 
 
 def all_turfs_for_review() -> QuerySet[Turf]:
     """Every turf, in any status, for an admin. Inactive grounds included."""
-    return _with_related(Turf.objects.all(), only_active_grounds=False)
+    return _with_related(Turf.objects.all(), only_active_grounds=False).prefetch_related(
+        *_OWNER_VIEW_PREFETCH
+    )
 
 
 def search_turfs(

@@ -41,7 +41,21 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Applications
 # ---------------------------------------------------------------------------
 DJANGO_APPS = [
-    "django.contrib.admin",
+    # Unfold themes the admin by overriding its templates and three of Django's admin
+    # JS files, so it has to be listed ahead of `django.contrib.admin` for its versions
+    # to win — in template resolution and in `collectstatic` alike (DECISIONS D96).
+    #
+    # `BasicAppConfig` rather than plain `"unfold"`: the default config swaps
+    # `admin.site` for a bare `UnfoldAdminSite`, and this project needs its own subclass
+    # of that — the TOTP gate lives on it — which `ChampHubAdminConfig.default_site`
+    # installs instead.
+    #
+    # Unfold's `contrib.*` apps (filters, forms, inlines, import_export, …) are
+    # deliberately **not** here: each is opt-in for a feature nothing uses yet, and an
+    # installed app that nothing renders is a template directory searched on every miss.
+    # Add the one you need when you first use one of its classes.
+    "unfold.apps.BasicAppConfig",
+    "config.apps.ChampHubAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -245,7 +259,16 @@ API_DOCS_PUBLIC = env.bool("API_DOCS_PUBLIC", default=True)
 
 #: Whether the Django admin demands a TOTP code as well as a password. Off locally,
 #: where it is friction with nothing to protect; on in production (Phase 11 step 4).
+#: Read per request through `apps.core.utils.setting`, by the admin site's permission
+#: check and by its login form — never at import, because `prod.py` overrides this
+#: *after* `base.py` has been read (DECISIONS D96).
 ADMIN_REQUIRES_OTP = env.bool("ADMIN_REQUIRES_OTP", default=False)
+
+#: How the admin looks and what its sidebar lists (django-unfold, DECISIONS D96). One
+#: long literal, so it lives in its own module.
+# A settings module is read top to bottom, and a setting is "used" by being a module
+# attribute — which no linter can see, hence the suppression.
+from .admin_theme import UNFOLD  # noqa: E402,F401
 
 #: Django's own ceiling on a request body, so an oversized upload is refused before
 #: anything parses it. `apps/core/validators.py` then bounds the image itself
@@ -279,9 +302,29 @@ MEDIA_ROOT = BASE_DIR / "media"
 #: has to survive a restart.
 MEDIA_BUCKET = env("AWS_STORAGE_BUCKET_NAME", default="")
 
+#: Where identity documents live, and nothing else.
+#:
+#: An NID scan is not a turf photo. The `default` store above is deliberately
+#: world-readable — public ACL, no signature, a year of cache — which is correct for a
+#: photo of a pitch and catastrophic for a photograph of somebody's passport. So
+#: identity documents go to a second, private store and are never served by URL at all:
+#: `apps/accounts/views.py` streams them to the person they belong to and to platform
+#: admins, and logs every admin read (DECISIONS D89).
+#:
+#: Locally that is a directory *outside* `MEDIA_ROOT`, so the `DEBUG`-only static media
+#: handler in `config/urls.py` cannot reach it even by accident. With a bucket
+#: configured it is the same bucket under a `private/` prefix with a private ACL.
+PRIVATE_MEDIA_ROOT = env("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "private-media"))
+
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    "private": {
+        "BACKEND": "apps.core.storage.PrivateFileSystemStorage",
+        # That backend's `.url` raises rather than returning a path that would 404 in
+        # development and leak in production. Nothing should ever ask for it.
+        "OPTIONS": {"location": PRIVATE_MEDIA_ROOT},
+    },
 }
 
 if MEDIA_BUCKET:
@@ -301,6 +344,22 @@ if MEDIA_BUCKET:
             "endpoint_url": env("AWS_S3_ENDPOINT_URL", default=None),
             "region_name": env("AWS_S3_REGION_NAME", default=None),
             "custom_domain": env("AWS_S3_CUSTOM_DOMAIN", default=None),
+        },
+    }
+    STORAGES["private"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": MEDIA_BUCKET,
+            "location": "private",
+            # The opposite posture to the public store on every line that matters: a
+            # private ACL, signed URLs, no CDN domain and no caching.
+            "default_acl": "private",
+            "querystring_auth": True,
+            "querystring_expire": env.int("PRIVATE_MEDIA_URL_EXPIRY_SECONDS", default=300),
+            "file_overwrite": False,
+            "object_parameters": {"CacheControl": "private, no-store"},
+            "endpoint_url": env("AWS_S3_ENDPOINT_URL", default=None),
+            "region_name": env("AWS_S3_REGION_NAME", default=None),
         },
     }
 
@@ -346,6 +405,9 @@ REST_FRAMEWORK = {
         "reaching-people": env("THROTTLE_REACHING_PEOPLE", default="20/hour"),
         "reports": env("THROTTLE_REPORTS", default="10/hour"),
         "player-search": env("THROTTLE_PLAYER_SEARCH", default="120/hour"),
+        # Generous enough for somebody trying names while they type, far short of
+        # walking a dictionary through it (DOMAIN §1b).
+        "username-check": env("THROTTLE_USERNAME_CHECK", default="240/hour"),
         "webhook": env("THROTTLE_WEBHOOK", default="600/min"),
     },
 }
@@ -382,6 +444,8 @@ SPECTACULAR_SETTINGS = {
         "SportProposalStatusEnum": "apps.sports.models.SPORT_PROPOSAL_STATUS_CHOICES",
         "StatValueTypeEnum": "apps.sports.models.STAT_VALUE_TYPE_CHOICES",
         "StatScopeEnum": "apps.sports.models.STAT_SCOPE_CHOICES",
+        "IdentityStatusEnum": "apps.accounts.models.IDENTITY_STATUS_CHOICES",
+        "IdentityDocumentTypeEnum": "apps.accounts.models.IDENTITY_DOCUMENT_TYPE_CHOICES",
         "PlayerGenderEnum": "apps.players.models.PLAYER_GENDER_CHOICES",
         "ProductKindEnum": "apps.inventory.models.PRODUCT_KIND_CHOICES",
         "ProductOwnerEnum": "apps.inventory.models.PRODUCT_OWNER_CHOICES",
@@ -419,11 +483,32 @@ SPECTACULAR_SETTINGS = {
 # ---------------------------------------------------------------------------
 # CORS
 # ---------------------------------------------------------------------------
+# Two frontends now talk to this API: the player app on 3000 and the owner app on 3001
+# (DECISIONS D83). Both origins have to be listed, and not only for CORS — the default
+# below also seeds `CLERK_AUTHORIZED_PARTIES`, and Clerk stamps the *browser's* origin
+# into every session token as `azp`. An owner app whose origin is missing from that list
+# gets a 401 on every call with nothing in the log but "Unauthorized", because the token
+# is valid and signed and simply not allowed to be used from there.
 CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS", default=["http://localhost:3000", "http://127.0.0.1:3000"]
+    "CORS_ALLOWED_ORIGINS",
+    default=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ],
 )
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=CORS_ALLOWED_ORIGINS)
+
+# ---------------------------------------------------------------------------
+# The frontends
+# ---------------------------------------------------------------------------
+# Where the owner app is served (DECISIONS D83). Notifications aimed at turf staff — low
+# stock, an order waiting at the counter — carry a link, and that link now lives in a
+# different app from the one a player reads their notifications in. So those two are
+# absolute URLs built from this, while every player-facing notification stays a path.
+OWNER_APP_BASE_URL = env("OWNER_APP_BASE_URL", default="http://localhost:3001").rstrip("/")
 
 # ---------------------------------------------------------------------------
 # Clerk
@@ -452,6 +537,98 @@ BOOKING_CONFIRM_WINDOW_HOURS = 2
 BOOKING_CONFIRM_CUTOFF_HOURS_BEFORE_START = 1
 BOOKING_HORIZON_DAYS = 30
 BOOKING_NO_SHOW_GRACE_MINUTES = 30
+
+# Identity verification (DOMAIN §1a). One account, one identity check, whichever role
+# the person holds — a turf owner and a player upload the same four documents.
+#
+# `IDENTITY_REQUIRED_FOR_TURF_APPROVAL` is off by default so an existing deployment does
+# not freeze its review queue the moment this ships; turning it on makes `approve_turf`
+# refuse a turf whose owner has not been verified. Like every rule here it is readable
+# through `apps.core.utils.setting`, so it can be flipped from a `PlatformSetting` row
+# without a deploy.
+IDENTITY_REQUIRED_FOR_TURF_APPROVAL = env.bool("IDENTITY_REQUIRED_FOR_TURF_APPROVAL", default=False)
+#: A document number is kept whole for the reviewer and masked everywhere else; this is
+#: how many trailing characters stay visible (e.g. "•••• 4821").
+IDENTITY_NUMBER_VISIBLE_CHARS = 4
+
+# Usernames (DOMAIN §1b). One handle per account: how somebody is invited to a match or
+# a squad without either person knowing an id, and the shareable half of a profile link.
+#
+# The bounds are a format rather than a tunable — a handle that got longer would not fit
+# the roster rows already built for it — but they live here with everything else so there
+# is one place to look. `USERNAME_RESERVED` is the part that genuinely moves: a word
+# becomes dangerous the day a route is named after it, and a `PlatformSetting` row
+# (comma-separated) adds one without a deploy.
+USERNAME_MIN_LENGTH = 3
+USERNAME_MAX_LENGTH = 20
+USERNAME_RESERVED = (
+    # Ours: routes in either frontend, and anything that reads as the platform speaking.
+    "about",
+    "account",
+    "admin",
+    "administrator",
+    "api",
+    "auth",
+    "board",
+    "booking",
+    "bookings",
+    "champhub",
+    "config",
+    "contact",
+    "counter",
+    "dashboard",
+    "finance",
+    "fitness",
+    "help",
+    "home",
+    "identity",
+    "inventory",
+    "leaderboard",
+    "legal",
+    "login",
+    "logout",
+    "match",
+    "matches",
+    "me",
+    "moderator",
+    "notifications",
+    "onboarding",
+    "order",
+    "orders",
+    "owner",
+    "owners",
+    "payment",
+    "payments",
+    "player",
+    "players",
+    "privacy",
+    "profile",
+    "rider",
+    "root",
+    "search",
+    "settings",
+    "signin",
+    "signup",
+    "squad",
+    "squads",
+    "staff",
+    "store",
+    "support",
+    "system",
+    "team",
+    "terms",
+    "turf",
+    "turfs",
+    "username",
+    "webhook",
+    "webhooks",
+    # Impersonation: a handle nobody should be able to answer to.
+    "champhubbd",
+    "champhubhelp",
+    "champhubsupport",
+    "official",
+    "support_team",
+)
 
 # Reliability score (DOMAIN §5)
 RELIABILITY_STARTING_SCORE = 100

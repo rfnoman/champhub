@@ -6,17 +6,20 @@ import { useTranslations } from "next-intl";
 
 import type { Booking } from "@/lib/api/types";
 import { useApiClient } from "@/lib/api/use-api";
+import { canCancel } from "@/lib/bookings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 /**
- * What can be done to a booking from its own page.
+ * What a player can do to their own booking: cancel it.
  *
- * Which buttons appear is decided by the booking's status *and* by whether the reader
- * is staff at the turf — the API enforces both regardless, so this only decides what to
- * render, never what is allowed.
+ * Confirming, taking payment and marking a no-show used to live here too, behind an
+ * `isStaff` flag the page worked out by fetching the reader's turfs on every view. Those
+ * are the turf's side of a booking and moved to the owner app with the rest of its
+ * operations (DECISIONS D83) — so this page no longer asks who is looking, and the extra
+ * request per booking went with it.
  */
-export function BookingActions({ booking, isStaff }: { booking: Booking; isStaff: boolean }) {
+export function BookingActions({ booking }: { booking: Booking }) {
   const t = useTranslations("bookingDetail");
   const router = useRouter();
   const api = useApiClient();
@@ -38,7 +41,6 @@ export function BookingActions({ booking, isStaff }: { booking: Booking; isStaff
   }
 
   const path = { path: { id: booking.id } };
-  const cancellable = ["reserved", "confirmed", "paid"].includes(booking.status);
 
   return (
     <div className="flex flex-col gap-3">
@@ -48,56 +50,8 @@ export function BookingActions({ booking, isStaff }: { booking: Booking; isStaff
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {isStaff && booking.status === "reserved" && (
-          <Button
-            size="sm"
-            disabled={busy === "confirm"}
-            onClick={() =>
-              run("confirm", () =>
-                api.POST("/api/v1/bookings/{id}/confirm", { params: path, body: {} as never }),
-              )
-            }
-          >
-            {t("confirm")}
-          </Button>
-        )}
-
-        {isStaff && booking.status === "confirmed" && (
-          <Button
-            size="sm"
-            disabled={busy === "paid"}
-            onClick={() =>
-              run("paid", () =>
-                api.POST("/api/v1/bookings/{id}/mark-paid", {
-                  params: path,
-                  body: {} as never,
-                }),
-              )
-            }
-          >
-            {t("markPaid", { price: booking.price })}
-          </Button>
-        )}
-
-        {isStaff && ["confirmed", "paid"].includes(booking.status) && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy === "no-show"}
-            onClick={() =>
-              run("no-show", () =>
-                api.POST("/api/v1/bookings/{id}/no-show", { params: path, body: {} as never }),
-              )
-            }
-          >
-            {t("noShow")}
-          </Button>
-        )}
-      </div>
-
-      {cancellable && (
-        <div className="flex flex-wrap items-end gap-2 border-t pt-3">
+      {canCancel(booking) && (
+        <div className="flex flex-wrap items-end gap-2">
           <Input
             aria-label={t("cancelReason")}
             placeholder={t("cancelReasonPlaceholder")}

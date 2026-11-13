@@ -226,7 +226,13 @@ function ResultCard({ player }: { player: PlayerSearchResult }) {
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{player.name}</p>
-        <p className="text-muted-foreground truncate text-xs">{player.area || t("noArea")}</p>
+        {/* The handle next to the area, because it is what the reader will use to
+            invite this player from anywhere else in the app (DOMAIN §1b). */}
+        <p className="text-muted-foreground truncate text-xs">
+          {player.handle && <span className="font-mono">{player.handle}</span>}
+          {player.handle && " · "}
+          {player.area || t("noArea")}
+        </p>
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-1">

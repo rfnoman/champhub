@@ -1,25 +1,62 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+
+{% load i18n unfold %}
+
+{#
+  The "merge into…" intermediate page for sport proposals.
+
+  Unfold's partials rather than `{{ form.as_p }}` and a bare submit button: this is a
+  page of the admin, and after DECISIONS D96 it is the only one whose markup is ours, so
+  it is the only one that could drift back to looking like Django's default.
+#}
 
 {% block content %}
-  <h1>{{ title }}</h1>
-  <p>{% blocktranslate count counter=proposals|length %}Merging 1 proposal:{% plural %}Merging {{ counter }} proposals:{% endblocktranslate %}</p>
-  <ul>
-    {% for proposal in proposals %}
-      <li><strong>{{ proposal.name }}</strong> — {{ proposal.description|default:"(no description)" }}</li>
-    {% endfor %}
-  </ul>
+    {% translate "(no description)" as no_description %}
 
-  <form method="post">
-    {% csrf_token %}
-    {% for proposal in proposals %}
-      <input type="hidden" name="_selected_action" value="{{ proposal.pk }}">
-    {% endfor %}
-    <input type="hidden" name="action" value="{{ action }}">
-    {{ form.as_p }}
-    <p>
-      <input type="submit" name="apply" value="{% translate 'Merge' %}" class="default">
-      <a href="." class="button cancel-link">{% translate 'Cancel' %}</a>
-    </p>
-  </form>
+    <h1 class="font-semibold mb-4 text-lg text-font-important-light dark:text-font-important-dark">
+        {{ title }}
+    </h1>
+
+    {% component "unfold/components/card.html" %}
+        <p class="mb-4 text-font-default-light dark:text-font-default-dark">
+            {% blocktranslate count counter=proposals|length trimmed %}
+                Merging 1 proposal:
+            {% plural %}
+                Merging {{ counter }} proposals:
+            {% endblocktranslate %}
+        </p>
+
+        <ul class="flex flex-col gap-2 mb-6">
+            {% for proposal in proposals %}
+                <li class="border-base-200 border-b last:border-0 pb-2 text-sm dark:border-base-800">
+                    <strong class="text-font-important-light dark:text-font-important-dark">{{ proposal.name }}</strong>
+                    <span class="text-font-subtle-light dark:text-font-subtle-dark">
+                        — {{ proposal.description|default:no_description }}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% for proposal in proposals %}
+                <input type="hidden" name="_selected_action" value="{{ proposal.pk }}">
+            {% endfor %}
+            <input type="hidden" name="action" value="{{ action }}">
+
+            {% include "unfold/helpers/field.html" with field=form.sport %}
+            {% include "unfold/helpers/field.html" with field=form.note %}
+
+            <div class="flex gap-2 mt-6">
+                {% component "unfold/components/button.html" with submit=1 name="apply" variant="primary" %}
+                    {% translate 'Merge' %}
+                {% endcomponent %}
+
+                {% component "unfold/components/button.html" with href="." variant="default" %}
+                    {% translate 'Cancel' %}
+                {% endcomponent %}
+            </div>
+        </form>
+    {% endcomponent %}
 {% endblock %}

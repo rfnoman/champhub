@@ -1,0 +1,65 @@
+name: owner-frontend
+
+on:
+  push:
+    branches: [main]
+    paths: ["owner-frontend/**", ".github/workflows/owner-frontend.yml"]
+  pull_request:
+    paths: ["owner-frontend/**", ".github/workflows/owner-frontend.yml"]
+
+concurrency:
+  group: owner-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: owner-frontend
+
+# The owner app is a sibling of `frontend/` with its own dependencies and its own copy
+# of the design system (DECISIONS D83), so it gets its own workflow rather than a second
+# job in that one: a change to one app should not re-run the other's build.
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    env:
+      # Build-time placeholders: Clerk refuses to initialise without keys, and CI must
+      # not hold real ones. Live auth is exercised manually / in staging e2e.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_Y2xlcmsuY2ktcGxhY2Vob2xkZXIuZXhhbXBsZSQ' }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY || 'sk_test_ci-placeholder' }}
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000
+      # The player app's origin, used for the links that cross between them.
+      NEXT_PUBLIC_PLAYER_APP_URL: http://127.0.0.1:3000
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: owner-frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      # A known-vulnerable dependency is a security bug that nobody wrote, so nobody
+      # finds it in review. `--audit-level=high` keeps the signal: a low-severity
+      # advisory in a build-time tool is not worth failing a merge over, and a job that
+      # cries wolf gets disabled.
+      - name: Dependency audit
+        run: npm audit --audit-level=high

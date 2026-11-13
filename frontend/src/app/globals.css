@@ -73,6 +73,7 @@
   --color-flare-foreground: var(--flare-foreground);
   --color-glow: var(--glow);
   --color-chalk: var(--chalk);
+  --color-pitch: var(--pitch);
 
   /* Rating bands. `ratingTone()` has a vitest contract — four distinct values, cuts at
      80/65/50, and no arbitrary-value brackets in the returned string — so these have to
@@ -171,6 +172,9 @@
   --flare-foreground: oklch(0.99 0.005 158);
   --glow: oklch(0.72 0.19 155);
   --chalk: oklch(0.99 0.004 158);
+  /* The night pitch (see the `pitch-night` utility). One value for both themes:
+     a floodlit pitch is the same colour whatever the reader's OS prefers. */
+  --pitch: oklch(0.126 0.026 158);
 
   --rating-elite: oklch(0.48 0.14 158);
   --rating-strong: oklch(0.52 0.13 130);
@@ -514,14 +518,218 @@
 }
 
 /* Chalk: the pitch-marking hairline, used where it encodes a division rather than
-   decorating one. */
+   decorating one.
+
+   It mixes toward `--foreground`, not `--chalk`. On the hero's night pitch those are
+   the same near-white, so it reads as chalk exactly as intended; anywhere else in the
+   light theme `--chalk` is a near-white line on a near-white card, i.e. invisible —
+   which is what it had quietly been doing on every divider outside the hero. */
 @utility chalk-line {
   background-image: linear-gradient(
     to right,
     transparent,
-    color-mix(in oklch, var(--chalk) 28%, transparent),
+    color-mix(in oklch, var(--foreground) 20%, transparent),
     transparent
   );
+}
+
+/* ---------------------------------------------------------------------------
+ * The night pitch — the landing hero's surface.
+ *
+ * It is floodlit in *both* themes, which is a deliberate exception to the rest
+ * of the app. A floodlit pitch rendered on paper-white is a contradiction: the
+ * light has nothing to be light against, and the chalk markings — which are
+ * white — disappear entirely. So the hero carries its own night.
+ *
+ * The mechanism is the `dark` class on the section rather than a parallel set
+ * of tokens here, because `@custom-variant dark (&:is(.dark *))` means every
+ * `dark:` utility inside the subtree then resolves correctly too. Overriding
+ * `--background` by hand would re-tint the surfaces and leave `Button`'s
+ * `dark:border-input` branch behind, which is how a hero ends up with one
+ * light-mode outline button on a black field.
+ *
+ * This utility only adds what `.dark` has no opinion about: the pitch is
+ * deeper than any card surface, and it is mown.
+ * ------------------------------------------------------------------------- */
+@utility pitch-night {
+  /* The cut width of an artificial pitch, scaled to look right at a distance. */
+  --mow: 4.5rem;
+
+  background-color: var(--pitch);
+  color: var(--foreground);
+  /* Mow stripes. Vertical, so they run away from the reader; 2.5% is the point
+     at which they are visible on an OLED phone and invisible on a bad TN panel,
+     which is the right way round for a texture nobody should notice. */
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--chalk) 1.5%, transparent) 0 var(--mow),
+    transparent var(--mow) calc(var(--mow) * 2)
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * The floodlights coming on.
+ *
+ * The page's one orchestrated, non-user-triggered sequence (DECISIONS D72) and
+ * the only one in the app. It is CSS rather than `motion` on purpose: the
+ * motion features are fetched after hydration, so a motion-driven version
+ * would hold the hero dark on a slow connection — the first thing a new
+ * visitor sees would be an unlit pitch for as long as the chunk took. CSS
+ * keyframes start at first paint and cost nothing.
+ *
+ * `flood-strike` is metal halide behaviour, not a fade: lamps hit hard, dip
+ * while the arc settles, then bloom to full over about a second.
+ *
+ * Reduced motion needs no rule of its own. The global `prefers-reduced-motion`
+ * block in `@layer base` collapses every duration to 0.01ms, and each keyframe
+ * here ends at the *lit* state — so a reader who asked for stillness gets the
+ * finished floodlit pitch on first paint, which is exactly right.
+ * ------------------------------------------------------------------------- */
+@keyframes flood-strike {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.62;
+  }
+  24% {
+    opacity: 0.1;
+  }
+  46% {
+    opacity: 0.84;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* The markings get chalked on as the light finds them. `pathLength="1"` on the
+   SVG normalises every path, so one dash length works for a circle, an arc and
+   a straight line alike. */
+@keyframes chalk-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@utility flood-beam {
+  animation: flood-strike 1250ms var(--ease-out-quint) both;
+}
+
+@utility chalk-mark {
+  stroke-dasharray: 1;
+  animation: chalk-draw 1400ms var(--ease-out-quint) 260ms both;
+}
+
+/* ---------------------------------------------------------------------------
+ * The availability ticker: tonight's slots, scrolling past.
+ *
+ * The track holds the list twice, so -50% is a seam-free loop. It pauses on
+ * hover and on focus-within — a keyboard reader tabbing into a link that is
+ * sliding out from under them is the accessibility failure every marquee has.
+ * ------------------------------------------------------------------------- */
+@keyframes ticker-slide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@utility ticker-track {
+  animation: ticker-slide 46s linear infinite;
+
+  &:hover,
+  &:focus-within {
+    animation-play-state: paused;
+  }
+}
+
+/* The global reduce block would collapse the duration and leave the track
+   parked at -50%. That happens to look identical — the list is duplicated —
+   but relying on that is luck, so say it. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * The wordmark, and the only thing in the chrome that is allowed to play (D82).
+ *
+ * The ball hops on hover and on focus — one bounce, with the squash on landing
+ * that makes it read as weight rather than as a sliding dot. `translate3d` and
+ * `scale` only: no layout property is touched, so the header never reflows and
+ * the whole thing stays on the compositor.
+ *
+ * The global reduce block handles stillness. It collapses the hop to 0.01ms and
+ * drops `rotate`/`scale` from the transition whitelist, which leaves the word at
+ * its resting tilt and the ball where it sits — the logo, minus the motion.
+ * ------------------------------------------------------------------------- */
+@keyframes ball-hop {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  26% {
+    transform: translate3d(0.1rem, -0.62rem, 0) scale(0.9, 1.12);
+  }
+  52% {
+    transform: translate3d(0, 0, 0) scale(1.24, 0.78);
+  }
+  74% {
+    transform: translate3d(0, -0.16rem, 0) scale(0.98, 1.02);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+}
+
+@utility ball-hop {
+  animation: ball-hop 760ms var(--ease-out-quint);
+}
+
+@utility wordmark-ball {
+  flex: none;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  background: var(--brand);
+  /* A ball rather than a dot: one inset shadow is the entire lighting model. */
+  box-shadow: inset -0.075rem -0.1rem 0 color-mix(in oklch, var(--brand) 62%, black);
+  /* It lands on its bottom edge, so that is what the squash pivots around. */
+  transform-origin: 50% 100%;
+}
+
+@utility wordmark-text {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--brand);
+  /* Pivots on the first letter's baseline corner: the left edge stays pinned to
+     the shared page column while the rest of the word leans up and right. */
+  transform-origin: 0% 100%;
+  rotate: -2.5deg;
+  transition:
+    rotate 280ms var(--ease-out-quint),
+    scale 280ms var(--ease-out-quint);
+}
+
+/* The hero headline, and the only thing on the page set this large. One step
+   above `display-xl`, tighter in both tracking and leading, because at 80px
+   the leading that reads as generous at 40px reads as loose. */
+@utility display-2xl {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.5rem + 4.8vw, 5rem);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.04em;
 }
 
 @layer base {

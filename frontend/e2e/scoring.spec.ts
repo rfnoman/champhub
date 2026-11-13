@@ -1,11 +1,13 @@
 import type { Page } from "@playwright/test";
 
 import { DEMO_TURFS, bookAFreeSlot } from "./support/booking";
+import { pickUsername } from "./support/onboarding";
 import { apiBaseUrl } from "./support/clerk-users";
 import { expect, requiresClerk, test } from "./support/fixtures";
 
 async function finishOnboarding(page: Page) {
   await page.goto("/onboarding");
+  await pickUsername(page);
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByRole("button", { name: /Football/ }).click();
   await page.getByRole("button", { name: "Next", exact: true }).click();

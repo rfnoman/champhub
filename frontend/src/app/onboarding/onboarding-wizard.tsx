@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
+import { AtSign, Check, Loader2 } from "lucide-react";
 
 import type { Attribute, Sport } from "@/lib/api/types";
 import { useApiClient } from "@/lib/api/use-api";
@@ -25,6 +26,9 @@ import { Textarea } from "@/components/ui/textarea";
 const SLIDER_MIN = 1;
 
 type Step = "basics" | "sports" | "skills" | "attributes";
+
+/** The last answer from the check endpoint, tagged with the term it was asked about. */
+type HandleCheck = { term: string; username: string; available: boolean; reason: string };
 
 const STEPS: Step[] = ["basics", "sports", "skills", "attributes"];
 
@@ -61,6 +65,8 @@ export function OnboardingWizard({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [username, setUsername] = useState("");
+  const [handleResult, setHandleResult] = useState<HandleCheck | null>(null);
   const [displayName, setDisplayName] = useState(defaultName);
   const [area, setArea] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -78,6 +84,43 @@ export function OnboardingWizard({
     () => sports.filter((sport) => chosen[sport.slug]),
     [sports, chosen],
   );
+
+  const handle = username.trim().replace(/^@+/, "").toLowerCase();
+
+  // Checked as they type, because a handle refused at the end of a four-step wizard is
+  // a handle refused at the worst possible moment.
+  useEffect(() => {
+    if (!handle) return;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const { data } = await api.GET("/api/v1/usernames/check", {
+        params: { query: { username: handle } as never },
+      });
+      if (cancelled || !data) return;
+      setHandleResult({
+        term: handle,
+        username: data.username,
+        available: data.available,
+        reason: data.reason ?? "",
+      });
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [api, handle]);
+
+  // Derived, so an answer about a handle that has since been edited reads as "still
+  // checking" rather than as a verdict on what is on screen now.
+  const handleCheck: "idle" | "checking" | "ok" | "bad" = !handle
+    ? "idle"
+    : handleResult?.term !== handle
+      ? "checking"
+      : handleResult.available
+        ? "ok"
+        : "bad";
 
   function toggleSport(sport: Sport) {
     setChosen((current) => {
@@ -116,7 +159,8 @@ export function OnboardingWizard({
   }
 
   const stepIndex = STEPS.indexOf(step);
-  const canAdvance = step !== "sports" || chosenSports.length > 0;
+  const canAdvance =
+    step === "basics" ? handleCheck === "ok" : step !== "sports" || chosenSports.length > 0;
 
   async function submit() {
     setSubmitting(true);
@@ -124,6 +168,7 @@ export function OnboardingWizard({
 
     const { data, error: apiError } = await api.POST("/api/v1/me/onboarding", {
       body: {
+        username: handle,
         display_name: displayName || undefined,
         area: area || undefined,
         date_of_birth: dateOfBirth || undefined,
@@ -145,7 +190,11 @@ export function OnboardingWizard({
     setSubmitting(false);
 
     if (apiError || !data) {
-      setError(t("submitFailed"));
+      // A handle claimed by somebody else between the check and the submit is the one
+      // failure here that a person can act on, so it is shown rather than swallowed.
+      const body = apiError as { username?: string[] } | undefined;
+      setError(body?.username?.[0] ?? t("submitFailed"));
+      if (body?.username?.length) setStep("basics");
       return;
     }
 
@@ -173,6 +222,47 @@ export function OnboardingWizard({
 
       {step === "basics" && (
         <div className="grid gap-4 sm:grid-cols-2">
+          {/* First field of the first step: it is how teammates will find this player
+              afterwards (DOMAIN §1b), and the only one the wizard insists on. */}
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="username">{t("fields.username")}</Label>
+            <div className="relative w-full sm:w-64">
+              <AtSign
+                aria-hidden
+                className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
+              />
+              <Input
+                id="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                className="pl-8"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={21}
+                placeholder={t("fields.usernamePlaceholder")}
+                aria-describedby="username-hint"
+              />
+            </div>
+            <p id="username-hint" className="text-muted-foreground text-xs">
+              {handleCheck === "checking" && (
+                <span className="inline-flex items-center gap-1">
+                  <Loader2 aria-hidden className="size-3 animate-spin" />
+                  {t("fields.usernameChecking")}
+                </span>
+              )}
+              {handleCheck === "ok" && (
+                <span className="text-brand inline-flex items-center gap-1">
+                  <Check aria-hidden className="size-3" />
+                  {t("fields.usernameAvailable", { username: handleResult?.username ?? handle })}
+                </span>
+              )}
+              {handleCheck === "bad" && (
+                <span className="text-destructive">{handleResult?.reason}</span>
+              )}
+              {handleCheck === "idle" && t("fields.usernameHint")}
+            </p>
+          </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="displayName">{t("fields.displayName")}</Label>
             <Input

@@ -218,4 +218,19 @@ TEMPLATES: dict[str, Template] = {
         "body": "About {calories} kcal. Streak: {streak} week(s).",
         "email": False,
     },
+    NotificationKind.IDENTITY_SUBMITTED: {
+        "title": "{person} sent an identity check",
+        "body": "A {document} is waiting in the verification queue.",
+        "email": False,
+    },
+    NotificationKind.IDENTITY_APPROVED: {
+        "title": "You are verified",
+        "body": "Your {document} was accepted, and the badge is on your profile.",
+        "email": True,
+    },
+    NotificationKind.IDENTITY_REJECTED: {
+        "title": "Your identity check needs another look",
+        "body": "{reason} You can upload it again from your account page.",
+        "email": True,
+    },
 }

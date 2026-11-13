@@ -15,6 +15,8 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin, TabularInline
+from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextareaWidget
 
 from .models import (
     Attribute,
@@ -29,37 +31,37 @@ from .services import approve_sport_proposal, merge_sport_proposal, reject_sport
 
 
 @admin.register(Attribute)
-class AttributeAdmin(admin.ModelAdmin):
+class AttributeAdmin(ModelAdmin):
     list_display = ("label", "key", "order")
     ordering = ("order",)
     search_fields = ("label", "key")
     prepopulated_fields = {"key": ("label",)}
 
 
-class SportFormatInline(admin.TabularInline):
+class SportFormatInline(TabularInline):
     model = SportFormat
     extra = 0
     prepopulated_fields = {"slug": ("name",)}
 
 
-class SportSkillInline(admin.TabularInline):
+class SportSkillInline(TabularInline):
     model = SportSkill
     extra = 0
 
 
-class SportAttributeWeightInline(admin.TabularInline):
+class SportAttributeWeightInline(TabularInline):
     model = SportAttributeWeight
     extra = 0
     autocomplete_fields = ("attribute",)
 
 
-class StatDefinitionInline(admin.TabularInline):
+class StatDefinitionInline(TabularInline):
     model = StatDefinition
     extra = 0
 
 
 @admin.register(Sport)
-class SportAdmin(admin.ModelAdmin):
+class SportAdmin(ModelAdmin):
     list_display = ("name", "slug", "met_value", "is_active", "order", "format_count")
     list_filter = ("is_active",)
     search_fields = ("name", "slug")
@@ -78,37 +80,48 @@ class SportAdmin(admin.ModelAdmin):
 
 
 @admin.register(SportFormat)
-class SportFormatAdmin(admin.ModelAdmin):
+class SportFormatAdmin(ModelAdmin):
     list_display = ("sport", "name", "players_per_side", "is_active")
     list_filter = ("sport", "is_active")
     search_fields = ("name", "sport__name")
 
 
 @admin.register(SportSkill)
-class SportSkillAdmin(admin.ModelAdmin):
+class SportSkillAdmin(ModelAdmin):
     list_display = ("sport", "label", "key", "weight", "counts_toward_overall", "order")
     list_filter = ("sport", "counts_toward_overall")
     search_fields = ("label", "key", "sport__name")
 
 
 @admin.register(StatDefinition)
-class StatDefinitionAdmin(admin.ModelAdmin):
+class StatDefinitionAdmin(ModelAdmin):
     list_display = ("sport", "label", "key", "value_type", "scope", "is_positive", "order")
     list_filter = ("sport", "value_type", "scope", "is_positive")
     search_fields = ("label", "key", "sport__name")
 
 
 class MergeProposalForm(forms.Form):
-    """Intermediate page for the "merge into…" action."""
+    """Intermediate page for the "merge into…" action.
+
+    Unfold's widgets rather than Django's defaults: this form is rendered by a template
+    of ours inside an Unfold page, and a bare `<select>` there is the one place in the
+    admin that would still look like 2013 (DECISIONS D96).
+    """
 
     sport = forms.ModelChoiceField(
-        queryset=Sport.objects.order_by("name"), label=_("Merge into sport")
+        queryset=Sport.objects.order_by("name"),
+        label=_("Merge into sport"),
+        widget=UnfoldAdminSelectWidget,
     )
-    note = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}), required=False)
+    note = forms.CharField(
+        widget=UnfoldAdminTextareaWidget(attrs={"rows": 3}),
+        required=False,
+        label=_("Note"),
+    )
 
 
 @admin.register(SportProposal)
-class SportProposalAdmin(admin.ModelAdmin):
+class SportProposalAdmin(ModelAdmin):
     list_display = (
         "name",
         "status",
@@ -183,6 +196,10 @@ class SportProposalAdmin(admin.ModelAdmin):
             request,
             "admin/sports/merge_proposal.html",
             {
+                # `each_context` first: an intermediate action page is still a page of
+                # the admin, and without it Unfold renders the chrome — sidebar, header,
+                # theme switch — empty (DECISIONS D96).
+                **self.admin_site.each_context(request),
                 "title": _("Merge sport proposals"),
                 "proposals": queryset,
                 "form": form,

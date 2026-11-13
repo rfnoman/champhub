@@ -44,6 +44,18 @@ class PlayerSearchThrottle(UserRateThrottle):
     scope = "player-search"
 
 
+class UsernameCheckThrottle(UserRateThrottle):
+    """The "is this handle free?" check (DOMAIN §1b).
+
+    It answers an existence question about any handle somebody cares to name, which is
+    also how you would enumerate the user base one guess at a time. A handle is public
+    by design — it is on a profile and pasted into chats — so what is worth limiting is
+    the rate: a person picking a name tries a handful, a script tries a dictionary.
+    """
+
+    scope = "username-check"
+
+
 class WebhookThrottle(ScopedRateThrottle):
     """Clerk's webhook, and anything else a vendor calls.
 

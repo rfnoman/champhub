@@ -1,4 +1,5 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin, TabularInline
 
 from .models import (
     MatchTeam,
@@ -11,7 +12,7 @@ from .models import (
 )
 
 
-class MatchTeamPlayerInline(admin.TabularInline):
+class MatchTeamPlayerInline(TabularInline):
     model = MatchTeamPlayer
     extra = 0
     # `MatchPlayer` is edited inline on `Match` and has no admin of its own, so it
@@ -20,7 +21,7 @@ class MatchTeamPlayerInline(admin.TabularInline):
 
 
 @admin.register(MatchTeam)
-class MatchTeamAdmin(admin.ModelAdmin):
+class MatchTeamAdmin(ModelAdmin):
     list_display = ("match", "side", "name", "captain")
     list_filter = ("side",)
     search_fields = ("match__id", "name")
@@ -28,13 +29,13 @@ class MatchTeamAdmin(admin.ModelAdmin):
     inlines = [MatchTeamPlayerInline]
 
 
-class PlayerStatInline(admin.TabularInline):
+class PlayerStatInline(TabularInline):
     model = PlayerStat
     extra = 0
     autocomplete_fields = ("player", "stat_definition")
 
 
-class ScorecardEventInline(admin.TabularInline):
+class ScorecardEventInline(TabularInline):
     model = ScorecardEvent
     extra = 0
     # Append-only history.
@@ -46,7 +47,7 @@ class ScorecardEventInline(admin.TabularInline):
 
 
 @admin.register(Scorecard)
-class ScorecardAdmin(admin.ModelAdmin):
+class ScorecardAdmin(ModelAdmin):
     list_display = (
         "match",
         "team_a_score",
@@ -73,14 +74,14 @@ class ScorecardAdmin(admin.ModelAdmin):
 
 
 @admin.register(MotmVote)
-class MotmVoteAdmin(admin.ModelAdmin):
+class MotmVoteAdmin(ModelAdmin):
     list_display = ("match", "voter", "nominee", "created_at")
     search_fields = ("match__id",)
     autocomplete_fields = ("match", "voter", "nominee")
 
 
 @admin.register(PeerRating)
-class PeerRatingAdmin(admin.ModelAdmin):
+class PeerRatingAdmin(ModelAdmin):
     # Deliberately does not list the rater: peer ratings are anonymous to recipients,
     # and support should not casually see who said what either.
     list_display = ("match", "ratee", "overall", "created_at")

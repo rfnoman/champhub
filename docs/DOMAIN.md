@@ -18,6 +18,60 @@ One account (synced from Clerk) can hold several roles at once.
 
 Turf ownership and staff are modelled as `TurfMembership(user, turf, role=owner|manager|cashier)`.
 
+## 1a. Identity verification
+Every account — player, turf owner, staff — can be identity-checked, and it is **one check
+per account**, not one per role: roles are permissions on one account (§1), and a turf owner
+who also plays has one face and one NID.
+
+- A person uploads **a photograph of themselves** (`User.photo`, shown wherever they appear)
+  and **one** government document: NID, driving licence, birth certificate or passport. Any
+  one of the four is enough — the NID is issued at 18, so a younger player legitimately has
+  only a birth certificate.
+- `IdentityVerification(user, document_type, document_number, document_front, document_back)`.
+  The back is optional; an NID and a driving licence carry the address there.
+- **Status machine**: `draft → submitted → approved`, `submitted → rejected → submitted`
+  (fix and send again), `approved → rejected` (a verification withdrawn after the fact).
+  Rejecting and withdrawing both require a reason, which the person reads.
+- The check is **editable only while it is a draft or rejected**. A submitted one must not
+  change under the reviewer; an approved one that could be edited is not a verification.
+- Only a platform admin reviews. Approval, rejection and withdrawal notify the person;
+  a submission notifies the admins.
+- **The documents are private.** They live in a separate private store, are never given a
+  URL, and are streamed only to the person they belong to and to platform admins — every
+  admin read is logged. The document number is shown in full to a reviewer and masked
+  (`•••• 4821`) everywhere else, including back to its owner.
+- What is public is one boolean: a player's profile card shows "ID verified". Never the
+  document type, never the number, never the image.
+- `IDENTITY_REQUIRED_FOR_TURF_APPROVAL` (default off) makes `approve_turf` refuse a turf
+  whose owner is not verified. The owner's identity status is shown in the admin turf queue
+  either way.
+
+## 1b. Usernames (handles)
+Every account has **one unique username** — a handle, written `@rafiq_hasan` — and it is
+how one person names another anywhere in the product.
+
+- **The shape**: 3–20 characters, lowercase English letters, digits and underscores,
+  starting with a letter. Stored lowercase; a leading `@` and any capitals are normalised
+  away on input, so `@Rafiq_Hasan` and `rafiq_hasan` are the same handle and cannot be two
+  accounts. Bengali script is refused — a handle has to survive being typed into a URL.
+- **Reserved words are refused**: the routes of either frontend (`settings`, `admin`,
+  `players`, …) and anything that reads as the platform speaking (`champhub`, `support`).
+  The list is a setting, so a word can be added without a deploy.
+- **A player chooses theirs during onboarding**, where it is the one required field
+  besides a sport. An owner or staff member who never onboards as a player claims one on
+  their account page in the owner app. An account can exist without one (every account
+  created before this, and any owner who has not visited that page); nothing breaks except
+  being invitable by handle.
+- **It can be changed**, and the old handle is immediately free for somebody else to take.
+- **What it is for**: inviting. A match invite and a squad invite each accept a username
+  instead of a player id, player search matches on it, and `/players/@rafiq_hasan` resolves
+  the profile — the link a person pastes into a group chat.
+- A handle **ignores `discoverable`**: giving somebody your handle is the opposite of
+  hiding, and a handle lookup behaves exactly like the direct profile link it is a prettier
+  form of (§3). Every other invite rule still applies — naming a player is not permission
+  to invite them.
+- A handle is **public**: it appears on the profile card, in search results and on rosters.
+
 ## 2. Sports catalogue
 - `Sport` is global and admin-curated. Owners **propose** a sport (`SportProposal`); an admin
   approves (creates the Sport) or merges it into an existing one. No duplicates.

@@ -36,28 +36,25 @@ const SOURCE = FILES.map((path) => readFileSync(path, "utf8")).join("\n");
 
 /** Every `data-testid` a spec asserts on. */
 const ASSERTED_TEST_IDS = [
+  // The till and the stock table moved to owner-frontend (DECISIONS D83); their
+  // locators are guarded by that app's copy of this file.
   "activity-history",
   "address-form",
   "availability",
   "cart",
-  "change-due",
   "conduct-queue",
   "fair-play",
   "home-dashboard",
   "match-board",
-  "movement-log",
-  "on-hand",
   "order-queue",
   "order-status",
   "payout-list",
   "platform-total",
   "player-search-results",
-  "pos-total",
   "rating-history",
   "reminder-settings",
   "scorecard-status",
   "store-items",
-  "todays-sales",
   "track-record",
 ];
 
@@ -118,8 +115,7 @@ describe("locators the e2e suite depends on", () => {
       "/app/scorecards/[matchId]/page.tsx",
       "/app/(player)/profile/page.tsx",
       "/app/(player)/players/[playerId]/page.tsx",
-      // These two render a form component that owns the heading.
-      "/app/(owner)/owner/new/page.tsx",
+      // Renders a form component that owns the heading.
       "/app/(player)/squads/new/page.tsx",
     ];
 
@@ -154,11 +150,26 @@ describe("locators the e2e suite depends on", () => {
       "Ask to join",
       "Create squad",
       "Place the order",
-      "Take payment",
-      "Submit for review",
+      // Handles (DOMAIN §1b): `usernames.spec.ts` clicks these, and `pickUsername`
+      // depends on the wizard's field keeping its id rather than its label.
+      "Invite",
+      "Change",
+      "Claim",
     ];
 
     expect(REQUIRED.filter((label) => !values.has(label))).toEqual([]);
+  });
+
+  it("keeps the username field addressable without English", () => {
+    // `e2e/support/onboarding.ts` locates the handle field and its hint by id, so that
+    // launch journey 7 can walk the wizard in Bangla (DOMAIN §1b). A rename here breaks
+    // thirteen specs at once, all of them in a fixture rather than in a test body.
+    const wizard = readFileSync(join(SRC, "app/onboarding/onboarding-wizard.tsx"), "utf8");
+    expect(wizard).toContain('id="username"');
+    expect(wizard).toContain('id="username-hint"');
+
+    const panel = readFileSync(join(SRC, "components/account/username-panel.tsx"), "utf8");
+    expect(panel).toContain('id="username"');
   });
 
   it("keeps backdrop-filter inside its allowlist", () => {

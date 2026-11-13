@@ -15,7 +15,7 @@ the turf or to the player's home.
 
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js 16 (App Router) + TypeScript, Tailwind 4, shadcn/ui, TanStack Query, next-intl (en + bn) |
+| Frontend | Two Next.js 16 apps — `frontend/` for players and admins, `owner-frontend/` for turf owners — TypeScript, Tailwind 4, shadcn/ui, TanStack Query, next-intl (en + bn) |
 | Auth | Clerk — `@clerk/nextjs` on the frontend; Django verifies Clerk session JWTs via JWKS |
 | Backend | Django 6.1 + DRF, drf-spectacular (OpenAPI) |
 | Database | PostgreSQL 17 + PostGIS 3.6 (`django.contrib.gis`) |
@@ -44,9 +44,13 @@ To go back to Node 20: `brew unlink node@24 && brew link --overwrite node@20`.
 First time only:
 
 ```bash
-cd backend  && cp .env.example .env && uv sync && cd ..
-cd frontend && cp .env.local.example .env.local && npm install && cd ..
+cd backend        && cp .env.example .env && uv sync && cd ..
+cd frontend       && cp .env.local.example .env.local && npm install && cd ..
+cd owner-frontend && cp .env.local.example .env.local && npm install && cd ..
 ```
+
+The owner app takes **the same Clerk keys** as the player app: a turf owner is a player
+with a role, not a second kind of user (DECISIONS D83).
 
 Then fill in the Clerk values (next section) and run everything with one command:
 
@@ -56,12 +60,14 @@ Then fill in the Clerk values (next section) and run everything with one command
 
 That starts Colima if Docker is down, brings up Postgres and Redis and waits for them
 to report healthy, applies migrations, then runs Django, the Celery worker+beat and
-Next.js together with each service's output prefixed and mirrored to `.logs/`. Ctrl+C
-stops everything it started; the containers are left running on purpose.
+**both** Next.js apps together with each service's output prefixed and mirrored to
+`.logs/`. Ctrl+C stops everything it started; the containers are left running on
+purpose.
 
 ```bash
 ./scripts/dev.sh --backend       # API only
-./scripts/dev.sh --no-worker     # skip Celery (nothing schedules work until Phase 03)
+./scripts/dev.sh --no-worker     # skip Celery
+./scripts/dev.sh --no-owner      # skip the owner app
 ./scripts/dev.sh --no-infra      # Postgres and Redis are already up
 ./scripts/dev.sh --help          # all options
 docker compose down              # stop the containers too
@@ -76,6 +82,7 @@ cd backend  && uv run python manage.py migrate
 cd backend  && uv run python manage.py runserver       # http://127.0.0.1:8000
 cd backend  && uv run celery -A config worker -B -l info
 cd frontend && npm run dev                             # http://localhost:3000
+cd owner-frontend && npm run dev                       # http://localhost:3001
 ```
 
 </details>
@@ -94,6 +101,8 @@ Useful URLs once both are running:
 | http://127.0.0.1:8000/api/v1/docs/ | Swagger UI |
 | http://127.0.0.1:8000/api/v1/schema/ | OpenAPI schema (source for `npm run gen:api`) |
 | http://127.0.0.1:8000/admin/ | Django admin (`seed_demo` creates `admin` / `admin`) |
+| http://localhost:3000 | The player app |
+| http://localhost:3001 | The owner app (every page redirects to sign-in until you are) |
 | http://localhost:3000/me | Debug page showing Django's `/api/v1/me` response |
 
 ## Clerk setup — the environment variables you must fill in
@@ -112,8 +121,8 @@ plan in production, and enabling tier B–F countries (which includes +880) is p
 
 | Variable | File | Value |
 |---|---|---|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `frontend/.env.local` | `pk_test_…` (safe in the browser) |
-| `CLERK_SECRET_KEY` | `frontend/.env.local` **and** `backend/.env` | `sk_test_…` — never expose this |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `frontend/.env.local` **and** `owner-frontend/.env.local` | `pk_test_…` (safe in the browser) |
+| `CLERK_SECRET_KEY` | both `.env.local` files **and** `backend/.env` | `sk_test_…` — never expose this |
 | `CLERK_FRONTEND_API_URL` | `backend/.env` | The **Frontend API URL** on the same page, e.g. `https://<slug>.clerk.accounts.dev`. JWKS is this plus `/.well-known/jwks.json` |
 | `CLERK_ISSUER` | `backend/.env` | Same value — Django verifies it as the token's `iss` claim |
 | `CLERK_AUTHORIZED_PARTIES` | `backend/.env` | `http://localhost:3000,http://127.0.0.1:3000` — the `azp` allowlist |
@@ -144,6 +153,7 @@ uv run pytest                                        # add --create-db after mig
 uv run ruff check . && uv run ruff format .
 uv run celery -A config worker -B -l info            # worker + beat
 
+# the same six in frontend/ and in owner-frontend/
 cd frontend
 npm run dev
 npm run lint && npm run typecheck && npm run format:check
@@ -151,6 +161,10 @@ npm run test                                         # Vitest
 npm run test:e2e                                     # Playwright (needs real Clerk keys)
 npm run gen:api                                      # regenerate API types (backend must be running)
 ```
+
+Two of the player app's launch journeys cross into the owner app, so they need it
+running: `OWNER_APP_URL=http://127.0.0.1:3001 npm run test:e2e`. Without it they skip
+rather than fail.
 
 ## Repository layout
 
@@ -160,14 +174,19 @@ turf-app/
     config/           settings/{base,dev,test,prod}, urls, celery
     apps/core/        abstract bases, health, extensions migration, seed_demo
     apps/accounts/    User, Clerk JWT auth, Clerk webhook, /me
-  frontend/           Next.js app
-    src/app/          routes: (player), (owner), (admin), sign-in, sign-up, me
+  frontend/           Next.js app — players and platform admins
+    src/app/          routes: (player), (admin), sign-in, sign-up, onboarding, me
     src/lib/api/      generated OpenAPI types + typed client
     src/i18n/         cookie-based locale config, request handler, switcher action
     messages/         en.json, bn.json
     e2e/              Playwright specs
+  owner-frontend/     Next.js app — turf owners and their staff (DECISIONS D83)
+    src/app/          (signed-in)/, turfs/[slug]/*, new/, sign-in, sign-up
+    src/components/   its own copies of the ui primitives and the design system
+    messages/         en.json, bn.json — only the namespaces this app renders
+    e2e/              Playwright specs for the turf surface
   docs/               DOMAIN, DECISIONS, PLAN, PROGRESS, phases/
-  .github/workflows/  backend and frontend CI
+  .github/workflows/  backend, frontend and owner-frontend CI
 ```
 
 ## Conventions worth knowing before you edit

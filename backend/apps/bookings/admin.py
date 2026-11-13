@@ -1,9 +1,10 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin, TabularInline
 
 from .models import Booking, BookingEvent
 
 
-class BookingEventInline(admin.TabularInline):
+class BookingEventInline(TabularInline):
     model = BookingEvent
     extra = 0
     # Append-only history: editing it would defeat the point of keeping it.
@@ -15,7 +16,7 @@ class BookingEventInline(admin.TabularInline):
 
 
 @admin.register(Booking)
-class BookingAdmin(admin.ModelAdmin):
+class BookingAdmin(ModelAdmin):
     list_display = ("ground", "player_name", "starts_at", "status", "price", "created_at")
     list_filter = ("status", "mode", "visibility", "ground__turf")
     search_fields = ("booked_by__email", "booked_for_name", "booked_for_phone", "id")
@@ -41,7 +42,7 @@ class BookingAdmin(admin.ModelAdmin):
 
 
 @admin.register(BookingEvent)
-class BookingEventAdmin(admin.ModelAdmin):
+class BookingEventAdmin(ModelAdmin):
     list_display = ("booking", "from_status", "to_status", "actor", "created_at")
     list_filter = ("to_status",)
     search_fields = ("booking__id",)

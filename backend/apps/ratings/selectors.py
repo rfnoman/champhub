@@ -64,8 +64,14 @@ def search_players(
     if played_at_turf:
         profiles = profiles.filter(ground_stats__turf__slug=played_at_turf)
     if query:
+        # A handle is typed with the `@` more often than not, and searching for
+        # "@rafiq" must not come back empty because of a character the person was right
+        # to include (DOMAIN §1b).
+        term = query.lstrip("@").strip()
         profiles = profiles.filter(
-            Q(display_name__icontains=query) | Q(user__first_name__icontains=query)
+            Q(display_name__icontains=term)
+            | Q(user__first_name__icontains=term)
+            | Q(user__username__icontains=term)
         )
 
     if available_from or available_until:

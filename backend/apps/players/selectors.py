@@ -18,7 +18,7 @@ CARD_SKILL_COUNT = 6
 
 def profile_queryset() -> QuerySet[PlayerProfile]:
     """A profile with everything the card needs, in a fixed number of queries."""
-    return PlayerProfile.objects.select_related("user").prefetch_related(
+    return PlayerProfile.objects.select_related("user", "user__identity").prefetch_related(
         Prefetch(
             "attributes",
             queryset=PlayerAttribute.objects.select_related("attribute").order_by(

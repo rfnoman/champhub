@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 import { getTranslations } from "next-intl/server";
@@ -10,6 +9,7 @@ import { LanguageSwitcher } from "./language-switcher";
 import { NavLinks } from "./nav-links";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
+import { Wordmark } from "./wordmark";
 
 export async function SiteHeader() {
   const t = await getTranslations();
@@ -29,12 +29,7 @@ export async function SiteHeader() {
       <div className="page-column flex h-14 items-center gap-1.5 px-4">
         {/* Must stay exactly one visible link whose accessible name is the wordmark —
             smoke.spec.ts asserts it in both languages. */}
-        <Link
-          href="/"
-          className="font-display text-brand hover:text-brand/85 mr-auto text-lg font-extrabold tracking-tight transition-colors"
-        >
-          {t("app.name")}
-        </Link>
+        <Wordmark label={t("app.name")} />
 
         <NavLinks />
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from apps.accounts.usernames import MAX_LENGTH as USERNAME_MAX_LENGTH
 from apps.core.utils import player_label
 from apps.players.selectors import player_sport_cards, profile_queryset
 from apps.players.serializers import PlayerSportCardSerializer
@@ -362,8 +363,34 @@ class DecideRequestSerializer(serializers.Serializer):
 
 
 class InvitePlayerSerializer(serializers.Serializer):
-    player_id = serializers.UUIDField(help_text="The player's profile id.")
+    """Who to invite: a profile id, or a handle (DOMAIN §1b).
+
+    Two ways in because they come from two places. A pick out of search or a roster has
+    the profile id already; somebody typing "@rafiq_hasan" out of a group chat has a
+    handle and nothing else, and making them find the player first would defeat the
+    point of handles.
+
+    Exactly one is required. Accepting both and preferring one would quietly ignore half
+    of what was sent, which is how a UI ends up inviting the wrong person.
+    """
+
+    player_id = serializers.UUIDField(required=False, help_text="The player's profile id.")
+    username = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=USERNAME_MAX_LENGTH + 1,
+        help_text="The player's @handle, instead of `player_id`. A leading `@` is fine.",
+    )
     message = serializers.CharField(max_length=300, required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        has_id = attrs.get("player_id") is not None
+        has_handle = bool((attrs.get("username") or "").strip().lstrip("@").strip())
+        if has_id and has_handle:
+            raise serializers.ValidationError("Send either a player_id or a username, not both.")
+        if not has_id and not has_handle:
+            raise serializers.ValidationError("Name a player: player_id or username.")
+        return attrs
 
 
 class DecideSerializer(serializers.Serializer):

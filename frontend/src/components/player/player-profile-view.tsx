@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
+import { BadgeCheck } from "lucide-react";
 
 import type { PlayerCardProfile } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +61,11 @@ export async function PlayerProfileView({
 
         <div className="min-w-0 flex-1">
           <h1 className="font-display truncate text-2xl font-bold tracking-tight">{player.name}</h1>
+          {/* The handle under the name, where every app that has one puts it: it is what
+              somebody copies to invite this player (DOMAIN §1b). */}
+          {player.handle && (
+            <p className="text-muted-foreground truncate font-mono text-sm">{player.handle}</p>
+          )}
           {player.area && <p className="text-muted-foreground text-sm">{player.area}</p>}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant="secondary">
@@ -67,6 +73,14 @@ export async function PlayerProfileView({
             </Badge>
             {cards.length > 0 && (
               <Badge variant="outline">{t("sportCount", { count: cards.length })}</Badge>
+            )}
+            {/* The account, not the sport: a document was checked against this person
+                (DOMAIN §1a). Strangers agree to meet each other through this app. */}
+            {player.is_identity_verified && (
+              <Badge variant="brand">
+                <BadgeCheck aria-hidden />
+                {t("identityVerified")}
+              </Badge>
             )}
           </div>
           {player.bio && <p className="mt-3 text-sm leading-relaxed">{player.bio}</p>}

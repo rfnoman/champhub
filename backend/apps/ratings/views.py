@@ -76,7 +76,7 @@ class PlayerSearchView(ListAPIView):
             OpenApiParameter("played_at_turf", str, description="Turf slug."),
             OpenApiParameter("available_from", str, description="ISO datetime."),
             OpenApiParameter("available_until", str, description="ISO datetime."),
-            OpenApiParameter("q", str, description="Name fragment."),
+            OpenApiParameter("q", str, description="Name or @username fragment."),
         ],
     )
     def get(self, request, *args, **kwargs):

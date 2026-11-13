@@ -31,6 +31,9 @@ def onboard(user):
     return complete_onboarding(
         user=user,
         data={
+            # Required since DOMAIN §1b; the factory already gave this account a unique
+            # one, so passing it through keeps every onboarded test player distinct.
+            "username": user.username,
             "attributes": {"stamina": 60, "agility": 60, "speed": 60, "strength": 60},
             "sports": [{"sport": "football", "positions": [], "skills": {"finishing": 60}}],
         },

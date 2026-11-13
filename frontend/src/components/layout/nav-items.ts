@@ -16,6 +16,11 @@ export type NavItem = {
   /** Key under the `nav` namespace. */
   key: string;
   icon: LucideIcon;
+  /**
+   * Another origin, not a route in this app — rendered as a plain `<a>`, since there is
+   * nothing for the router to prefetch. The owner app is the only one (DECISIONS D83).
+   */
+  external?: boolean;
 };
 
 /**
@@ -38,7 +43,9 @@ export const SECONDARY: NavItem[] = [
   { href: "/activity", key: "activity", icon: Dumbbell },
   { href: "/squads", key: "squads", icon: Users },
   { href: "/store", key: "store", icon: ShoppingBag },
-  { href: "/owner", key: "owner", icon: Store },
+  // Resolved at render time from NEXT_PUBLIC_OWNER_APP_URL, so the href is filled in by
+  // the component rather than frozen into this list at module load.
+  { href: "", key: "owner", icon: Store, external: true },
 ];
 
 /**

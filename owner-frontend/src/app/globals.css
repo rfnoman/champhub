@@ -1,0 +1,787 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+ * Phase 12 — "Floodlit pitch" (DECISIONS D73)
+ *
+ * Evening turf culture in Dhaka: grounds under floodlights, 9pm kickoffs. Two
+ * devices carry it. The *floodlight* is the single light source in a view —
+ * literal on the landing hero, a top-edge glow on interior chrome — and it is
+ * what makes glass read as glass, because a panel is only glassy if there is
+ * something behind it to bend. The *chalk line* is the structural vocabulary,
+ * and it encodes information rather than decorating: a centre line splits a
+ * scoreline, a penalty arc crops the player card, unavailable slots are
+ * hatched as out of play. Where there is nothing to encode, there is no line.
+ * ------------------------------------------------------------------------- */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  /* The system stack, with the Bengali face from next/font appended: fallback is per
+     glyph, so English renders in the platform font and Bangla in Hind Siliguri. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, var(--font-bengali),
+    "Helvetica Neue", Arial, sans-serif;
+  /* Was `var(--font-geist-mono)` for eleven phases with no Geist loaded anywhere, so
+     every price, rating, score and kickoff time fell through to the browser default
+     monospace. An explicit stack costs nothing and fixes it (D74). */
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  /* Archivo, weight axis only — 35 kB rather than the 90 kB the width axis costs.
+     Display and numerals only; body text stays on the system stack (D74). */
+  --font-display: var(--font-archivo), var(--font-sans);
+  --font-heading: var(--font-archivo), var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* The brand, separate from `--primary` on purpose. `--primary` is the deep green that
+     can carry white text in both themes; `--brand` is the vivid floodlit green that can
+     only do so in the dark. Keeping them apart is what stops a light-mode button landing
+     at 1.4:1 (D73). */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-flare: var(--flare);
+  --color-flare-foreground: var(--flare-foreground);
+  --color-glow: var(--glow);
+  --color-chalk: var(--chalk);
+  --color-pitch: var(--pitch);
+
+  /* Rating bands. `ratingTone()` has a vitest contract — four distinct values, cuts at
+     80/65/50, and no arbitrary-value brackets in the returned string — so these have to
+     be real single-token utilities rather than `text-[oklch(...)]`. */
+  --color-rating-elite: var(--rating-elite);
+  --color-rating-strong: var(--rating-strong);
+  --color-rating-fair: var(--rating-fair);
+  --color-rating-low: var(--rating-low);
+  /* A fill and a label have different jobs. A bar, a ring or a meter is decoration and
+     wants to be vivid; the same colour as *small text* has to clear AA on the page
+     behind it, which caps how bright it can be. One token tried to do both and the
+     result was a muddy brown in light mode — so fills use the `-vivid` pair and text
+     keeps the accessible one. In dark mode the two are the same. */
+  --color-rating-elite-vivid: var(--rating-elite-vivid);
+  --color-rating-strong-vivid: var(--rating-strong-vivid);
+  --color-rating-fair-vivid: var(--rating-fair-vivid);
+  --color-rating-low-vivid: var(--rating-low-vivid);
+  --color-sport-vivid: var(--sport-vivid);
+
+  /* Per-sport identity. Set by `[data-sport]` below, which an allowlist in
+     src/lib/sport-theme.ts drives — sports come from the database and admins can
+     approve new ones, so an unknown slug has to fall back rather than render untinted. */
+  --color-sport: var(--sport);
+  --color-sport-foreground: var(--sport-foreground);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Motion. Eleven phases shipped `transition-colors` in 28 files with no duration and
+     no easing anywhere in the codebase, so everything ran on Tailwind's bare default.
+     `--ease-spring-out` is a spring sampled from a real solver, not an approximation of
+     one: `linear()` takes the polyline directly (D79). */
+  --ease-spring-out: linear(
+    0,
+    0.006,
+    0.025 2.8%,
+    0.101 6.1%,
+    0.539 18.9%,
+    0.721 25.3%,
+    0.849 31.5%,
+    0.937 38.1%,
+    0.968 41.8%,
+    0.991 45.7%,
+    1.006 50.1%,
+    1.015 55%,
+    1.017 63.9%,
+    1.001
+  );
+  --ease-press-in: cubic-bezier(0.3, 0.8, 0.5, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 420ms;
+
+  /* Two elevations that mean different things: a hairline for flat surfaces, a tinted
+     shadow for things that genuinely float. Tinted with the pitch hue rather than
+     `rgba(0,0,0,.1)`, which is the shadow every generated card uses. */
+  --shadow-raise: 0 1px 2px -1px var(--shadow-tint), 0 4px 12px -4px var(--shadow-tint);
+  --shadow-float: 0 2px 4px -2px var(--shadow-tint), 0 12px 32px -8px var(--shadow-tint);
+}
+
+/* ---------------------------------------------------------------------------
+ * Light: chalk paper. The neutrals carry a little chroma at the pitch hue, so
+ * the greys are green-greys rather than dead greys.
+ * ------------------------------------------------------------------------- */
+:root {
+  --background: oklch(0.975 0.004 158);
+  --foreground: oklch(0.19 0.022 158);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.022 158);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.022 158);
+  /* The deep pitch green. `--brand` below is the vivid one, which cannot carry white
+     text on white ground at AA — hence two tokens rather than one (D73). */
+  --primary: oklch(0.52 0.13 158);
+  --primary-foreground: oklch(0.99 0.005 158);
+  --secondary: oklch(0.945 0.006 158);
+  --secondary-foreground: oklch(0.25 0.025 158);
+  --muted: oklch(0.945 0.006 158);
+  --muted-foreground: oklch(0.5 0.015 158);
+  --accent: oklch(0.93 0.035 158);
+  --accent-foreground: oklch(0.25 0.03 158);
+  --destructive: oklch(0.56 0.2 15.5);
+  --border: oklch(0.89 0.008 158);
+  --input: oklch(0.89 0.008 158);
+  --ring: oklch(0.52 0.13 158);
+
+  --brand: oklch(0.52 0.13 158);
+  --brand-foreground: oklch(0.99 0.005 158);
+  --flare: oklch(0.56 0.2 15.5);
+  --flare-foreground: oklch(0.99 0.005 158);
+  --glow: oklch(0.72 0.19 155);
+  --chalk: oklch(0.99 0.004 158);
+  /* The night pitch (see the `pitch-night` utility). One value for both themes:
+     a floodlit pitch is the same colour whatever the reader's OS prefers. */
+  --pitch: oklch(0.126 0.026 158);
+
+  --rating-elite: oklch(0.48 0.14 158);
+  --rating-strong: oklch(0.52 0.13 130);
+  --rating-fair: oklch(0.55 0.13 75);
+  --rating-low: oklch(0.5 0.015 158);
+  --rating-elite-vivid: oklch(0.68 0.19 158);
+  --rating-strong-vivid: oklch(0.74 0.18 128);
+  --rating-fair-vivid: oklch(0.78 0.16 82);
+  --rating-low-vivid: oklch(0.72 0.02 158);
+
+  /* A categorical ramp, replacing five greys. Hues are spaced far enough apart to stay
+     distinguishable for the commonest colour-vision deficiencies, and they deliberately
+     are not the four sport hues — those already mean something. */
+  --chart-1: oklch(0.55 0.14 158);
+  --chart-2: oklch(0.55 0.15 250);
+  --chart-3: oklch(0.6 0.15 55);
+  --chart-4: oklch(0.52 0.16 310);
+  --chart-5: oklch(0.6 0.12 195);
+
+  --sport: var(--brand);
+  --sport-foreground: var(--brand-foreground);
+  --sport-vivid: oklch(0.7 0.18 158);
+
+  /* Glass. The *look* is the edge highlight and the translucency; the blur only does
+     real work on chrome, which is why `glass-panel` has none (D75). In light mode the
+     recipe inverts: elevation from an outer shadow and a faint dark bottom inset,
+     rather than a bright top highlight, or it reads as flat grey. */
+  --glass-bg: oklch(1 0 0 / 0.72);
+  --glass-bg-opaque: oklch(1 0 0 / 0.97);
+  --glass-border: oklch(0.19 0.022 158 / 0.1);
+  --glass-highlight: oklch(0.19 0.022 158 / 0.05);
+  --glass-blur: 16px;
+  --glass-saturate: 1.7;
+  --shadow-tint: oklch(0.3 0.05 158 / 0.14);
+
+  --radius: 0.625rem;
+  --sidebar: oklch(0.99 0.004 158);
+  --sidebar-foreground: oklch(0.19 0.022 158);
+  --sidebar-primary: oklch(0.52 0.13 158);
+  --sidebar-primary-foreground: oklch(0.99 0.005 158);
+  --sidebar-accent: oklch(0.945 0.006 158);
+  --sidebar-accent-foreground: oklch(0.25 0.025 158);
+  --sidebar-border: oklch(0.89 0.008 158);
+  --sidebar-ring: oklch(0.52 0.13 158);
+}
+
+/* ---------------------------------------------------------------------------
+ * Dark: midnight pitch. This is the designed palette; light is a real second
+ * set rather than an inversion of it. The base is a green-black (chroma 0.025
+ * at hue 158), not a tinted near-black.
+ * ------------------------------------------------------------------------- */
+.dark {
+  --background: oklch(0.168 0.025 158);
+  --foreground: oklch(0.967 0.008 158);
+  --card: oklch(0.218 0.028 160);
+  --card-foreground: oklch(0.967 0.008 158);
+  --popover: oklch(0.218 0.028 160);
+  --popover-foreground: oklch(0.967 0.008 158);
+  /* Here the vivid green *can* be primary: against the midnight base it clears AA
+     comfortably with a near-black foreground. */
+  --primary: oklch(0.823 0.219 155);
+  --primary-foreground: oklch(0.17 0.03 158);
+  --secondary: oklch(0.27 0.03 160);
+  --secondary-foreground: oklch(0.967 0.008 158);
+  --muted: oklch(0.27 0.03 160);
+  --muted-foreground: oklch(0.72 0.02 158);
+  --accent: oklch(0.32 0.045 158);
+  --accent-foreground: oklch(0.967 0.008 158);
+  --destructive: oklch(0.653 0.216 15.5);
+  --border: oklch(0.967 0.008 158 / 0.12);
+  --input: oklch(0.967 0.008 158 / 0.16);
+  --ring: oklch(0.823 0.219 155);
+
+  --brand: oklch(0.823 0.219 155);
+  --brand-foreground: oklch(0.17 0.03 158);
+  --flare: oklch(0.653 0.216 15.5);
+  --flare-foreground: oklch(0.99 0.005 158);
+  --glow: oklch(0.823 0.219 155);
+  --chalk: oklch(0.967 0.008 158);
+
+  --rating-elite: oklch(0.85 0.2 158);
+  --rating-strong: oklch(0.86 0.19 128);
+  --rating-fair: oklch(0.82 0.16 72);
+  --rating-low: oklch(0.72 0.02 158);
+  /* On the midnight base the accessible colour is already the vivid one. */
+  --rating-elite-vivid: oklch(0.85 0.2 158);
+  --rating-strong-vivid: oklch(0.86 0.19 128);
+  --rating-fair-vivid: oklch(0.82 0.16 72);
+  --rating-low-vivid: oklch(0.72 0.02 158);
+
+  --chart-1: oklch(0.8 0.18 158);
+  --chart-2: oklch(0.7 0.16 250);
+  --chart-3: oklch(0.8 0.15 60);
+  --chart-4: oklch(0.72 0.17 310);
+  --chart-5: oklch(0.78 0.12 195);
+
+  --sport: var(--brand);
+  --sport-foreground: var(--brand-foreground);
+  --sport-vivid: var(--brand);
+
+  --glass-bg: oklch(0.967 0.008 158 / 0.07);
+  --glass-bg-opaque: oklch(0.2 0.028 160 / 0.96);
+  --glass-border: oklch(0.967 0.008 158 / 0.12);
+  --glass-highlight: oklch(1 0 0 / 0.1);
+  --glass-blur: 18px;
+  --glass-saturate: 1.35;
+  --shadow-tint: oklch(0.05 0.02 158 / 0.55);
+
+  --sidebar: oklch(0.2 0.028 160);
+  --sidebar-foreground: oklch(0.967 0.008 158);
+  --sidebar-primary: oklch(0.823 0.219 155);
+  --sidebar-primary-foreground: oklch(0.17 0.03 158);
+  --sidebar-accent: oklch(0.27 0.03 160);
+  --sidebar-accent-foreground: oklch(0.967 0.008 158);
+  --sidebar-border: oklch(0.967 0.008 158 / 0.12);
+  --sidebar-ring: oklch(0.823 0.219 155);
+}
+
+/* ---------------------------------------------------------------------------
+ * Per-sport identity (D73). One attribute re-tints a whole subtree with no JS
+ * and no interpolated class names — which matters because Tailwind's JIT
+ * cannot see a computed class, the constraint rating.tsx already documents.
+ * ------------------------------------------------------------------------- */
+:root[data-sport="football"],
+[data-sport="football"] {
+  --sport: oklch(0.52 0.13 158);
+  --sport-foreground: oklch(0.99 0.005 158);
+  --sport-vivid: oklch(0.7 0.18 158);
+}
+[data-sport="futsal"] {
+  --sport: oklch(0.58 0.14 62);
+  --sport-foreground: oklch(0.99 0.005 158);
+  --sport-vivid: oklch(0.78 0.16 78);
+}
+[data-sport="cricket"] {
+  --sport: oklch(0.52 0.16 258);
+  --sport-foreground: oklch(0.99 0.005 158);
+  --sport-vivid: oklch(0.66 0.17 258);
+}
+[data-sport="badminton"] {
+  --sport: oklch(0.5 0.18 300);
+  --sport-foreground: oklch(0.99 0.005 158);
+  --sport-vivid: oklch(0.68 0.18 300);
+}
+
+.dark [data-sport="football"] {
+  --sport: oklch(0.823 0.219 155);
+  --sport-foreground: oklch(0.17 0.03 158);
+  --sport-vivid: var(--sport);
+}
+.dark [data-sport="futsal"] {
+  --sport: oklch(0.81 0.16 72);
+  --sport-foreground: oklch(0.18 0.04 72);
+  --sport-vivid: var(--sport);
+}
+.dark [data-sport="cricket"] {
+  --sport: oklch(0.67 0.17 258);
+  --sport-foreground: oklch(0.99 0.005 158);
+  --sport-vivid: var(--sport);
+}
+.dark [data-sport="badminton"] {
+  --sport: oklch(0.72 0.17 300);
+  --sport-foreground: oklch(0.18 0.04 300);
+  --sport-vivid: var(--sport);
+}
+
+/* ---------------------------------------------------------------------------
+ * Glass (D75). Two utilities, because the expensive half is only needed on
+ * chrome. `glass-panel` is unrestricted. `glass-chrome` carries the
+ * `backdrop-filter` and is confined by an eslint rule to four files — the
+ * header, the bottom nav, the Sheet and the Dialog. All four are fixed or
+ * overlay surfaces, so nothing blurred ever sits inside a scrolling list,
+ * which is the case that actually janks.
+ * ------------------------------------------------------------------------- */
+@utility glass-panel {
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    var(--shadow-raise);
+}
+
+@utility glass-chrome {
+  background-color: var(--glass-bg);
+  border-color: var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+
+  /* Without the filter the translucency is just a washed-out panel, and text contrast
+     goes with it — so go nearly opaque rather than pretending. */
+  @supports not (backdrop-filter: blur(1px)) {
+    background-color: var(--glass-bg-opaque);
+  }
+}
+
+/* A real OS accessibility setting, and this codebase already refuses to block
+   pinch-zoom to tidy a layout. Also the switch the perf A/B flips at runtime. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-chrome,
+  .glass-panel {
+    background-color: var(--glass-bg-opaque);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.reduce-effects .glass-chrome,
+.reduce-effects .glass-panel {
+  background-color: var(--glass-bg-opaque);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Numerals (D74). What the app wanted everywhere it reached for `font-mono`
+ * was *tabular*, not monospace: ratings that line up in a column, prices that
+ * do not jitter as they change, kickoff times that scan.
+ * ------------------------------------------------------------------------- */
+@utility num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
+}
+
+/* Display type. The width contrast comes from weight and tracking, since the width axis
+   cost 55 kB more than it was worth (D74). */
+@utility display-xl {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 1.6rem + 4.5vw, 4rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+@utility display-lg {
+  font-family: var(--font-display);
+  font-size: clamp(1.875rem, 1.3rem + 2.8vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+/* Small structural labels. Sentence case on purpose: a tracked-out ALL-CAPS eyebrow over
+   every heading is the commonest tell of a templated page, and the app had them on the
+   player card and the scorecard. */
+@utility label-sm {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.005em;
+  color: var(--muted-foreground);
+}
+
+/* The page column.
+ *
+ * The header, the footer and the page content all have to line up: a wordmark that sits
+ * four rem inside the heading beneath it reads as a mistake, because it is one.
+ *
+ * The width is a property rather than a class because the three are siblings — the
+ * header renders *before* `<main>`, so it cannot inherit anything the page sets. The
+ * page declares its width with `data-page-width`, `:has()` lifts that to `<body>`, and
+ * the custom property then cascades down to all three. Where `:has()` is unsupported
+ * the header simply keeps the default width, which is what it did before.
+ */
+@utility page-column {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--page-max);
+}
+
+/* The native select, styled (DECISIONS D76).
+ *
+ * It stays a real `<select>` with real `<option>` children: on a cheap Android phone
+ * the OS picker is faster, renders Bengali in the system's own stack, honours the
+ * reader's text-size setting, cannot be clipped by the bottom tab bar, and costs zero
+ * JavaScript across the eighteen files that use one. It also keeps Playwright's
+ * `selectOption()` working, which four specs depend on.
+ *
+ * `appearance: none` plus a background-image chevron is what makes it match `Input`;
+ * the open list is the browser's own, which is the point.
+ */
+@utility field-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  padding-inline-end: 1.75rem;
+
+  &:focus-visible {
+    border-color: var(--ring);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+  }
+}
+
+/* Press physics (D79). `:active` applies only while held, so the *release* is what reads
+   as spring-back — the overshoot lives on the base rule and the fast curve inside
+   `:active`. Depth is the shadow collapsing, not just the scale. */
+@utility press {
+  /* Transform and shadow get the long spring; colour gets a short linear ramp. One
+     shorthand can carry both, which is why this is a utility rather than
+     `transition-all` plus a duration — `transition-all duration-slow` would make every
+     hover tint take 420ms. */
+  transition:
+    transform var(--duration-slow) var(--ease-spring-out),
+    box-shadow var(--duration-slow) var(--ease-spring-out),
+    filter var(--duration-fast) linear,
+    color var(--duration-fast) linear,
+    background-color var(--duration-fast) linear,
+    border-color var(--duration-fast) linear,
+    opacity var(--duration-fast) linear;
+  -webkit-tap-highlight-color: transparent;
+  /* Also removes the 300ms tap delay on touch. */
+  touch-action: manipulation;
+
+  &:active {
+    transform: scale(0.97) translateY(1px);
+    filter: brightness(0.96);
+    transition-duration: 90ms;
+    transition-timing-function: var(--ease-press-in);
+  }
+}
+
+/* The floodlight. One light source per view, and the thing that gives glass something to
+   bend — glass over a flat colour is indistinguishable from opaque glass. */
+@utility floodlight {
+  background-image:
+    radial-gradient(
+      120% 80% at 50% -20%,
+      color-mix(in oklch, var(--glow) 22%, transparent) 0%,
+      transparent 65%
+    ),
+    radial-gradient(
+      70% 50% at 88% 8%,
+      color-mix(in oklch, var(--glow) 9%, transparent) 0%,
+      transparent 70%
+    );
+}
+
+/* Chalk: the pitch-marking hairline, used where it encodes a division rather than
+   decorating one.
+
+   It mixes toward `--foreground`, not `--chalk`. On the hero's night pitch those are
+   the same near-white, so it reads as chalk exactly as intended; anywhere else in the
+   light theme `--chalk` is a near-white line on a near-white card, i.e. invisible —
+   which is what it had quietly been doing on every divider outside the hero. */
+@utility chalk-line {
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklch, var(--foreground) 20%, transparent),
+    transparent
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * The night pitch — the landing hero's surface.
+ *
+ * It is floodlit in *both* themes, which is a deliberate exception to the rest
+ * of the app. A floodlit pitch rendered on paper-white is a contradiction: the
+ * light has nothing to be light against, and the chalk markings — which are
+ * white — disappear entirely. So the hero carries its own night.
+ *
+ * The mechanism is the `dark` class on the section rather than a parallel set
+ * of tokens here, because `@custom-variant dark (&:is(.dark *))` means every
+ * `dark:` utility inside the subtree then resolves correctly too. Overriding
+ * `--background` by hand would re-tint the surfaces and leave `Button`'s
+ * `dark:border-input` branch behind, which is how a hero ends up with one
+ * light-mode outline button on a black field.
+ *
+ * This utility only adds what `.dark` has no opinion about: the pitch is
+ * deeper than any card surface, and it is mown.
+ * ------------------------------------------------------------------------- */
+@utility pitch-night {
+  /* The cut width of an artificial pitch, scaled to look right at a distance. */
+  --mow: 4.5rem;
+
+  background-color: var(--pitch);
+  color: var(--foreground);
+  /* Mow stripes. Vertical, so they run away from the reader; 2.5% is the point
+     at which they are visible on an OLED phone and invisible on a bad TN panel,
+     which is the right way round for a texture nobody should notice. */
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--chalk) 1.5%, transparent) 0 var(--mow),
+    transparent var(--mow) calc(var(--mow) * 2)
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * The floodlights coming on.
+ *
+ * The page's one orchestrated, non-user-triggered sequence (DECISIONS D72) and
+ * the only one in the app. It is CSS rather than `motion` on purpose: the
+ * motion features are fetched after hydration, so a motion-driven version
+ * would hold the hero dark on a slow connection — the first thing a new
+ * visitor sees would be an unlit pitch for as long as the chunk took. CSS
+ * keyframes start at first paint and cost nothing.
+ *
+ * `flood-strike` is metal halide behaviour, not a fade: lamps hit hard, dip
+ * while the arc settles, then bloom to full over about a second.
+ *
+ * Reduced motion needs no rule of its own. The global `prefers-reduced-motion`
+ * block in `@layer base` collapses every duration to 0.01ms, and each keyframe
+ * here ends at the *lit* state — so a reader who asked for stillness gets the
+ * finished floodlit pitch on first paint, which is exactly right.
+ * ------------------------------------------------------------------------- */
+@keyframes flood-strike {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.62;
+  }
+  24% {
+    opacity: 0.1;
+  }
+  46% {
+    opacity: 0.84;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* The markings get chalked on as the light finds them. `pathLength="1"` on the
+   SVG normalises every path, so one dash length works for a circle, an arc and
+   a straight line alike. */
+@keyframes chalk-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@utility flood-beam {
+  animation: flood-strike 1250ms var(--ease-out-quint) both;
+}
+
+@utility chalk-mark {
+  stroke-dasharray: 1;
+  animation: chalk-draw 1400ms var(--ease-out-quint) 260ms both;
+}
+
+/* ---------------------------------------------------------------------------
+ * The availability ticker: tonight's slots, scrolling past.
+ *
+ * The track holds the list twice, so -50% is a seam-free loop. It pauses on
+ * hover and on focus-within — a keyboard reader tabbing into a link that is
+ * sliding out from under them is the accessibility failure every marquee has.
+ * ------------------------------------------------------------------------- */
+@keyframes ticker-slide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@utility ticker-track {
+  animation: ticker-slide 46s linear infinite;
+
+  &:hover,
+  &:focus-within {
+    animation-play-state: paused;
+  }
+}
+
+/* The global reduce block would collapse the duration and leave the track
+   parked at -50%. That happens to look identical — the list is duplicated —
+   but relying on that is luck, so say it. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * The wordmark, and the only thing in the chrome that is allowed to play (D82).
+ *
+ * The ball hops on hover and on focus — one bounce, with the squash on landing
+ * that makes it read as weight rather than as a sliding dot. `translate3d` and
+ * `scale` only: no layout property is touched, so the header never reflows and
+ * the whole thing stays on the compositor.
+ *
+ * The global reduce block handles stillness. It collapses the hop to 0.01ms and
+ * drops `rotate`/`scale` from the transition whitelist, which leaves the word at
+ * its resting tilt and the ball where it sits — the logo, minus the motion.
+ * ------------------------------------------------------------------------- */
+@keyframes ball-hop {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  26% {
+    transform: translate3d(0.1rem, -0.62rem, 0) scale(0.9, 1.12);
+  }
+  52% {
+    transform: translate3d(0, 0, 0) scale(1.24, 0.78);
+  }
+  74% {
+    transform: translate3d(0, -0.16rem, 0) scale(0.98, 1.02);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+}
+
+@utility ball-hop {
+  animation: ball-hop 760ms var(--ease-out-quint);
+}
+
+@utility wordmark-ball {
+  flex: none;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  background: var(--brand);
+  /* A ball rather than a dot: one inset shadow is the entire lighting model. */
+  box-shadow: inset -0.075rem -0.1rem 0 color-mix(in oklch, var(--brand) 62%, black);
+  /* It lands on its bottom edge, so that is what the squash pivots around. */
+  transform-origin: 50% 100%;
+}
+
+@utility wordmark-text {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--brand);
+  /* Pivots on the first letter's baseline corner: the left edge stays pinned to
+     the shared page column while the rest of the word leans up and right. */
+  transform-origin: 0% 100%;
+  rotate: -2.5deg;
+  transition:
+    rotate 280ms var(--ease-out-quint),
+    scale 280ms var(--ease-out-quint);
+}
+
+/* The hero headline, and the only thing on the page set this large. One step
+   above `display-xl`, tighter in both tracking and leading, because at 80px
+   the leading that reads as generous at 40px reads as loose. */
+@utility display-2xl {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.5rem + 4.8vw, 5rem);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.04em;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* The reading column the app was built in; route groups widen it below. */
+    --page-max: 64rem;
+    /* Something for the chrome's blur to pick up. Pure CSS, zero bytes, and it is what
+       makes the glass legible in *both* themes. */
+    background-image: radial-gradient(
+      140% 70% at 50% 0%,
+      color-mix(in oklch, var(--glow) 7%, transparent) 0%,
+      transparent 60%
+    );
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /* Owner and admin need the room — a settings page with four panels and three stock
+     tables. The marketing page sits between the two. */
+  body:has([data-page-width="wide"]) {
+    --page-max: 80rem;
+  }
+  body:has([data-page-width="bleed"]) {
+    --page-max: 72rem;
+  }
+
+  /* Bengali conjuncts need vertical room a Latin-tuned leading does not give them, and
+     Bangla strings run 20–30% longer — which is what breaks a tight layout at 390px. */
+  :lang(bn) {
+    line-height: 1.7;
+  }
+
+  /* One rule rather than a `prefers-reduced-motion` block in each animated component,
+     because the per-component version is the one that is missing from the next component
+     somebody writes (D78). Colour transitions are left alone deliberately: they
+     communicate state and cause nobody motion sickness. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-property: color, background-color, border-color, fill, stroke, opacity !important;
+      transition-duration: 120ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

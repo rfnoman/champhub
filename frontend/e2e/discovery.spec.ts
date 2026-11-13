@@ -1,9 +1,11 @@
 import type { Page } from "@playwright/test";
 
 import { expect, requiresClerk, test } from "./support/fixtures";
+import { pickUsername } from "./support/onboarding";
 
 async function finishOnboarding(page: Page) {
   await page.goto("/onboarding");
+  await pickUsername(page);
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByRole("button", { name: /Football/ }).click();
   await page.getByRole("button", { name: "Next", exact: true }).click();

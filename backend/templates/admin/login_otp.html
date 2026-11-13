@@ -1,0 +1,83 @@
+{% extends "admin/login.html" %}
+
+{% load i18n unfold %}
+
+{#
+  The admin login page: Unfold's, with the TOTP field (DECISIONS D64, D96).
+
+  Unfold's own `admin/login.html` offers `login_before` / `login_after` blocks, but both
+  sit *outside* the `<form>` — and a one-time code posted outside the login form is not
+  posted at all. So the `content` block is overridden with a copy of Unfold's, one field
+  longer. It is a copy and will not follow Unfold's upstream edits; `test_admin.py`
+  asserts the page renders and that the field appears exactly when the gate is on, which
+  is the part that must not rot.
+
+  A separate template name rather than an override of `admin/login.html`: this extends
+  that name, and a file extending itself is a loop.
+#}
+
+{% block content %}
+    {% include "unfold/helpers/unauthenticated_title.html" with title=site_title|default:_('ChampHub admin') subtitle=_('Welcome back to') %}
+
+    {% include "unfold/helpers/messages.html" %}
+
+    {% if form.errors or form.non_field_errors %}
+        <div class="flex flex-col gap-4 mb-8 *:mb-0">
+            {% include "unfold/helpers/messages/errornote.html" with errors=form.errors %}
+
+            {% include "unfold/helpers/messages/error.html" with errors=form.non_field_errors %}
+
+            {% if user.is_authenticated %}
+                {% blocktranslate trimmed asvar message %}
+                    You are authenticated as {{ username }}, but are not authorized to
+                    access this page. Would you like to login to a different account?
+                {% endblocktranslate %}
+
+                {% include "unfold/helpers/messages/error.html" with error=message %}
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <form action="{{ app_path }}" method="post" id="login-form">
+        {% csrf_token %}
+
+        {#
+          Django's admin login template carries this and Unfold's does not (0.110.1), so
+          a sign-in that started at `/admin/login/` rather than at `?next=…` posts no
+          destination and `LoginView` falls back to `LOGIN_REDIRECT_URL` — which this
+          project never sets, so an admin who logged in correctly landed on a 404 at
+          `/accounts/profile/`. `AdminSite.login` puts the admin index in `next` when the
+          request names nowhere, which is exactly the right value.
+        #}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        {% include "unfold/helpers/field.html" with field=form.username %}
+
+        {% include "unfold/helpers/field.html" with field=form.password %}
+
+        {% if admin_requires_otp %}
+            {% include "unfold/helpers/field.html" with field=form.otp_token %}
+
+            {{ form.otp_device }}
+            {{ form.otp_challenge }}
+
+            <p class="mt-2 text-font-subtle-light text-sm dark:text-font-subtle-dark">
+                {% translate "From the authenticator app holding this account's TOTP device." %}
+            </p>
+        {% endif %}
+
+        <div class="flex flex-col gap-3 mt-6">
+            {% component "unfold/components/button.html" with submit=1 variant="primary" class="submit-row w-full" %}
+                {% translate 'Log in' %}
+            {% endcomponent %}
+
+            {% url 'admin:admin_password_reset' as password_reset_url %}
+
+            {% if password_reset_url %}
+                {% component "unfold/components/button.html" with href=password_reset_url variant="secondary" class="password-reset-link w-full" %}
+                    {% translate 'Forgotten your password or username?' %}
+                {% endcomponent %}
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}

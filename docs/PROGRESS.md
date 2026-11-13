@@ -17,6 +17,7 @@ Updated by Claude Code at the end of each phase.
 | 10 Online payments & ledger | **done** (sandbox credentials pending) | 2026-11-04 | Provider abstraction, SSLCommerz with server-side validation, advances, policy refunds, balanced ledger, commissions, payouts |
 | 11 Hardening, Bangla, launch | **done** (not deployed; see gaps) | 2026-11-04 | Audit; Bangla; PWA; performance; security; observability; admin tools; policies; deployable; launch journeys |
 | 12 Design system | **done** | 2026-11-04 | "Floodlit pitch" palette, light/dark with system default, per-sport colour, Archivo display face, glass chrome, CSS press physics, mobile navigation, every screen restyled |
+| — Owner app split | **done** | 2026-11-12 | The turf-owner surface moved to its own Next.js app, `owner-frontend/` on port 3001 (D83–D88) |
 
 ## Log
 <!-- Per phase: what was built, deviations from the plan, known gaps, follow-ups. -->
@@ -1885,3 +1886,438 @@ regression. Rebuild, restart, then run.
   waiting for review.
 - `src/components/motion/` exists and `LazyMotion` is mounted, but only the landing hero
   uses it. The list reflows and exit animations D72 justifies it with are not built yet.
+
+## Landing page
+
+The Phase 12 landing page was the floodlit hero, four sport chips, three text steps and
+the owner pitch. This replaces it with something that demonstrates the product instead
+of describing it, and it is the one page in the app that now has a non-trivial
+interaction of its own.
+
+**The hero's bold object is the booking.** Not a photograph of a pitch and not a static
+card: tonight's six slots at Dhanmondi Arena, pressable. Press an hour and the price, the
+price band, the roster and the count to fill all change together — 21:00 is ৳3,000 peak
+and five short, 23:00 is ৳2,200 night and twelve short. That trade-off (later is cheaper
+and emptier, and somebody has to decide) is the arithmetic every captain in Dhaka does at
+six on a Friday, and two taps is the whole product explained with no sign-in. There is
+deliberately **no call to action inside the card** — the hero already has two, and a
+"Hold 21:00" button for a visitor about to meet a sign-in wall is both a muddle and a
+small lie.
+
+**Everything on the page is real.** The turf, ground and prices are the seeded Dhanmondi
+Arena from `apps/turfs/demo.py`; "Peak" and "Night" are that ground's own `PriceRule`
+labels; capacity is `players_per_side × 2` (DOMAIN §6), so 7-a-side holds 14 and the
+per-player figure is derived rather than invented; the two-hour hold is
+`BOOKING_CONFIRM_WINDOW_HOURS`; the three journey panels use the seeded players; and the
+sport showcase's skills are the `SportSkill` rows from `apps/sports/catalogue.py` with
+the seeded players' own numbers. **The Bangla skill labels are the catalogue's own
+`label_bn`** — the backend already shipped them, so the showcase uses the same words the
+profile screen does rather than forty more strings of mine.
+
+**Motion, and where it is spent.** One orchestrated non-user-triggered sequence: the
+floodlights coming on. It is **CSS keyframes, not `motion`** — the motion features are
+fetched after hydration (D72), so a motion-driven version would hold the hero dark for as
+long as that chunk took on a slow connection, and an unlit pitch is the first thing a new
+visitor would see. `flood-strike` is metal-halide behaviour rather than a fade (hit, dip
+while the arc settles, bloom to full) and the markings are chalked on with
+`stroke-dashoffset` over a `pathLength="1"` normalisation. It needs **no reduced-motion
+rule of its own**: every keyframe ends at the lit state, so the global reduce block in
+`@layer base` delivers the finished pitch on first paint, which is exactly right.
+`motion` is spent on the two things a person does — the slot strip and the sport switcher.
+
+Two implementation notes worth keeping. The slot indicator travels with
+`x: "${index * 100}%"`, which works only because the strip uses **dividers rather than
+gaps**: six exactly-equal cells mean one cell is exactly the indicator's own width, and
+that is how it animates without the layout projection D72 deliberately does not ship. And
+the roster is **fourteen fixed dots whose state changes**, not a list that unmounts — a
+per-index delay turns the change into a wave across the row, with the colour left to CSS
+because `var(--brand)` is not a value motion can interpolate (the same split as D79).
+
+**What else changed.** The sport showcase is the first thing in the app to use the
+per-sport colour identity (D73) for its actual purpose: `data-sport` on the wrapper
+re-tints the panel, and the three rating bars keep their DOM nodes across a switch so
+`RatingBar`'s own width transition carries them to the new sport's values. D80 records
+why the hero is dark in both themes and the `filter`-before-`clip-path` trap behind the
+beams; D81 records a `chalk-line` that had been invisible on light-theme cards since
+Phase 12 and is now fixed for every caller, not just the new ones. `hero-match.tsx` is
+gone, absorbed into `slot-strip.tsx`. The `home` namespace went from 27 keys to 64, in
+both catalogues.
+
+**The wordmark plays now** (D82). It was `font-display text-brand` and nothing else;
+it is now a 2.5° sticker tilt on the word plus a ball on the baseline behind it that
+hops — squash on landing — when the link is hovered or focused. `Wordmark` in
+`src/components/layout/wordmark.tsx`, with `wordmark-text`, `wordmark-ball` and
+`ball-hop` in globals.css. Three things it deliberately does not do: play on load (D72
+gives the page one unprompted sequence and the floodlights have it), split the word per
+letter (that breaks Bengali conjuncts and the accessible name `smoke.spec.ts` asserts),
+or move the word's left edge (the ball trails, the tilt pivots on the baseline corner,
+so the shared page column `align.spec.ts` measures is untouched).
+
+**Verification**: lint, prettier, typecheck and 56 Vitest green; a clean production build;
+and `smoke.spec.ts` + `align.spec.ts` **10 passed / 2 failed** on both the chromium and
+Pixel 7 projects — both failures are `align.spec.ts`'s *signed-in* test throwing
+`CLERK_SECRET_KEY is required` in the fixture before it loads a page, which is the
+environment, not the page. The column-alignment test that actually measures the landing
+page against the header and footer passes on both projects. Reviewed as screenshots in
+both themes at 1440px and 390px, and in Bangla; no horizontal overflow at any of them.
+
+**Follow-ups, honestly:**
+
+- **The perf budget is still not re-measured**, and this page makes that worse, not
+  better: it adds two blurred beam layers and a fourteen-dot spring stagger to the hero.
+  The blurs are `filter`, not `backdrop-filter`, so D75's allowlist is intact and nothing
+  blurred sits in a scrolling list — but a 44px blur over a 34rem cone is still
+  compositor work on a low-end Android, and it has not been traced.
+- The Bangla added here is mine except the skill labels, and joins the queue waiting on a
+  native speaker. One thing a reviewer should rule on: I changed `liveFormat` from
+  "৭ জনের দল" to "7 জনের দল" for D62 consistency — Bengali and Latin digits were
+  appearing four centimetres apart in the same card — and that is a judgement call about
+  Bangla typography that I am not qualified to make.
+- The seeded demo content is hard-coded in the components rather than fetched. That is
+  the right call for a landing page that must render with the backend down, but it means
+  the prices drift silently if `apps/turfs/demo.py` changes. Nothing tests the agreement.
+- The ticker claims six listings across five turfs. That is honest about the *seed*, and
+  it will read as thin or as a lie the day the pilot has either fewer or many more.
+
+### The owner app — a second frontend (2026-11-12)
+
+Not a phase. The turf-owner surface moved out of the player app into its own Next.js
+deployment, `owner-frontend/`, on port 3001 (DECISIONS **D83–D88**).
+
+**What moved.** Every route under `(owner)/owner/*` — the turf dashboard, the three-step
+registration wizard, turf settings (grounds, hours, prices, staff, submit for review),
+the day view with its confirmation queue and walk-in form, the counter, the shelf and its
+movement log, rentals, store orders and the finance statement — plus the components only
+they used. URLs lost the `/owner` prefix: the dashboard is `/`, registration is `/new`,
+and a turf is `/turfs/<slug>/…`.
+
+**What moved that was not a route.** The staff half of the player's booking-detail page.
+`/bookings/[bookingId]` fetched `/me/turfs` on *every* view to work out an `isStaff` flag,
+and behind it hid confirm, mark-paid and no-show — a player's page carrying an owner's
+buttons. Those are now `/turfs/<slug>/bookings/<id>` in the owner app, which is also where
+the customer's phone number belongs. The player page lost the extra request, and its
+actions card is now rendered only when there is something in it (`canCancel`).
+
+**What the split bought, beyond tidiness.** The chrome is no longer a compromise between
+two audiences. The owner app's header carries no notification bell and no five-destination
+nav; its phone tab bar is *context-sensitive* — inside a turf it is that turf's five
+operational destinations, so a cashier moves between the till, the day's bookings and the
+stock table without going out to a dashboard, which is how the player app's tab bar made
+them do it. `turfs/[slug]/layout.tsx` now owns the turf's name, its review badge and the
+tab strip (D87), replacing six copies of the same header and six different ad-hoc "back to
+the turf" buttons; `getOwnerTurf` is wrapped in React's `cache()` so the layout and the
+page inside it share one request. The installed icon is a **T**, not a C — the same person
+installs both apps.
+
+**Two bugs fixed on the way, both pre-existing.** A staff invitation could be read but not
+accepted: the card linked to `/owner/invitations/<id>`, a route nobody ever built, while
+`POST /me/memberships/{id}/accept` has existed since Phase 02 (D88). And
+`align.spec.ts`'s signed-in test called `requiresClerk()` *inside* the test body, where
+the fixture has already run — which is why that test has been reported as "2 failed,
+environment not page" since Phase 12 instead of skipping cleanly. Both apps now call it at
+describe scope.
+
+**The backend change the move required.** One line of settings, and the only thing here
+that could have broken production silently. Clerk stamps the browser's origin into every
+session token as `azp`, and Django rejects a token whose `azp` is not in
+`CLERK_AUTHORIZED_PARTIES` — which defaulted to the CORS origins, which were port 3000
+only. Every call from the owner app came back 401 with a valid signed token and nothing in
+the log but "Unauthorized". Found by running the moved e2e suite, not by reading the code.
+Both origins are now in `backend/.env`, `.env.example`, `settings/base.py` and
+`.do/app.yaml`, and D85 records that production needs the two apps on one registrable
+domain (`owner.champhub.com`) or a Clerk satellite domain, or an owner signs in twice.
+
+**Shared code is copied, not packaged** (D84). The ui primitives, `globals.css`, the typed
+API client and the i18n setup are duplicates. An npm-workspaces refactor was the
+alternative and was rejected for this change — it would have rewritten every import in a
+twelve-phase-old app and touched CI, both Dockerfiles and Vercel to guarantee two files
+stay identical. **The standing cost is that a token changed in one app must be changed in
+the other**, which is now written into CLAUDE.md. What keeps them honest is tests in both
+apps: `align.spec.ts` measures the shared page column, and `e2e-hooks.test.ts` re-asserts
+D75's `backdrop-filter` allowlist per app. The owner app's copy also fails the build if a
+`<Link>` ever points at the player app's origin, because Next would answer that with its
+own 404 rather than leaving.
+
+**Tests split with the code.** `inventory.spec.ts` moved whole; turf registration came out
+of `turfs.spec.ts`, the walk-in test out of `bookings.spec.ts`, the finance 404 out of
+`payments.spec.ts`. The owner suite adds its own smoke (the gate, the wordmark, the
+`noindex` header, Bangla), a column-alignment spec and a test that the tab strip survives
+navigation. Two launch journeys genuinely cross both apps — an owner lists a turf and an
+admin reviews it; a player orders from the warehouse while a cashier sells off the turf's
+shelf — so they now navigate to `ownerUrl(...)` and **skip rather than fail** when the
+owner app is not running (`e2e/support/apps.ts`).
+
+**Verification.** Both apps: lint, prettier, typecheck, build and Vitest green — 51 in the
+player app, 35 in the owner app (its own locator guard, message-usage and catalogue-parity
+tests). Owner Playwright: **17 passed / 0 failed** against a production build with real
+Clerk keys, including registration end to end, stocking a shelf, ringing up a sale and
+watching the stock drop, and the two 404 gates. Player Playwright: the affected specs
+(`smoke`, `align`, `bookings`, `payments`, `turfs`, `discovery`) **24 passed / 1 failed**,
+plus launch journeys 1 and 5 green across both apps. `./scripts/dev.sh` brings up infra,
+API, worker and both frontends.
+
+The one failure is pre-existing and date-dependent, not caused by this move:
+`turfs.spec.ts` asserts a ৳3,200 peak price at Mirpur for *tomorrow*, and the demo data
+prices Friday and Saturday as the weekend (৳3,800). It passes Sun–Thu and fails on
+Thursdays and Fridays. Left alone deliberately — it is unrelated scope — but it should be
+made weekday-aware.
+
+**Follow-ups, honestly:**
+
+- **The owner app has no service worker and no offline page.** The player app's PWA
+  machinery (`public/sw.js`, the install prompt, `/offline`) was not copied. For an app
+  whose main screen is a till run on a phone at a turf with patchy signal, that is the most
+  valuable thing still missing. It is installable — manifest and icons are there — but it
+  will not open without a connection.
+- **Owner notifications.** There is no bell in this app, so a staff invitation or a new
+  booking is only seen by reloading a page or in the player app. The notifications API is
+  already there; nothing consumes it here.
+- **The Bangla for the 15 new keys is mine**, and joins the queue waiting on a native
+  speaker — specifically `app.name` ("চ্যাম্পহাব টার্ফ"), the four footer policy titles
+  and `nav.playerApp`.
+- **`manage.tsx` is still 765 lines** and `calendar.tsx` still mixes the queue, the day
+  list and the walk-in form. The move did not fix the IA debt Phase 12 recorded; it only
+  gave those pages a frame that no longer repeats itself.
+- **Nothing is deployed.** The second Vercel project / App Platform service for
+  `owner-frontend` does not exist, and `deploy.yml` still only deploys the backend. The
+  compose topology has an `owner` service and the Dockerfile builds, but neither has run
+  anywhere but here.
+
+---
+
+# Identity verification (photo + government document)
+
+Not a numbered phase — a feature asked for after Phase 12, built on `phase-12-design-system`.
+Rules in **DOMAIN §1a**, decisions **D89–D92**.
+
+**What it is.** Every account can upload a photograph of themselves and one government
+document — NID, driving licence, birth certificate or passport, any one of the four — and a
+platform admin approves or rejects it. Players and turf owners use the same flow, in their
+own apps, against the same endpoints, because it is the same account and the same person
+(DOMAIN §1).
+
+**Backend.**
+
+- `IdentityVerification` (one per `User`) + `IdentityVerificationEvent`, with the state
+  machine `draft → submitted → approved`, `submitted → rejected → submitted`, and
+  `approved → rejected` for a verification withdrawn afterwards. One service function per
+  transition, each writing an event row and notifying somebody; nothing else writes
+  `status`. `User.photo` is new and account-level — the photo a reviewer compares the
+  document against, and the one shown wherever that person appears.
+- Six endpoints: `GET/PATCH /me/identity`, `POST /me/identity/submit`,
+  `GET /me/identity/files/{field}`, `PATCH /me` (the account photo, multipart), and the
+  admin queue `admin/identity-verifications` with `approve`, `reject`, `revoke` and
+  `files/{field}`.
+- Three notification kinds, Django admin registration (deliberately *without* the
+  documents — see below), seeded demo data in four states, and 26 tests covering the
+  transitions, the refusals, the masking and who may fetch a file.
+- `approve_turf` can be gated on the owner being verified
+  (`IDENTITY_REQUIRED_FOR_TURF_APPROVAL`, default off), and `OwnerTurfSerializer` now
+  carries `owner_identity_status` so the admin queue and the owner dashboard both show it.
+
+**The privacy posture is the feature** (D89). The documents go to a second, private storage
+alias — outside `MEDIA_ROOT` locally, a private-ACL prefix in the bucket in production — and
+are never given a URL: the local backend's `url()` raises, and the API streams the bytes to
+the owner of the document and to platform admins, logging every admin read. The Django
+admin shows the row but not the files, so there is no quiet second door past that log. The
+document number is unmasked for a reviewer and `•••• 4821` everywhere else, including back
+to the person who typed it. Publicly, all that exists is one boolean on the player card.
+
+**Frontends.** A copied `IdentityPanel` in both apps (D84), a page each
+(`/settings/identity` in the player app, `/account` in the owner app, linked from settings
+and from the owner dashboard's nudge), the admin review queue at `/admin/identity` with the
+photo, the document and the number side by side, and an authenticated route handler in each
+app (`/api/identity/...`) that forwards the session to Django so an `<img>` can show a file
+that has no URL. 114 new message keys per language across the two apps — 228 catalogue entries, Bangla included.
+
+**Verification.** Backend `pytest` **1584 passed, 1 skipped**, `ruff` clean. (One threaded
+booking-concurrency test fails intermittently under full-suite load — a barrier timeout; it
+passes in isolation and on a rerun, and touches nothing here.) Both frontends: lint,
+prettier, typecheck and Vitest green. Playwright against production builds with real Clerk
+keys: a new player uploads a photo and a passport and lands in the queue; an owner does the
+same from the dashboard nudge; `/admin/identity` joins the admin gate spec. The admin queue
+itself was driven by hand against seeded data — photo, both document images and the actions
+all render and load.
+
+**Found on the way** (D92): uploaded media had never actually been displayed by either
+frontend, and it did not work. `MEDIA_URL` was relative, so photos resolved against the
+Next.js origin; once absolute, the Phase 11 CSP blocked them for being plain http. Both are
+fixed, which also un-breaks turf photos and player photos — nothing had rendered one before.
+
+**Follow-ups, honestly:**
+
+- **Nothing expires.** A verified identity stays verified forever, and nothing re-checks a
+  passport that has since run out. There is no document-expiry field and no re-verification
+  schedule.
+- **No duplicate detection.** Two accounts can submit the same NID number and both be
+  approved; the queue would only catch it if the same admin remembered the number.
+- **The documents are kept indefinitely.** There is no retention rule and no deletion on
+  account deactivation, which is the next thing a privacy policy will ask for. The files
+  are deleted only when replaced.
+- **The gate is off.** `IDENTITY_REQUIRED_FOR_TURF_APPROVAL` defaults to false, so today
+  verification is advisory for owners. Turning it on is a one-line setting — and a decision
+  about the pilot.
+- **The Bangla for the new keys is mine**, and joins the queue waiting on a native speaker.
+
+---
+
+# Usernames (@handles, for inviting)
+
+Not a numbered phase — a feature asked for after identity verification, built on the same
+branch. Rules in **DOMAIN §1b**, decisions **D93–D95**.
+
+**What it is.** Every account can hold one unique handle, written `@rafiq_hasan`, and it is
+how one person names another: a match invite and a squad invite both accept a username in
+place of a player id, player search matches on it, and `/players/@rafiq_hasan` opens the
+profile. A player picks theirs in onboarding, where it is now the one required field
+besides a sport (D93); a turf owner claims one on `/account` in the owner app, because they
+never run the player wizard.
+
+**Backend.**
+
+- `User.username` — unique, nullable (blank has no room under a unique index), with the
+  rules in one module, `apps/accounts/usernames.py`: normalisation (strip a pasted `@`,
+  fold case), the shape (3–20, lowercase ASCII letters, digits, underscore, must start with
+  a letter), and the reserved list. `User.handle` is the same thing with the `@` on it.
+  The validator sits on the field *and* in the service, so a fixture, a management command
+  and the Django admin obey the rules the API does.
+- `set_username`, `username_availability` and `user_by_username` in
+  `accounts/services.py`. No event row and no state machine: it is a plain attribute with
+  no states to move between. The "taken?" check can race, so the save runs in its own
+  `atomic` block and the unique index has the last word — the `IntegrityError` comes back
+  as the same field error the check would have given, not a 500.
+- Four endpoints: `PUT /me/username`, `GET /usernames/check?username=`,
+  `GET /players/by-username/{username}`, and `username` on the onboarding payload. `GET /me`
+  and every player serializer now carry `username` and `handle`; `/players/search`'s `q`
+  matches a handle with or without the `@`.
+- `InvitePlayerSerializer` takes `player_id` **or** `username`, exactly one — accepting both
+  and preferring one would quietly ignore half of what a UI sent. The handle only names the
+  player; `invite_player` and `invite_to_squad` decide exactly as before, so an outsider
+  gets the same refusal either way.
+- A handle lookup ignores `discoverable` (D95), the same rule a direct profile link has
+  always followed. The availability check is throttled per account
+  (`username-check`, 240/hour) because it answers "does this account exist" for any word;
+  the lookup shares the player-directory throttle.
+- `UserFactory` now mints a handle per account, and `seed_demo` gives each demo player
+  theirs (`@rafi_ahmed`). 70 new tests: 56 in `accounts/tests/test_usernames.py`
+  (normalisation, every refusal message, the race, the endpoints, onboarding), 7 for
+  inviting by handle, and the rest across the lookup endpoint and search.
+
+**Frontends.** A copied `UsernamePanel` in both apps (D84) — the field, a debounced
+availability check that reports on the *normalised* handle, and the shareable profile link
+with a copy button, since giving the handle away is the point. The wizard's first step
+gained the field and will not advance without a free handle; the profile card, search
+results and both invite boxes (match page, squad page) now speak handles. `/players/[id]`
+resolves a segment starting with `@` through the by-username endpoint, so one route serves
+both the id link and the one a person pastes into a group chat. 16 new message keys per
+language per app — 64 catalogue entries, Bangla included.
+
+**Verification.** Backend `pytest` **1657 passed, 4 failed** — the four are `payments`
+payout tests that fail on the clock rather than on this work (see below), and the
+booking-concurrency flake passed on this run; `ruff` clean. Both frontends: lint,
+prettier, typecheck, Vitest (52 and 36) and a production build green. `seed_demo` re-run,
+and the handles it writes resolve through `user_by_username` against the real database.
+Playwright was **not** run (it needs real Clerk keys and a production build): the suite is
+updated — a shared `pickUsername` fixture now gets all thirteen onboarding specs past the
+new required field, located by element id so launch journey 7 still walks the wizard in
+Bangla — `frontend/e2e/usernames.spec.ts` is new, covering the handle chain across two accounts,
+a handle nobody has claimed, and a rename; and the owner app's `account.spec.ts` gained an
+owner claiming one. The static `e2e-hooks` guard was extended to
+cover the field ids and button labels those specs depend on.
+
+**Found on the way.** Four `payments` payout tests fail between 18:00 and 24:00 UTC and
+pass the rest of the day, and they predate this work: ledger entries stamp
+`occurred_on = to_dhaka(now()).date()` while the tests ask for a statement covering
+`now().date()`, which is the UTC date — a different day once Dhaka has crossed midnight.
+The fix is `to_dhaka(now()).date()` in the four tests; left alone here because it is
+nothing to do with handles.
+
+**Follow-ups, honestly:**
+
+- **A dropped handle is immediately reusable** (D94), so a rename is impersonatable and an
+  old chat link can come to point at a stranger. `UsernameHistory` plus a cooling-off
+  period is the fix when handles start outliving conversations.
+- **Nothing suggests a handle.** A player who cannot think of one is stuck staring at an
+  empty required field; a "suggestions from your name" button is an obvious kindness and is
+  not built.
+- **Confusable handles are not caught.** `rafiq_hasan` and `rafiq_hasan_` are both
+  claimable, and so are `rafiq1` / `rafiql`. Only exact (case-folded) collisions are
+  refused — no visual-confusable or underscore-stripped comparison.
+- **The accounts that predate this have no handle**, including every existing turf owner,
+  and nothing nudges them: there is no banner, no notification, and the owner dashboard
+  does not mention it the way it does the identity check.
+- **No admin tooling.** A platform admin can edit a handle through the Django admin but
+  there is no release of a squatted or abusive handle, and no audit of who changed one.
+- **The Bangla for the new keys is mine**, and joins the queue waiting on a native speaker.
+
+---
+
+# The Django admin, on django-unfold
+
+Not a numbered phase — asked for after the username work, built on the same branch.
+Decisions **D96–D98**.
+
+**What it is.** The platform admin — 59 registered models, the turf review queue, the
+conduct queue, the identity queue — rendered by [django-unfold](https://unfoldadmin.com)
+0.110.1 instead of by Django's 2013 stylesheet. It is the interface this product's own
+staff live in, and it was the last surface that had not been through Phase 12.
+
+**Backend.**
+
+- One app, `unfold`, ahead of `django.contrib.admin` in `INSTALLED_APPS` — the order
+  decides both template and static-file resolution, and Unfold overrides three of
+  Django's admin JS files. Its `contrib.*` packages are opt-in and none is installed:
+  removing them again changed nothing that the smoke tests render.
+- 58 `ModelAdmin`s and 26 inlines across 14 apps now extend Unfold's classes. `UserAdmin`
+  additionally takes Unfold's three auth forms, so the password widgets stop being
+  Django's markup inside an Unfold page. `Group` and django-otp's `TOTPDevice` are
+  unregistered and re-registered as themed subclasses in `apps/core/admin.py` — they are
+  pages an admin genuinely uses, and a library that knows nothing about Unfold cannot
+  theme itself.
+- `config/settings/admin_theme.py` carries the whole `UNFOLD` literal: the palette (the
+  frontend's `--brand` greens at hue 158 and the same green-greys, D73), the ⌘K model
+  search, and the eight-group sidebar with a `view` permission check per link (D98).
+- **The second factor moved** (D97). D64's gate was django-otp's `OTPAdminSite`, swapped
+  in by mutating `admin.site.__class__`; both of those are gone. The site is now
+  `apps.core.admin_site.ChampHubAdminSite` — Unfold's site plus an `is_verified()` check —
+  installed through `config.apps.ChampHubAdminConfig.default_site`, Django's own documented
+  mechanism. The login form (`apps.core.admin_forms.AdminLoginForm`) is Unfold's with
+  django-otp's mixin, and it asks for a token only when the gate is on, read per request
+  through `setting()` rather than at import.
+- Two templates are ours: `admin/login_otp.html` (Unfold's login page plus the token
+  field) and the restyled `admin/sports/merge_proposal.html`, the one custom action page
+  in the project, which now also gets `each_context` so its chrome is not empty.
+
+**Verification.** `manage.py check` clean, `ruff` clean, `collectstatic` clean under both
+the development and the production (manifest, compressed) storages. A new
+`apps/core/tests/test_admin.py` — **189 passed, 4 skipped** — fetches every registered
+model's changelist and add form, asserts every admin is an Unfold admin, and pins the TOTP
+gate in both directions. Backend `pytest` **1848 passed, 5 failed**: the four `payments`
+payout tests that fail between 18:00 and 24:00 UTC on a Dhaka/UTC date boundary (recorded
+in the previous section and nothing to do with this), plus the known booking-concurrency
+flake. Driven by hand in the browser as well — login, index, two changelists, a turf
+change form with its inlines, a user change form, and the merge action page.
+
+**Found on the way.** Unfold's login template carries no hidden `next` field, so a sign-in
+that started at `/admin/login/` posted no destination and Django's `LoginView` fell back to
+`LOGIN_REDIRECT_URL` — `/accounts/profile/`, which this project does not serve. Every
+automated check passed and the admin landed on a 404; it was found by logging in by hand.
+Our login template carries the field, and a test now posts the form the way a browser does
+rather than posting two fields directly, which is the only shape of that test that would
+have caught it.
+
+**Follow-ups, honestly:**
+
+- **The dashboard is still Django's app list.** Unfold's `DASHBOARD_CALLBACK` is where a
+  real one would go — turfs awaiting review, identity checks waiting, today's bookings,
+  unpaid payouts — and it is not built.
+- **No Unfold filters or actions in use.** Its range and date-picker filters live in
+  `unfold.contrib.filters`, which is not installed because nothing uses it yet; and
+  `list_filter_submit` is off, so a filter still reloads per click. Both are per-admin
+  opt-ins nobody has gone through 58 classes for.
+- **One upstream deprecation warning** on Django 6.1 (`get_action_choices` without
+  `action_location`). Harmless today, the library's to fix, and it will become an error in
+  a later Django.
+- **The sidebar is a hand-written list** (D98). A model registered tomorrow appears under
+  "all applications" and nowhere else until somebody adds it, and nothing fails if they
+  do not.

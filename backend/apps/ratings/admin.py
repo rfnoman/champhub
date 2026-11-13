@@ -1,4 +1,5 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 
 from .models import (
     Availability,
@@ -11,7 +12,7 @@ from .models import (
 
 
 @admin.register(RatingChange)
-class RatingChangeAdmin(admin.ModelAdmin):
+class RatingChangeAdmin(ModelAdmin):
     list_display = ("profile", "sport", "before_overall", "after_overall", "played_at")
     list_filter = ("sport", "weights_version")
     search_fields = ("profile__display_name", "profile__user__email")
@@ -25,7 +26,7 @@ class RatingChangeAdmin(admin.ModelAdmin):
 
 
 @admin.register(PlayerSportStats)
-class PlayerSportStatsAdmin(admin.ModelAdmin):
+class PlayerSportStatsAdmin(ModelAdmin):
     list_display = ("profile", "sport", "matches", "wins", "motm_awards")
     list_filter = ("sport",)
     search_fields = ("profile__display_name",)
@@ -33,7 +34,7 @@ class PlayerSportStatsAdmin(admin.ModelAdmin):
 
 
 @admin.register(PlayerGroundStats)
-class PlayerGroundStatsAdmin(admin.ModelAdmin):
+class PlayerGroundStatsAdmin(ModelAdmin):
     list_display = ("profile", "turf", "ground", "sport", "matches", "motm_awards")
     list_filter = ("sport", "turf")
     search_fields = ("profile__display_name", "turf__name")
@@ -41,7 +42,7 @@ class PlayerGroundStatsAdmin(admin.ModelAdmin):
 
 
 @admin.register(ConductReport)
-class ConductReportAdmin(admin.ModelAdmin):
+class ConductReportAdmin(ModelAdmin):
     list_display = ("reported", "reason", "status", "reporter", "created_at")
     list_filter = ("status", "reason")
     search_fields = ("reported__email", "reporter__email", "details")
@@ -49,7 +50,7 @@ class ConductReportAdmin(admin.ModelAdmin):
 
 
 @admin.register(Availability)
-class AvailabilityAdmin(admin.ModelAdmin):
+class AvailabilityAdmin(ModelAdmin):
     list_display = ("profile", "sport", "starts_at", "ends_at", "area")
     list_filter = ("sport",)
     search_fields = ("profile__display_name", "area")
@@ -57,7 +58,7 @@ class AvailabilityAdmin(admin.ModelAdmin):
 
 
 @admin.register(LeaderboardEntry)
-class LeaderboardEntryAdmin(admin.ModelAdmin):
+class LeaderboardEntryAdmin(ModelAdmin):
     list_display = ("rank", "profile", "metric", "sport", "turf", "period", "value")
     list_filter = ("metric", "period", "sport", "turf")
     search_fields = ("profile__display_name",)

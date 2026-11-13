@@ -19,6 +19,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
+from apps.accounts.services import set_username
 from apps.core.utils import now
 from apps.sports.models import Attribute, Sport, SportSkill
 
@@ -273,9 +274,16 @@ def complete_onboarding(*, user, data: dict) -> PlayerProfile:
         }
 
     At least one sport is required — the profile card, match board and discovery all key
-    off ``PlayerSport``, so finishing with none would leave the player stranded.
+    off ``PlayerSport``, so finishing with none would leave the player stranded. A
+    username is required for the same kind of reason: it is how somebody invites this
+    player afterwards (DOMAIN §1b), and the wizard is the only moment in the app that
+    asks for one.
     """
     profile = get_or_create_profile(user)
+
+    # Before anything else is written: a handle that is taken must fail the whole wizard,
+    # not leave a profile behind with no way to be invited.
+    set_username(user=user, username=data.get("username", ""))
 
     sports_payload = data.get("sports") or []
     if not sports_payload:

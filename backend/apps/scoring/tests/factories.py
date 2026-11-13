@@ -22,6 +22,8 @@ def onboard(user, sport: str = "football", skill: int = 60):
     return complete_onboarding(
         user=user,
         data={
+            # Onboarding requires a handle (DOMAIN §1b); the factory's is already unique.
+            "username": user.username,
             "attributes": {"stamina": skill, "agility": skill, "speed": skill, "strength": skill},
             "sports": [{"sport": sport, "positions": [], "skills": {}}],
         },

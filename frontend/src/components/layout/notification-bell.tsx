@@ -9,6 +9,8 @@ import { Bell } from "lucide-react";
 import type { Notification } from "@/lib/api/types";
 import { useApiClient } from "@/lib/api/use-api";
 import { Button } from "@/components/ui/button";
+
+import { NotificationLink } from "./notification-link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -137,13 +139,13 @@ export function NotificationBell() {
               return (
                 <li key={item.id} className="border-b last:border-b-0">
                   {item.url ? (
-                    <Link
-                      href={item.url}
+                    <NotificationLink
+                      url={item.url}
                       className="hover:bg-muted/60 block px-3 py-2 text-sm"
-                      onClick={() => setOpen(false)}
+                      onNavigate={() => setOpen(false)}
                     >
                       {body}
-                    </Link>
+                    </NotificationLink>
                   ) : (
                     <div className="px-3 py-2 text-sm">{body}</div>
                   )}

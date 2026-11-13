@@ -14,13 +14,14 @@ products to the turf or to the player's home.
 ## Stack
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js (App Router) + TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, next-intl (en + bn) |
+| Frontend | **Two** Next.js apps (App Router) + TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, next-intl (en + bn): `frontend/` for players and admins, `owner-frontend/` for turf owners (DECISIONS D83) |
 | Auth | Clerk (`@clerk/nextjs` on frontend; Django verifies Clerk session JWTs via JWKS) |
 | Backend | Django + Django REST Framework, drf-spectacular (OpenAPI) |
+| Admin | Django admin themed with **django-unfold** (DECISIONS D96); new `ModelAdmin`s and inlines extend `unfold.admin` classes, never `django.contrib.admin` ones |
 | DB | PostgreSQL + PostGIS (`django.contrib.gis`) |
 | Jobs | Celery + Redis (timers: hold expiry, auto-confirm, vote close, reminders) |
 | Tests | pytest-django + factory_boy (backend), Vitest (frontend units), Playwright (e2e) |
-| Local dev | docker compose (postgres/postgis, redis); backend and frontend run on host |
+| Local dev | docker compose (postgres/postgis, redis); Django and both Next.js apps run on the host (3000 player, 3001 owner) |
 
 ## Repository layout
 ```
@@ -42,9 +43,13 @@ turf-app/
       fitness/        Activity log, streaks, bundles, reminders
       payments/       Payment, providers (cash now; SSLCommerz/bKash later), ledger
       notifications/  In-app notifications, email, push
-  frontend/           Next.js app
-    src/app/          routes: (player), (owner), (admin)
+  frontend/           Next.js app — players and platform admins
+    src/app/          routes: (player), (admin)
     src/lib/api/      generated OpenAPI types + typed client
+  owner-frontend/     Next.js app — turf owners and their staff, port 3001
+    src/app/          (signed-in)/{page,new,turfs/[slug]/*}, sign-in, sign-up
+    src/components/   its own copies of the ui primitives + globals.css
+    messages/         only the namespaces this app renders
   docs/
   docker-compose.yml
 ```
@@ -61,6 +66,16 @@ turf-app/
 - **IDs**: UUID primary keys on all domain models exposed via API.
 - **Permissions**: DRF permission classes in `apps/<app>/permissions.py`; object-level
   checks for owner/staff/leader. Roles are permissions on one account, never separate user types.
+- **Admin**: every `ModelAdmin`/`TabularInline`/`StackedInline` comes from `unfold.admin`,
+  and a model registered by a third-party library is re-registered as a themed subclass in
+  `apps/core/admin.py` (D96). Unfold's `contrib.*` apps are opt-in — add the one you need
+  to `INSTALLED_APPS` when you first use one of its classes. The admin site itself is `apps.core.admin_site` — Unfold's
+  plus the TOTP gate (D97) — installed through `config.apps.ChampHubAdminConfig`; the
+  sidebar it shows is the curated list in `config/settings/admin_theme.py` (D98).
+- **Uploads**: photos meant to be looked at (turfs, players, products) go to the default,
+  world-readable store. Anything sensitive — today identity documents — goes to
+  `STORAGES["private"]` via `apps.core.storage`, is never given a URL, and is streamed by a
+  view that checks who is asking and logs admin reads (DECISIONS D89).
 - **API**: REST under `/api/v1/`, documented with drf-spectacular; after changing the API,
   regenerate frontend types (`npm run gen:api`). Paginate all list endpoints.
 - **Configurable rules** (cutoff hours, auto-confirm windows, rating weights) live in
@@ -68,7 +83,15 @@ turf-app/
 - **i18n**: every user-facing frontend string goes through next-intl; add keys to both
   `messages/en.json` and `messages/bn.json` (bn may be an English placeholder until
   Phase 11). Key sets must match — a unit test enforces it. Locale lives in the
-  `NEXT_LOCALE` cookie; URLs carry **no** locale prefix (DECISIONS D13).
+  `NEXT_LOCALE` cookie; URLs carry **no** locale prefix (DECISIONS D13). Each app has
+  its own catalogues holding only the namespaces it renders.
+- **Two frontends** (DECISIONS D83): owner work goes in `owner-frontend/`, player and
+  admin work in `frontend/`. The design system, the ui primitives, the API client and
+  the i18n setup are **copied** between them, not shared — change a token in one and
+  change it in the other. Links between the apps are absolute URLs on a plain `<a>`
+  (`ownerAppUrl()` / `playerAppUrl()` in `src/lib/links.ts`), never `<Link>`. A new
+  frontend origin must be added to the backend's `CLERK_AUTHORIZED_PARTIES` and
+  `CORS_ALLOWED_ORIGINS`, or Clerk's `azp` check 401s every call from it.
 - **Next.js 16 specifics** (older tutorials get these wrong):
   - Request middleware is `src/proxy.ts`, not `middleware.ts`, and runs on the Node
     runtime only. It attaches the Clerk session and nothing else.
@@ -87,8 +110,9 @@ turf-app/
 
 ## Commands
 ```
-./scripts/dev.sh                          # everything: infra + migrate + api + worker + web
+./scripts/dev.sh                          # everything: infra + migrate + api + worker + both web apps
 ./scripts/dev.sh --backend                # API only (see --help for more)
+./scripts/dev.sh --no-owner               # skip the owner app
 
 docker compose up -d                      # postgres (55432) + redis (56379)
 cd backend && uv run python manage.py runserver
@@ -96,11 +120,13 @@ cd backend && uv run python manage.py seed_demo
 cd backend && uv run pytest               # add --create-db after changing migrations
 cd backend && uv run ruff check . && uv run ruff format .
 cd backend && uv run celery -A config worker -B -l info
-cd frontend && npm run dev
+cd frontend && npm run dev                # player app, port 3000
+cd owner-frontend && npm run dev          # owner app, port 3001
 cd frontend && npm run lint && npm run typecheck && npm run format:check
 cd frontend && npm run test               # Vitest
 cd frontend && npm run test:e2e           # Playwright (needs real Clerk keys)
 cd frontend && npm run gen:api            # regenerate API types (backend must be running)
+# every one of those five also exists in owner-frontend/
 ```
 
 **Environment notes (Phase 00):**
@@ -109,6 +135,9 @@ cd frontend && npm run gen:api            # regenerate API types (backend must b
   any model with a `PointField` fails without them even though PostGIS runs in Docker.
 - Container ports are **55432 / 56379**, not the defaults — a native Postgres and Redis
   occupy 5432/6379 on the dev machine and would silently shadow them.
+- The frontends are **3000** (player) and **3001** (owner). Both origins are listed in
+  `backend/.env`'s `CLERK_AUTHORIZED_PARTIES` and `CORS_ALLOWED_ORIGINS`; a missing one
+  means a 401 on every call from that app with nothing in the log but "Unauthorized".
 - Local PostGIS image is `imresamu/postgis` (multi-arch); `postgis/postgis` is amd64-only
   and does not run on Apple Silicon. CI uses the upstream image. See DECISIONS D16.
 

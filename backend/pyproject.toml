@@ -10,6 +10,7 @@ dependencies = [
     "django-filter>=26.2",
     "django-otp>=1.6",
     "django-storages[s3]>=1.14",
+    "django-unfold>=0.110.1",
     "djangorestframework>=3.18.3",
     "drf-spectacular>=0.30.0",
     "gunicorn>=26.2.0",

@@ -108,10 +108,15 @@ services:
       # Clerk, and the frontend origins its tokens may come from. A token whose `azp` is
       # not listed is rejected — which is correct, and is also the single most likely
       # reason a working staging deploy stops authenticating in production.
+      #
+      # **Both** frontends must be listed (DECISIONS D83): the player app at SITE_URL
+      # and the owner app at OWNER_SITE_URL. Clerk stamps the browser's own origin into
+      # every session token, so an owner app missing from this list authenticates
+      # nobody — with a 401 on every call and nothing in the log to say why.
       - {key: CLERK_FRONTEND_API_URL, value: "${CLERK_FRONTEND_API_URL}"}
       - {key: CLERK_ISSUER, value: "${CLERK_FRONTEND_API_URL}"}
-      - {key: CLERK_AUTHORIZED_PARTIES, value: "${SITE_URL}"}
-      - {key: CORS_ALLOWED_ORIGINS, value: "${SITE_URL}"}
+      - {key: CLERK_AUTHORIZED_PARTIES, value: "${SITE_URL},${OWNER_SITE_URL}"}
+      - {key: CORS_ALLOWED_ORIGINS, value: "${SITE_URL},${OWNER_SITE_URL}"}
 
       # Media on Spaces: S3-compatible, so the same settings would drive R2 or S3 if this
       # ever moves (DECISIONS D71).

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin, TabularInline
 
 from .models import (
     Address,
@@ -13,33 +14,33 @@ from .models import (
 
 
 @admin.register(DeliveryZone)
-class DeliveryZoneAdmin(admin.ModelAdmin):
+class DeliveryZoneAdmin(ModelAdmin):
     list_display = ("name", "fee", "eta_hours", "turf_delivery_cutoff_hours", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name",)
 
 
 @admin.register(Address)
-class AddressAdmin(admin.ModelAdmin):
+class AddressAdmin(ModelAdmin):
     list_display = ("label", "area", "player", "is_default")
     search_fields = ("line", "area", "player__email")
     raw_id_fields = ("player",)
 
 
-class CartItemInline(admin.TabularInline):
+class CartItemInline(TabularInline):
     model = CartItem
     extra = 0
     raw_id_fields = ("stock_item",)
 
 
 @admin.register(Cart)
-class CartAdmin(admin.ModelAdmin):
+class CartAdmin(ModelAdmin):
     list_display = ("player", "updated_at")
     raw_id_fields = ("player",)
     inlines = [CartItemInline]
 
 
-class OrderItemInline(admin.TabularInline):
+class OrderItemInline(TabularInline):
     model = OrderItem
     extra = 0
     raw_id_fields = ("product", "stock_item")
@@ -47,7 +48,7 @@ class OrderItemInline(admin.TabularInline):
     readonly_fields = ("name", "unit_price", "quantity", "nutrition")
 
 
-class OrderEventInline(admin.TabularInline):
+class OrderEventInline(TabularInline):
     model = OrderEvent
     extra = 0
     readonly_fields = ("from_status", "to_status", "actor", "note")
@@ -57,7 +58,7 @@ class OrderEventInline(admin.TabularInline):
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(ModelAdmin):
     list_display = ("created_at", "player", "location", "fulfilment", "total", "status")
     list_filter = ("status", "fulfilment", "location")
     search_fields = ("player__email", "id")
@@ -69,7 +70,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 @admin.register(RiderProfile)
-class RiderProfileAdmin(admin.ModelAdmin):
+class RiderProfileAdmin(ModelAdmin):
     list_display = ("user", "phone", "is_active")
     list_filter = ("is_active", "zones")
     raw_id_fields = ("user",)

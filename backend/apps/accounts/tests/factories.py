@@ -15,6 +15,10 @@ class UserFactory(DjangoModelFactory):
         skip_postgeneration_save = True
 
     clerk_id = factory.Sequence(lambda n: f"user_test{n:05d}")
+    # A handle, because almost every account in the app has one (onboarding requires it,
+    # DOMAIN §1b) and a test that forgets it would be testing a state real players are
+    # not in. `username=None` for the cases that need an account without one.
+    username = factory.Sequence(lambda n: f"player{n:05d}")
     email = factory.LazyAttribute(lambda o: f"{o.clerk_id}@example.com")
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
@@ -36,4 +40,5 @@ class UserFactory(DjangoModelFactory):
 
 class PlatformAdminFactory(UserFactory):
     clerk_id = factory.Sequence(lambda n: f"user_admin{n:05d}")
+    username = factory.Sequence(lambda n: f"reviewer{n:05d}")
     is_platform_admin = True

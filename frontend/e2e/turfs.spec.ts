@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { apiBaseUrl } from "./support/clerk-users";
+import { pickUsername } from "./support/onboarding";
 import { OPEN_SLOT, dhakaDate, findOpenSlot } from "./support/booking";
 import { expect, requiresClerk, test } from "./support/fixtures";
 
@@ -13,6 +14,7 @@ import { expect, requiresClerk, test } from "./support/fixtures";
  */
 async function finishOnboarding(page: Page) {
   await page.goto("/onboarding");
+  await pickUsername(page);
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByRole("button", { name: /Football/ }).click();
   await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -123,43 +125,5 @@ test.describe("turf detail", () => {
     );
 
     await expect(page.locator("[data-slot-start]")).toHaveCount(fromApi);
-  });
-});
-
-test.describe("turf registration", () => {
-  requiresClerk();
-
-  test("an owner registers a turf and it starts as a draft", async ({ signedInPage: page }) => {
-    await finishOnboarding(page);
-
-    await page.goto("/owner");
-    await expect(page.getByRole("heading", { level: 1, name: "Turf dashboard" })).toBeVisible();
-    await page.getByRole("link", { name: "Register a turf" }).first().click();
-
-    await expect(page).toHaveURL(/\/owner\/new/);
-    await page.getByLabel("Turf name").fill("E2E Test Turf");
-    await page.getByLabel("Address").fill("Road 1, Dhanmondi, Dhaka");
-    await page.getByLabel("Area", { exact: true }).fill("Dhanmondi");
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-
-    // Step 2 is the map picker; the default Dhaka pin is fine for this.
-    await expect(page.getByRole("heading", { name: "Where is it?" })).toBeVisible();
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-
-    await page.getByRole("button", { name: "Floodlights" }).click();
-    await page.getByRole("button", { name: "Create draft" }).click();
-
-    await expect(page).toHaveURL(/\/owner\/e2e-test-turf/);
-    await expect(page.getByText("Draft")).toBeVisible();
-    // A draft has no grounds yet, so it cannot be submitted — and the API says why.
-    // Matched on the text rather than role=alert: Next's route announcer is one too.
-    await page.getByRole("button", { name: "Submit for review" }).click();
-    await expect(page.getByText(/Add at least one ground/)).toBeVisible();
-  });
-
-  test("a brand-new owner has no turfs", async ({ signedInPage: page }) => {
-    await finishOnboarding(page);
-    await page.goto("/owner");
-    await expect(page.getByText("You have not registered a turf yet.")).toBeVisible();
   });
 });

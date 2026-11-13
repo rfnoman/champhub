@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
@@ -9,6 +10,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.services import user_by_username
+from apps.core.throttling import PlayerSearchThrottle
 from apps.sports.models import Sport
 
 from .models import PlayerProfile
@@ -167,4 +170,39 @@ class PlayerDetailView(APIView):
     )
     def get(self, request, player_id):
         profile = get_object_or_404(profile_queryset(), pk=player_id)
+        return Response(_render(profile, PublicPlayerProfileSerializer))
+
+
+class PlayerByUsernameView(APIView):
+    """The same card, found by handle (DOMAIN §1b).
+
+    This is what makes a handle worth having: somebody says "@rafiq_hasan" in a group
+    chat and the person reading it can open the profile, invite them, or both, without
+    anybody having to exchange an id.
+
+    Two deliberate choices:
+
+    * **It ignores ``discoverable``.** Handing out a handle is the opposite of hiding,
+      and this behaves exactly like the direct profile link it is a prettier form of.
+    * **404 when there is no account**, and the same 404 when the handle is malformed —
+      "no player with that username" is the only honest answer to both, and splitting
+      them would turn the endpoint into a validator for guessing.
+
+    Throttled with the player directory, because walking handles through it would be a
+    way to enumerate accounts.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [PlayerSearchThrottle]
+
+    @extend_schema(
+        operation_id="players_retrieve_by_username",
+        summary="A player's public profile, by username",
+        responses={200: PublicPlayerProfileSerializer},
+    )
+    def get(self, request, username):
+        user = user_by_username(username)
+        if user is None:
+            raise Http404("No player with that username.")
+        profile = get_object_or_404(profile_queryset(), user=user)
         return Response(_render(profile, PublicPlayerProfileSerializer))

@@ -39,7 +39,11 @@ function policy(nonce: string): string {
     // Next inlines its critical CSS, and styles cannot carry a nonce through Tailwind.
     "style-src 'self' 'unsafe-inline'",
     // Map tiles, turf photos and Clerk avatars, all from hosts we do not control.
-    "img-src 'self' data: blob: https:",
+    // The API origin is named explicitly for the sake of development: uploaded media is
+    // served by Django over plain http on another port there, and `https:` alone
+    // blocked every account photo and turf photo with nothing in the UI to say why. In
+    // production the API is https, so this adds nothing.
+    `img-src 'self' data: blob: https: ${api}`,
     "font-src 'self' data:",
     `connect-src 'self' ${api} ${clerk}`,
     // Clerk's bot-protection challenge renders in a frame.

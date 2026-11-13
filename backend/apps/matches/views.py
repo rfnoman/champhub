@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.services import user_by_username
 from apps.core.throttling import ReachingPeopleThrottle
 from apps.players.models import PlayerProfile
 
@@ -72,6 +73,26 @@ def _player_from_profile(profile_id):
     """
     profile = get_object_or_404(PlayerProfile.objects.select_related("user"), id=profile_id)
     return profile.user
+
+
+def _invited_player(data: dict):
+    """The account an invite is for, named by profile id or by handle (DOMAIN §1b).
+
+    A handle that belongs to nobody is a 400 on the ``username`` field rather than a
+    404: the request is well-formed and the person typed something wrong, so the answer
+    belongs under the input they typed it into.
+
+    The lookup deliberately does not care whether that player is discoverable — handing
+    out a handle is the opposite of hiding — but every other rule still applies, because
+    the invite services are what actually decide and they are reached unchanged.
+    """
+    if data.get("player_id") is not None:
+        return _player_from_profile(data["player_id"])
+
+    player = user_by_username(data.get("username"))
+    if player is None:
+        raise DjangoValidationError({"username": "No player has that username."})
+    return player
 
 
 def _parse_date(raw: str | None) -> date_type | None:
@@ -241,7 +262,7 @@ class MatchViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
             invite = invite_player(
                 match=match,
                 invited_by=request.user,
-                player=_player_from_profile(payload.validated_data["player_id"]),
+                player=_invited_player(payload.validated_data),
                 message=payload.validated_data.get("message", ""),
             )
         except DjangoValidationError as exc:
@@ -479,7 +500,7 @@ class SquadViewSet(
             invite = invite_to_squad(
                 squad=squad,
                 invited_by=request.user,
-                player=_player_from_profile(payload.validated_data["player_id"]),
+                player=_invited_player(payload.validated_data),
                 message=payload.validated_data.get("message", ""),
             )
         except DjangoValidationError as exc:

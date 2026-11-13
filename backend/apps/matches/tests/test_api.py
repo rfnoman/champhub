@@ -40,6 +40,8 @@ def onboard(user, sport: str = "football"):
     return complete_onboarding(
         user=user,
         data={
+            # Onboarding requires a handle (DOMAIN §1b); the factory's is already unique.
+            "username": user.username,
             "attributes": {"stamina": 60, "agility": 60, "speed": 60, "strength": 60},
             "sports": [{"sport": sport, "positions": [], "skills": {"finishing": 60}}],
         },
@@ -331,6 +333,104 @@ class TestInviteApi:
         response = client.post(
             f"/api/v1/matches/{match.id}/invite",
             {"player_id": str(profile.id)},
+            format="json",
+        )
+        assert response.status_code == 400
+
+
+class TestInviteByUsername:
+    """Naming somebody by their handle instead of by an id (DOMAIN §1b).
+
+    The reason this matters: the person being invited was named in a group chat, not
+    picked out of a list, and the organiser has nothing but "@rafiq_hasan" to go on.
+    """
+
+    def test_the_organiser_invites_by_handle(self, client, booker):
+        match = make_match(booker=booker)
+        guest = UserFactory(username="rafiq_hasan")
+        get_or_create_profile(guest)
+
+        client.force_authenticate(booker)
+        response = client.post(
+            f"/api/v1/matches/{match.id}/invite",
+            {"username": "@Rafiq_Hasan", "message": "Need a keeper"},
+            format="json",
+        )
+        assert response.status_code == 201
+        assert response.data["status"] == "leader_approved"
+        assert match.invites.get().invited_player == guest
+
+    def test_it_reaches_a_player_who_is_not_discoverable(self, client, booker):
+        """Handing out a handle is the opposite of hiding (DOMAIN §3)."""
+        match = make_match(booker=booker)
+        guest = UserFactory(username="hidden_keeper")
+        profile = get_or_create_profile(guest)
+        profile.discoverable = False
+        profile.save(update_fields=["discoverable"])
+
+        client.force_authenticate(booker)
+        response = client.post(
+            f"/api/v1/matches/{match.id}/invite",
+            {"username": "hidden_keeper"},
+            format="json",
+        )
+        assert response.status_code == 201
+
+    def test_an_unclaimed_handle_is_an_error_on_the_field(self, client, booker):
+        match = make_match(booker=booker)
+        client.force_authenticate(booker)
+
+        response = client.post(
+            f"/api/v1/matches/{match.id}/invite",
+            {"username": "nobody_here"},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "username" in response.data
+
+    def test_naming_nobody_is_refused(self, client, booker):
+        match = make_match(booker=booker)
+        client.force_authenticate(booker)
+        assert client.post(f"/api/v1/matches/{match.id}/invite", {}, format="json").status_code == (
+            400
+        )
+
+    def test_naming_somebody_twice_is_refused(self, client, booker):
+        """Both fields would mean quietly ignoring one of them — and maybe the wrong one."""
+        match = make_match(booker=booker)
+        guest = UserFactory(username="rafiq_hasan")
+        profile = get_or_create_profile(guest)
+
+        client.force_authenticate(booker)
+        response = client.post(
+            f"/api/v1/matches/{match.id}/invite",
+            {"player_id": str(profile.id), "username": "rafiq_hasan"},
+            format="json",
+        )
+        assert response.status_code == 400
+
+    def test_the_squad_invite_takes_a_handle_too(self, client, player):
+        leader = UserFactory()
+        squad = make_squad(leader=leader, name="Squad")
+        UserFactory(username="shanto_7")
+
+        client.force_authenticate(leader)
+        response = client.post(
+            f"/api/v1/squads/{squad.slug}/invite",
+            {"username": "shanto_7"},
+            format="json",
+        )
+        assert response.status_code == 201
+
+    def test_every_other_invite_rule_still_applies(self, client, booker):
+        """The handle only names the player; the services still decide."""
+        match = make_match(booker=booker)
+        UserFactory(username="rafiq_hasan")
+        client.force_authenticate(UserFactory())  # an outsider, handle or not
+
+        response = client.post(
+            f"/api/v1/matches/{match.id}/invite",
+            {"username": "rafiq_hasan"},
             format="json",
         )
         assert response.status_code == 400

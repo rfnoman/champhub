@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { ownerAppUrl } from "@/lib/links";
+
 import { PRIMARY, SECONDARY, isActive } from "./nav-items";
 
 /**
@@ -74,11 +76,20 @@ export function NavLinks() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {SECONDARY.map((item) => (
-            <DropdownMenuItem key={item.href} asChild>
-              <Link href={item.href}>
-                <item.icon className="size-4" aria-hidden />
-                {t(item.key)}
-              </Link>
+            <DropdownMenuItem key={item.key} asChild>
+              {/* The owner app is a separate deployment (DECISIONS D83), so its entry
+                  is an anchor to another origin — a <Link> would try to route to it. */}
+              {item.external ? (
+                <a href={ownerAppUrl()} target="_blank" rel="noreferrer">
+                  <item.icon className="size-4" aria-hidden />
+                  {t(item.key)}
+                </a>
+              ) : (
+                <Link href={item.href}>
+                  <item.icon className="size-4" aria-hidden />
+                  {t(item.key)}
+                </Link>
+              )}
             </DropdownMenuItem>
           ))}
           {/* `/me` dumps the raw backend session — useful while building, not something

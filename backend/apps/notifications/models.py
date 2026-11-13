@@ -75,6 +75,11 @@ class NotificationKind(models.TextChoices):
     RECOVERY = "recovery", _("Recovery tip")
     WEEKLY_RECAP = "weekly_recap", _("Your week")
 
+    # Identity verification (DOMAIN §1a)
+    IDENTITY_SUBMITTED = "identity_submitted", _("Identity check to review")
+    IDENTITY_APPROVED = "identity_approved", _("Identity verified")
+    IDENTITY_REJECTED = "identity_rejected", _("Identity check needs more")
+
 
 class Notification(BaseModel):
     user = models.ForeignKey(

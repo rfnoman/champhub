@@ -1,4 +1,5 @@
 import { apiBaseUrl } from "./support/clerk-users";
+import { pickUsername } from "./support/onboarding";
 import { expect, requiresClerk, test } from "./support/fixtures";
 
 /**
@@ -15,6 +16,12 @@ test.describe("onboarding", () => {
     await page.goto("/profile");
     await expect(page).toHaveURL(/\/onboarding/);
     await expect(page.getByRole("heading", { name: "Tell us about you" })).toBeVisible();
+
+    // Step 1 cannot be left without a handle: it is how anybody invites this player
+    // afterwards (DOMAIN §1b), and this wizard is the only place a player is asked.
+    await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
+    const handle = await pickUsername(page);
+    await expect(page.getByRole("button", { name: "Next", exact: true })).toBeEnabled();
 
     await page.getByLabel("Area").fill("Dhanmondi");
     await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -36,6 +43,8 @@ test.describe("onboarding", () => {
 
     await expect(page).toHaveURL(/\/profile/);
     await expect(page.getByRole("heading", { level: 1, name: "E2E Player" })).toBeVisible();
+    // The handle they chose is on the card, which is where somebody copies it from.
+    await expect(page.getByText(`@${handle}`).first()).toBeVisible();
     await expect(page.getByText("OVERALL")).toBeVisible();
     await expect(page.getByText("MID", { exact: true })).toBeVisible();
     // Self-assessed, so the card must say so (DOMAIN §3).
@@ -50,6 +59,7 @@ test.describe("onboarding", () => {
     signedInPage: page,
   }) => {
     await page.goto("/onboarding");
+    await pickUsername(page);
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByRole("button", { name: /Football/ }).click();
     await page.getByRole("button", { name: "Next", exact: true }).click();

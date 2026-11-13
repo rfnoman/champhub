@@ -8,6 +8,7 @@ import type { Squad } from "@/lib/api/types";
 import { useApiClient } from "@/lib/api/use-api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
@@ -25,6 +26,7 @@ export function SquadManage({ squad }: { squad: Squad }) {
 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [handle, setHandle] = useState("");
   const isLeader = squad.my_role === "leader";
   const isMember = squad.my_role != null;
 
@@ -34,10 +36,16 @@ export function SquadManage({ squad }: { squad: Squad }) {
     const { error: apiError } = await call();
     setBusy(null);
     if (apiError) {
-      setError(t("failed"));
-      return;
+      // The API's own sentence where there is one: "no player has that username" is the
+      // most likely failure here and the only one the reader can do anything about.
+      const body = apiError as Record<string, string[] | string> | null;
+      const first = body && typeof body === "object" ? Object.values(body)[0] : null;
+      const message = Array.isArray(first) ? first.join(" ") : first;
+      setError(message || t("failed"));
+      return false;
     }
     router.refresh();
+    return true;
   }
 
   const slugPath = { path: { slug: squad.slug } };
@@ -77,6 +85,51 @@ export function SquadManage({ squad }: { squad: Squad }) {
                 }
               />
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Inviting by handle (DOMAIN §1b). Any member may propose somebody; the leader's
+          invite goes straight out, which is the chain the API already enforces (D1). */}
+      {isMember && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="label-sm">{t("invite")}</CardTitle>
+            <p className="text-muted-foreground text-xs">{t("inviteHint")}</p>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-end gap-2">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="squad-invite-handle" className="text-xs">
+                {t("inviteByHandle")}
+              </Label>
+              <Input
+                id="squad-invite-handle"
+                value={handle}
+                onChange={(event) => setHandle(event.target.value)}
+                placeholder={t("handlePlaceholder")}
+                autoCapitalize="none"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={21}
+                className="w-48"
+              />
+            </div>
+            <Button
+              size="sm"
+              disabled={!handle.trim() || busy === "invite"}
+              onClick={async () => {
+                const ok = await run("invite", () =>
+                  api.POST("/api/v1/squads/{slug}/invite", {
+                    params: slugPath,
+                    body: { username: handle.trim() } as never,
+                  }),
+                );
+                // Kept on failure: a mistyped handle is worth correcting, not retyping.
+                if (ok) setHandle("");
+              }}
+            >
+              {t("sendInvite")}
+            </Button>
           </CardContent>
         </Card>
       )}

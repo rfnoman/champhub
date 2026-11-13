@@ -312,6 +312,7 @@ class TestRemovePlayerSport:
 class TestCompleteOnboarding:
     def payload(self, **overrides):
         data = {
+            "username": "rafi_ahmed",
             "display_name": "Rafi",
             "area": "Dhanmondi",
             "preferred_side": "right",

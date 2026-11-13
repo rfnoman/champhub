@@ -13,7 +13,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from django_otp.admin import OTPAdminSite
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
@@ -52,12 +51,14 @@ api_v1 = [
 #
 # Clerk guards player and owner accounts and brings its own second factor, but the Django
 # admin is a separate door with a separate password — and behind it is every booking,
-# every payment and every player's details. `OTPAdminSite` refuses a login that has not
-# also verified a TOTP device, which an admin registers under "TOTP devices"
-# (DECISIONS D64). Off in development, where there is nothing worth protecting and a
-# second factor is only friction.
-if settings.ADMIN_REQUIRES_OTP:
-    admin.site.__class__ = OTPAdminSite
+# every payment and every player's details. `ADMIN_REQUIRES_OTP` makes the admin refuse a
+# login that has not also verified a TOTP device, which an admin registers under "TOTP
+# devices" (DECISIONS D64). Off in development, where there is nothing worth protecting
+# and a second factor is only friction.
+#
+# The gate lives on the admin *site* — `apps.core.admin_site.ChampHubAdminSite`, installed
+# through `config.apps.ChampHubAdminConfig` — rather than being switched on from here, so
+# that it and Unfold's theme can be the same object (DECISIONS D96).
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -65,4 +66,7 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # The literal path, not `settings.MEDIA_URL`: development points that at this
+    # server's absolute origin so the frontend on another port can load an uploaded
+    # photo, and `static()` quietly returns no routes for a prefix carrying a scheme.
+    urlpatterns += static("media/", document_root=settings.MEDIA_ROOT)
