@@ -5,7 +5,6 @@
 # That certificate is valid for 15 years and is not a public one: only Cloudflare
 # accepts it, which is the point — a request that reaches this box without going
 # through Cloudflare cannot complete a handshake.
-
 {
 	# Who may speak for the client. Without this, `client_ip` is the direct peer —
 	# Cloudflare — and anyone could set CF-Connecting-IP to anything they liked.
