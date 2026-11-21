@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "permissions": {
+    "allow": [
+      "Bash(npx -y clerk@latest:*)",
+      "Bash(npx -y clerk@latest *)",
+      "Bash(doctl spaces:*)",
+      "Bash(doctl spaces *)"
+    ]
+  }
+}
