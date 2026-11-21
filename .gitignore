@@ -79,3 +79,4 @@ next-env.d.ts
 .db*.conf
 .deploy.secrets
 .tokens
+client_secret*.json
