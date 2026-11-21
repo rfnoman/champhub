@@ -23,9 +23,15 @@ echo "--> building the backend image"
 "${COMPOSE[@]}" build api
 
 echo "--> migrating (direct connection, not the pool)"
+# The pool is a different database *name* as well as a different port: PgBouncer is
+# addressed as "champhub-pool", the real database is "champhub". Overriding only the
+# port would ask the cluster directly for a database called champhub-pool, which does
+# not exist.
 DIRECT_PORT=$(grep -E '^POSTGRES_DIRECT_PORT=' "$ENV_FILE" | cut -d= -f2)
+DIRECT_DB=$(grep -E '^POSTGRES_DIRECT_DB=' "$ENV_FILE" | cut -d= -f2)
 "${COMPOSE[@]}" run --rm \
 	-e "POSTGRES_PORT=${DIRECT_PORT:-25060}" \
+	-e "POSTGRES_DB=${DIRECT_DB:-champhub}" \
 	-e POSTGRES_BEHIND_PGBOUNCER=false \
 	api python manage.py migrate --noinput
 

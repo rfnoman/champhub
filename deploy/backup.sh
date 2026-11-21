@@ -34,6 +34,7 @@ echo "--> dumping and verifying"
 # connect to template1, which managed Postgres refuses to anyone but its superuser.
 docker compose -f deploy/compose.yml run --rm \
 	-e "POSTGRES_PORT=${POSTGRES_DIRECT_PORT:-25060}" \
+	-e "POSTGRES_DB=${POSTGRES_DIRECT_DB:-champhub}" \
 	-e POSTGRES_BEHIND_PGBOUNCER=false \
 	-v "$BACKUP_DIR:/backups" \
 	api python manage.py backup_database \
