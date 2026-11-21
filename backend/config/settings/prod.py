@@ -7,6 +7,11 @@ DEBUG = False
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
+# Except for the health endpoint, which is polled over plain HTTP on the loopback by the
+# container healthcheck and by deploy.sh. Redirected, it answers 301 with an empty body
+# — and `curl -f` treats a 301 as success, so the check would pass for a container that
+# could not reach the database at all (Phase 13 step 5).
+SECURE_REDIRECT_EXEMPT = [r"^api/v1/health$"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = env.int("DJANGO_SECURE_HSTS_SECONDS", default=60 * 60 * 24 * 365)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True

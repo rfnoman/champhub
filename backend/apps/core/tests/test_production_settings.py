@@ -61,6 +61,8 @@ def load_prod_settings(**overrides: str) -> dict:
         "'no_server_cursors': db.get('DISABLE_SERVER_SIDE_CURSORS', False), "
         "'mailers': s.MAILERS, "
         "'num_proxies': s.REST_FRAMEWORK.get('NUM_PROXIES'), "
+        "'redirect_exempt': s.SECURE_REDIRECT_EXEMPT, "
+        "'ssl_redirect': s.SECURE_SSL_REDIRECT, "
         "}))"
     )
     result = subprocess.run(
@@ -191,3 +193,25 @@ class TestClientAddress:
         first = factory.get("/", HTTP_X_FORWARDED_FOR="1.1.1.1", REMOTE_ADDR="10.0.0.2")
         second = factory.get("/", HTTP_X_FORWARDED_FOR="2.2.2.2", REMOTE_ADDR="10.0.0.2")
         assert throttle.get_ident(first) != throttle.get_ident(second)
+
+
+class TestHealthCheckReachesTheApp:
+    def test_the_health_endpoint_is_exempt_from_the_https_redirect(self):
+        """The probe speaks plain HTTP on the loopback; a 301 would hide an outage.
+
+        `curl -f` fails on 4xx and 5xx but not on 3xx, so a redirected health check
+        reports a healthy container whatever the database is doing.
+        """
+        loaded = load_prod_settings()
+        assert loaded["ssl_redirect"] is True
+        assert loaded["redirect_exempt"] == [r"^api/v1/health$"]
+
+    @pytest.mark.parametrize(
+        ("path", "exempt"),
+        [("api/v1/health", True), ("api/v1/health/other", False), ("api/v1/bookings", False)],
+    )
+    def test_the_pattern_exempts_that_one_path(self, path, exempt):
+        import re
+
+        patterns = [re.compile(p) for p in load_prod_settings()["redirect_exempt"]]
+        assert any(p.search(path) for p in patterns) is exempt
