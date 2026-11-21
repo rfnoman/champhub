@@ -1,17 +1,15 @@
 name: deploy
 
 # Deployment is a consequence of a green main, never a thing somebody does by hand at
-# 11pm (Phase 11 step 8).
+# 11pm (Phase 11 step 8, re-pointed at the droplet in Phase 13 step 10).
 #
-# Both platforms build from the repository themselves — App Platform from
-# `backend/Dockerfile`, Vercel from its git integration — so there are no registry
-# credentials here and nothing to push. What this workflow does is the part they cannot:
-# refuse to deploy a broken main, and tell Sentry which commit went out.
+# The backend runs on one droplet and builds its own image there, so there is no
+# registry here and nothing to push: this workflow refuses to deploy a broken main,
+# runs `deploy/deploy.sh` over SSH, checks the API came back, and tells Sentry which
+# commit went out. Vercel builds both frontends from its own git integration.
 
 # **Disarmed on purpose.** `workflow_dispatch` only, so merging to main does not deploy
-# anything — there is nothing deployed yet, and a workflow that fires at infrastructure
-# which does not exist is noise at best. When the DigitalOcean app and the secrets below
-# exist and you want merges to ship, add back:
+# anything until the launch checks (step 9) have passed once by hand. To arm it, add:
 #
 #   push:
 #     branches: [main]
@@ -48,20 +46,23 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
+      # `deploy.sh` does the whole deploy on the box — fetch, build, migrate against
+      # the direct database port, roll the containers, wait for health. There is
+      # nothing for a checkout here to add.
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          host: ${{ secrets.DROPLET_HOST }}
+          username: deploy
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          # The build on a 2 GB box takes minutes, and a timeout mid-migration is the
+          # one failure mode worth spending patience to avoid.
+          command_timeout: 20m
+          script: /opt/champhub/deploy/deploy.sh
 
-      # App Platform runs the PRE_DEPLOY migration job itself, then rolls the three
-      # services. `--wait` is what makes a failed migration fail this workflow rather
-      # than leave a half-deployed app and a green tick.
-      - name: Deploy
-        run: doctl apps create-deployment ${{ secrets.DO_APP_ID }} --wait
-
-      - name: Check it came back up
+      # deploy.sh already waits for the loopback health check; this one goes through
+      # Cloudflare and Caddy, so it also catches a certificate or proxy that broke.
+      - name: Check it came back up from outside
         run: |
           for attempt in $(seq 1 10); do
             status=$(curl -s -o /dev/null -w '%{http_code}' "${{ vars.API_BASE_URL }}/api/v1/health" || true)

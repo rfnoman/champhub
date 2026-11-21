@@ -77,3 +77,4 @@ next-env.d.ts
 # ---- Deploy credentials (never committed) ----
 .db.conf
 .db*.conf
+.deploy.secrets
