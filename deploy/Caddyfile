@@ -40,8 +40,13 @@ api.champhub.fit {
 	}
 }
 
-# Anything that reaches the box on another name — a scanner on the bare IP — gets
-# nothing. No certificate is offered and no vhost answers.
+# Port 80 on the origin. Cloudflare has "Always Use HTTPS" on, so a browser's plain
+# HTTP request is redirected at the edge and never arrives here; what does arrive is a
+# scanner on the bare IP, which the cloud firewall should already have dropped. Answer
+# a redirect rather than a 404 anyway: this block replaces Caddy's own automatic
+# HTTP→HTTPS redirect (defining `:80` takes the port over), and a 404 would be the
+# wrong answer for the one case that matters — a client that reaches the origin on 80
+# for a host we do serve.
 :80 {
-	respond 404
+	redir https://{host}{uri} permanent
 }
