@@ -42,7 +42,7 @@ test.describe("owner identity", () => {
   test("an unverified owner is told, and can send their NID from the dashboard", async ({
     signedInPage: page,
   }) => {
-    await page.goto("/");
+    await page.goto("/turfs");
     // The dashboard nudge: an owner whose identity is unverified finds out here rather
     // than in a turf rejection.
     await expect(page.getByText("Not sent")).toBeVisible();

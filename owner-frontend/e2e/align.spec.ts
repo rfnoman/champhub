@@ -36,6 +36,17 @@ async function columnEdges(page: Page) {
 }
 
 test.describe("column alignment", () => {
+  test("the landing page lines its header, hero and footer up", async ({ page }) => {
+    // The landing is the app's only `bleed` page: the hero draws edge to edge and the
+    // `.page-column` *inside* it is what has to line up with the chrome. Nothing else
+    // in this app exercises that branch of the `:has()` rule.
+    await page.goto("/");
+    const edges = await columnEdges(page);
+    expect(edges.content, "no page column found").not.toBeNull();
+    expect(edges.header, "header vs content").toBe(edges.content);
+    expect(edges.footer, "footer vs content").toBe(edges.content);
+  });
+
   test("the sign-in page lines its header, content and footer up", async ({ page }) => {
     await page.goto("/sign-in");
     const edges = await columnEdges(page);
@@ -55,7 +66,7 @@ test.describe("column alignment", () => {
 
       // Every signed-in page in this app is `wide`, so the dashboard covers that branch
       // of the `:has()` rule; the sign-in page above covers the default.
-      await page.goto("/");
+      await page.goto("/turfs");
       await page.waitForTimeout(600);
       const edges = await columnEdges(page);
       expect(edges.content, "no page column found").not.toBeNull();

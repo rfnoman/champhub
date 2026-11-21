@@ -25,7 +25,7 @@ export default async function NotFound() {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Button variant="brand" size="touch" asChild>
-            <Link href="/">{t("turfs")}</Link>
+            <Link href="/turfs">{t("turfs")}</Link>
           </Button>
         </div>
       </section>

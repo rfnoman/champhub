@@ -12,7 +12,7 @@ test.describe("turf registration", () => {
   requiresClerk();
 
   test("an owner registers a turf and it starts as a draft", async ({ signedInPage: page }) => {
-    await page.goto("/");
+    await page.goto("/turfs");
     await expect(page.getByRole("heading", { level: 1, name: "Turf dashboard" })).toBeVisible();
     await page.getByRole("link", { name: "Register a turf" }).first().click();
 
@@ -38,7 +38,7 @@ test.describe("turf registration", () => {
   });
 
   test("a brand-new owner has no turfs", async ({ signedInPage: page }) => {
-    await page.goto("/");
+    await page.goto("/turfs");
     await expect(page.getByText("You have not registered a turf yet.")).toBeVisible();
   });
 

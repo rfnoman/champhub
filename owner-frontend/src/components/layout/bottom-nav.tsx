@@ -32,6 +32,12 @@ export function BottomNav() {
   const pathname = usePathname();
   const slug = turfSlugFrom(pathname);
 
+  // The landing page is the one public route in this app, and the only people who see
+  // it are signed out (a signed-in owner is redirected to their turfs). A tab bar
+  // offering them "your turfs" is addressing somebody who is not there yet; the page
+  // makes its own case and carries its own calls to action.
+  if (pathname === "/") return null;
+
   const tabs: Tab[] = slug
     ? TURF_TABS.filter((tab) => tab.mobile).map((tab) => {
         const href = `/turfs/${slug}${tab.segment}`;
@@ -43,7 +49,12 @@ export function BottomNav() {
         };
       })
     : [
-        { href: "/", label: nav("turfs"), icon: LayoutGrid, current: pathname === "/" },
+        {
+          href: "/turfs",
+          label: nav("turfs"),
+          icon: LayoutGrid,
+          current: pathname === "/turfs",
+        },
         { href: "/new", label: nav("register"), icon: PlusCircle, current: pathname === "/new" },
       ];
 

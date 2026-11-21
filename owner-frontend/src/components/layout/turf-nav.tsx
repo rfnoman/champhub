@@ -67,7 +67,9 @@ export function TurfNav({ slug, isApproved }: { slug: string; isApproved: boolea
         </Button>
       )}
       <Button variant="ghost" size="sm" asChild>
-        <Link href="/">
+        {/* The dashboard, named: `/` is the public landing now and would only bounce a
+            signed-in owner back here through a redirect. */}
+        <Link href="/turfs">
           <ArrowLeft aria-hidden />
           {t("backToDashboard")}
         </Link>

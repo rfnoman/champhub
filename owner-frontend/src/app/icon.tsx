@@ -20,30 +20,28 @@ export const contentType = "image/png";
 
 export default function Icon() {
   return new ImageResponse(
-    (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "100%",
-          height: "100%",
-          background: "#07140F",
-          backgroundImage: "radial-gradient(120% 90% at 50% -10%, #11402C 0%, #07140F 70%)",
-          // Rounded rather than round: a circle inside a 32px square loses four corners
-          // of an already small canvas, and the tab strip clips nothing.
-          borderRadius: 7,
-          color: "#00E07A",
-          fontSize: 27,
-          fontWeight: 700,
-          // The cap sits optically high in the box without this; the tab is small enough
-          // that a pixel of droop reads as a mistake.
-          lineHeight: 1,
-        }}
-      >
-        T
-      </div>
-    ),
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        background: "#07140F",
+        backgroundImage: "radial-gradient(120% 90% at 50% -10%, #11402C 0%, #07140F 70%)",
+        // Rounded rather than round: a circle inside a 32px square loses four corners
+        // of an already small canvas, and the tab strip clips nothing.
+        borderRadius: 7,
+        color: "#00E07A",
+        fontSize: 27,
+        fontWeight: 700,
+        // The cap sits optically high in the box without this; the tab is small enough
+        // that a pixel of droop reads as a mistake.
+        lineHeight: 1,
+      }}
+    >
+      T
+    </div>,
     { ...size },
   );
 }
