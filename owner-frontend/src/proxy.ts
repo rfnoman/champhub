@@ -1,6 +1,7 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
+import { clerkCspHosts } from "@/lib/clerk-hosts";
 
 /**
  * Next.js 16 renamed `middleware.ts` to `proxy.ts` (Node runtime only, no `edge`).
@@ -34,7 +35,11 @@ import { env } from "@/lib/env";
  */
 function policy(nonce: string): string {
   const api = env(process.env.NEXT_PUBLIC_API_BASE_URL, "http://127.0.0.1:8000");
-  const clerk = "https://*.clerk.accounts.dev https://*.clerk.com";
+  // Derived from the publishable key, never written down: a production instance is
+  // served from a custom domain that the `*.clerk.accounts.dev` wildcard does not
+  // match, and hardcoding it blocked every Frontend API call in production while
+  // every check stayed green (see lib/clerk-hosts.ts).
+  const clerk = clerkCspHosts(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
   return [
     "default-src 'self'",
