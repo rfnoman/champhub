@@ -60,6 +60,15 @@ RUN apt-get update \
 
 # Never root. A process that is compromised should not also own the filesystem.
 RUN useradd --create-home --uid 10001 turf
+
+# Celery beat's schedule lives on a volume so a restart does not re-fire or skip a
+# timer. The directory has to exist *in the image*, owned by `turf`: Docker copies the
+# image path's ownership onto a named volume when it first creates it, and a volume
+# created against a missing path is root-owned — which a container running as uid 10001
+# cannot write, and beat crash-loops on `PermissionError: /var/lib/celery/beat-schedule`
+# (Phase 13 step 5).
+RUN install -d -o turf -g turf /var/lib/celery
+
 WORKDIR /app
 
 COPY --from=builder --chown=turf:turf /app /app
