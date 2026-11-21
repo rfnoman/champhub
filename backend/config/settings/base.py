@@ -718,15 +718,30 @@ DEFAULT_PLAYER_WEIGHT_KG = 70
 # ---------------------------------------------------------------------------
 # Django 6.1 deprecated the flat EMAIL_* settings in favour of MAILERS; the two cannot
 # be mixed (ImproperlyConfigured), so notifications are built on MAILERS from the start.
-MAILERS = {
-    "default": {
-        "BACKEND": env(
-            "DJANGO_EMAIL_BACKEND",
-            default="django.core.mail.backends.console.EmailBackend",
-        ),
-        "OPTIONS": {},
+#
+# With MAILERS, the SMTP backend takes its server from OPTIONS and nowhere else: it
+# raises `InvalidMailer` without a `host`, and never falls back to `EMAIL_HOST`. So the
+# connection details are read here under `SMTP_*` names, which Django does not reserve
+# (`EMAIL_*` would be the deprecated settings by another route) (Phase 13 step 0).
+_mail_backend = env(
+    "DJANGO_EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend",
+)
+_mail_options: dict = {}
+if _mail_backend == "django.core.mail.backends.smtp.EmailBackend":
+    _mail_options = {
+        "host": env("SMTP_HOST"),
+        "port": env.int("SMTP_PORT", default=587),
+        "username": env("SMTP_USERNAME", default=""),
+        "password": env("SMTP_PASSWORD", default=""),
+        # STARTTLS on 587 is what Resend, Brevo and SES all offer. Port 465 wants
+        # implicit TLS instead: set SMTP_USE_TLS=false and SMTP_USE_SSL=true.
+        "use_tls": env.bool("SMTP_USE_TLS", default=True),
+        "use_ssl": env.bool("SMTP_USE_SSL", default=False),
+        # A hung mail server must not hold a Celery worker forever.
+        "timeout": env.int("SMTP_TIMEOUT", default=10),
     }
-}
+MAILERS = {"default": {"BACKEND": _mail_backend, "OPTIONS": _mail_options}}
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="ChampHub <no-reply@champhub.local>")
 
 #: JSON where something will index it, readable where a person is reading the terminal.

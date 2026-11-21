@@ -1,5 +1,13 @@
 # DigitalOcean App Platform specification (Phase 11 step 8, DECISIONS D71).
 #
+# NOT the current deployment, and it does not work as written. Production is a droplet
+# plus managed Postgres (docs/phases/13-deploy-droplet.md, DECISIONS D99); this file is
+# kept as the scaling path. Before applying it: settings read POSTGRES_HOST / _PORT /
+# _DB / _USER / _PASSWORD / _SSLMODE, never DATABASE_URL, so every `DATABASE_URL` below
+# has to become those five bindings (`${turf-db.HOSTNAME}`, `.PORT`, `.DATABASE`,
+# `.USERNAME`, `.PASSWORD`) and POSTGRES_SSLMODE=require. As it stands, every process
+# would try Postgres on 127.0.0.1 and the PRE_DEPLOY migrate job would fail.
+#
 # Apply with:  doctl apps create --spec .do/app.yaml
 # Update with: doctl apps update <app-id> --spec .do/app.yaml
 #

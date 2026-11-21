@@ -44,6 +44,16 @@ class Command(BaseCommand):
             default=14,
             help="How many dumps to keep. Older ones are deleted.",
         )
+        parser.add_argument(
+            "--maintenance-db",
+            default="",
+            help=(
+                "Database `createdb`/`dropdb` connect to while creating the scratch "
+                "copy. They default to `template1`, which managed Postgres refuses to "
+                "anyone but its own superuser — on DigitalOcean pass `defaultdb` "
+                "(Phase 13 step 4)."
+            ),
+        )
 
     def handle(self, *args, **options):
         database = settings.DATABASES["default"]
@@ -88,17 +98,29 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Wrote {size / 1024 / 1024:.1f} MB"))
 
         if not options["skip_verify"]:
-            self._verify(target, database, connection, environment)
+            self._verify(
+                target,
+                database,
+                connection,
+                environment,
+                maintenance_db=options["maintenance_db"],
+            )
 
         self._prune(directory, options["keep"])
 
-    def _verify(self, dump: Path, database, connection, environment) -> None:
+    def _verify(
+        self, dump: Path, database, connection, environment, *, maintenance_db: str = ""
+    ) -> None:
         """Restore into a scratch database and count what came back."""
         scratch = f"{database['NAME']}_restore_check"
         self.stdout.write(f"Restoring into {scratch} to check the dump…")
 
-        self._run(["dropdb", "--if-exists", *connection, scratch], environment, allow_failure=True)
-        self._run(["createdb", *connection, scratch], environment)
+        admin = [*connection]
+        if maintenance_db:
+            admin += ["--maintenance-db", maintenance_db]
+
+        self._run(["dropdb", "--if-exists", *admin, scratch], environment, allow_failure=True)
+        self._run(["createdb", *admin, scratch], environment)
 
         try:
             self._run(
@@ -128,9 +150,7 @@ class Command(BaseCommand):
                 )
             self.stdout.write(self.style.SUCCESS(f"Restored and verified: {tables} tables"))
         finally:
-            self._run(
-                ["dropdb", "--if-exists", *connection, scratch], environment, allow_failure=True
-            )
+            self._run(["dropdb", "--if-exists", *admin, scratch], environment, allow_failure=True)
 
     def _prune(self, directory: Path, keep: int) -> None:
         dumps = sorted(directory.glob("*.dump"), key=lambda p: p.stat().st_mtime, reverse=True)

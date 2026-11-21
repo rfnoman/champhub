@@ -1,0 +1,103 @@
+# One droplet: Caddy, the three application processes and Redis (Phase 13, DECISIONS D99).
+#
+# What is NOT here, on purpose:
+#   * postgres — DigitalOcean Managed PostgreSQL. The database is the one thing the pilot
+#     cannot afford to lose, so its backups, point-in-time restore and upgrades are
+#     somebody else's job. Nothing here has a `depends_on: postgres`; the API's health
+#     endpoint reports the database, so an outage there shows up as an unhealthy API
+#     rather than a container that refuses to start.
+#   * web / owner — both Next.js apps are on Vercel (D83, D99).
+#
+# The three backend services share one image: same code, same dependencies, three
+# commands. Only Caddy publishes a port to the world; `api` is bound to the loopback
+# because Docker writes its own iptables rules and a published port bypasses ufw.
+
+name: champhub
+
+x-logging: &logging
+  # Without rotation, a few months of request logs fill a 60 GB disk and everything
+  # stops at once.
+  driver: json-file
+  options: {max-size: "10m", max-file: "5"}
+
+x-backend: &backend
+  image: ${BACKEND_IMAGE:-champhub-backend:latest}
+  build:
+    context: ../backend
+  env_file: [.env.prod]
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.prod
+  restart: unless-stopped
+  logging: *logging
+  depends_on:
+    redis: {condition: service_healthy}
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/champhub/certs:/certs:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+    logging: *logging
+    depends_on: [api]
+
+  api:
+    <<: *backend
+    # Loopback only. Caddy reaches it over the compose network by name.
+    ports: ["127.0.0.1:8000:8000"]
+    healthcheck:
+      # The endpoint reports the database, the cache and the workers, so this answers
+      # "can it serve", not just "is the process alive".
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    <<: *backend
+    # Two, not four: this box has 2 GB and gunicorn has first call on it. The signal to
+    # raise it is queue latency, not CPU.
+    command: celery -A config worker --loglevel=info --concurrency=2
+    healthcheck:
+      test: ["CMD", "celery", "-A", "config", "inspect", "ping", "-d", "celery@$$HOSTNAME"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  beat:
+    <<: *backend
+    # Exactly one. Two beats mean every timer fires twice — two hold-expiry runs, two
+    # weekly recaps — and the jobs are idempotent per match or per week, not per run.
+    command: celery -A config beat --loglevel=info --scheduler=celery.beat:PersistentScheduler --schedule=/var/lib/celery/beat-schedule
+    volumes: ["beat-schedule:/var/lib/celery"]
+    deploy:
+      replicas: 1
+
+  redis:
+    image: redis:8-alpine
+    # It is the Celery broker, so it must never evict a message to make room: the thing
+    # it would drop is a hold expiry or a reminder. `noeviction` makes a full Redis
+    # refuse writes loudly instead of losing timers quietly. AOF so a restart keeps the
+    # queue.
+    command: >
+      redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  redis-data:
+  beat-schedule:
+  caddy-data:
+  caddy-config:

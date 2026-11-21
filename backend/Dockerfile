@@ -36,13 +36,26 @@ FROM python:3.14-slim-trixie AS runtime
 
 # `libgdal` and `libgeos` are runtime dependencies here, not build ones: Django imports
 # them through ctypes when it loads any model with a PointField, which is most of them.
+#
+# The client tools come from PGDG and not from Debian, which ships 17: `pg_dump` refuses
+# to touch a server newer than itself, and the managed cluster runs 18 — so a Debian
+# `postgresql-client` makes `manage.py backup_database` fail with "aborting because of
+# server version mismatch" and nothing else notices (Phase 13 step 4).
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         libgdal36 \
         libgeos-c1t64 \
         libproj25 \
-        postgresql-client \
+        ca-certificates \
         curl \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+        https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc]" \
+        "https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install --no-install-recommends -y postgresql-client-18 \
     && rm -rf /var/lib/apt/lists/*
 
 # Never root. A process that is compromised should not also own the filesystem.
@@ -66,11 +79,15 @@ RUN DJANGO_SECRET_KEY=build-only \
 USER turf
 EXPOSE 8000
 
+# Gunicorn's own default for `--workers` is $WEB_CONCURRENCY, so the count is set here
+# and overridden per machine by the environment (a 2 GB droplet runs 2), without a
+# shell-form CMD or an entrypoint script (Phase 13 step 0).
+ENV WEB_CONCURRENCY=3
+
 # Uvicorn workers, not sync ones: the Phase 09 notification stream is a long-lived
 # response, and a sync worker holding one is a worker serving nobody (DECISIONS D54).
 CMD ["gunicorn", "config.asgi:application", \
      "--bind", "0.0.0.0:8000", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--workers", "3", \
      "--access-logfile", "-", \
      "--error-logfile", "-"]

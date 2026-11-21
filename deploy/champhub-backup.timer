@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the ChampHub database dump weekly
+
+[Timer]
+# Sundays 03:00 Dhaka. The box keeps UTC, and Dhaka is UTC+6 with no DST, so that is
+# Saturday 21:00 here — quiet in Bangladesh either way.
+OnCalendar=Sat 21:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

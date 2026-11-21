@@ -11,8 +11,9 @@ from __future__ import annotations
 import threading
 from datetime import timedelta
 
+import psycopg.errors
 import pytest
-from django.db import IntegrityError, connections, transaction
+from django.db import IntegrityError, OperationalError, connections, transaction
 from psycopg.types.range import TimestamptzRange
 
 from apps.accounts.tests.factories import UserFactory
@@ -184,3 +185,41 @@ def test_the_same_slot_on_another_ground_is_free():
     create_booking(user=UserFactory(), ground=other, start=start, sport_format=other_format)
 
     assert Booking.objects.count() == 2
+
+
+def _operational_error(cause: psycopg.errors.Error) -> OperationalError:
+    """An OperationalError wrapping a psycopg error, the way Django's backend raises it."""
+    wrapped = OperationalError("database said no")
+    wrapped.__cause__ = cause
+    return wrapped
+
+
+def test_a_deadlocked_insert_is_reported_as_a_taken_slot(monkeypatch):
+    """The deadlock victim of a slot race gets the same answer as the constraint's.
+
+    Driving a real deadlock through the threads above is luck; this pins the branch.
+    """
+    ground, sport_format = bookable_ground()
+    start = next_slot_start()
+
+    def deadlock(*args, **kwargs):
+        raise _operational_error(psycopg.errors.DeadlockDetected())
+
+    monkeypatch.setattr(Booking.objects, "create", deadlock)
+
+    with pytest.raises(SlotTakenError):
+        create_booking(user=UserFactory(), ground=ground, start=start, sport_format=sport_format)
+
+
+def test_an_unrelated_database_failure_is_not_reported_as_a_taken_slot(monkeypatch):
+    """A dropped connection is not a player losing a race, and must not read as one."""
+    ground, sport_format = bookable_ground()
+    start = next_slot_start()
+
+    def connection_lost(*args, **kwargs):
+        raise _operational_error(psycopg.errors.ConnectionFailure())
+
+    monkeypatch.setattr(Booking.objects, "create", connection_lost)
+
+    with pytest.raises(OperationalError):
+        create_booking(user=UserFactory(), ground=ground, start=start, sport_format=sport_format)

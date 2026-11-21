@@ -23,7 +23,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, OperationalError, transaction
 from django.db.models import Q
 from psycopg.types.range import TimestamptzRange
 
@@ -50,6 +50,20 @@ logger = logging.getLogger(__name__)
 
 class SlotTakenError(ValidationError):
     """Raised when the exclusion constraint rejects an overlapping booking."""
+
+
+#: Two inserts for the same slot do not always end in a constraint violation. Checking an
+#: exclusion constraint makes the second inserter wait on the first transaction's id, so
+#: when both insert at the same moment each waits for the other and Postgres breaks the
+#: tie by killing one with `deadlock detected` (40P01) instead of
+#: `conflicting key value violates exclusion constraint`. The victim is a loser of the
+#: same race and is owed the same answer, not a 500 (Phase 13 step 0).
+SLOT_RACE_SQLSTATES = frozenset({"40P01", "40001"})
+
+
+def _is_slot_race(exc: Exception) -> bool:
+    """True when this database error is two bookings racing, not a broken connection."""
+    return getattr(exc.__cause__, "sqlstate", None) in SLOT_RACE_SQLSTATES
 
 
 # ---------------------------------------------------------------------------
@@ -278,9 +292,14 @@ def create_booking(
                 confirmed_at=now() if auto else None,
                 expires_at=None if auto else confirmation_deadline(start=slot.start),
             )
-    except IntegrityError as exc:
+    except (IntegrityError, OperationalError) as exc:
         # The exclusion constraint is the only thing that can reject this insert, and it
         # means somebody else got the slot in the microseconds since availability loaded.
+        # A deadlock here says the same thing (see SLOT_RACE_SQLSTATES); any other
+        # OperationalError — a dropped connection, a dead database — is not this player's
+        # fault and must not be reported as a taken slot.
+        if isinstance(exc, OperationalError) and not _is_slot_race(exc):
+            raise
         logger.info(
             "Slot taken while booking",
             extra={"ground": str(ground.id), "start": slot.start.isoformat()},

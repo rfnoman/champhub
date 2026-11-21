@@ -1,0 +1,12 @@
+[Unit]
+Description=ChampHub weekly off-provider database dump (verified)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/champhub/deploy/backup.sh
+# Root because it drives the Docker socket and chowns the dump directory.
+User=root
+# A dump that hangs must not still be hanging next Sunday.
+TimeoutStartSec=3600
