@@ -46,6 +46,13 @@ const nextConfig: NextConfig = {
       },
     },
   },
+
+  experimental: {
+    // Set by `next upgrade --agent=security`: it records that this app opted into
+    // agent-driven *security* patches only, so a future run brings the next advisory
+    // fix and nothing else. Not a feature flag — it changes no runtime behaviour.
+    agentUpgrade: "security",
+  },
 };
 
 // Points next-intl at src/i18n/request.ts.
