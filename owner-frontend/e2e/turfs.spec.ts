@@ -1,5 +1,9 @@
 import { expect, requiresClerk, test } from "./support/fixtures";
 
+/** A real shared place link; the backend reads the venue's own `!3d/!4d` out of it. */
+const MAPS_LINK =
+  "https://www.google.com/maps/place/Turf/@23.7465,90.3760,17z/data=!3d23.7465!4d90.3760";
+
 /**
  * Registering a turf and getting it as far as review.
  *
@@ -22,8 +26,11 @@ test.describe("turf registration", () => {
     await page.getByLabel("Area", { exact: true }).fill("Dhanmondi");
     await page.getByRole("button", { name: "Next", exact: true }).click();
 
-    // Step 2 is the map picker; the default Dhaka pin is fine for this.
+    // Step 2 will not advance without a location (DECISIONS D103): registration used to
+    // send the Dhaka default silently, which put a turf in the middle of the city with
+    // no way to correct it. Pasting the Maps link is what an owner actually has.
     await expect(page.getByRole("heading", { name: "Where is it?" })).toBeVisible();
+    await page.getByLabel("Google Maps link").fill(MAPS_LINK);
     await page.getByRole("button", { name: "Next", exact: true }).click();
 
     await page.getByRole("button", { name: "Floodlights" }).click();
@@ -53,6 +60,7 @@ test.describe("turf registration", () => {
     await page.getByLabel("Address").fill("Road 1, Dhanmondi, Dhaka");
     await page.getByLabel("Area", { exact: true }).fill("Dhanmondi");
     await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByLabel("Google Maps link").fill(MAPS_LINK);
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page).toHaveURL(/\/turfs\/e2e-tabs/);

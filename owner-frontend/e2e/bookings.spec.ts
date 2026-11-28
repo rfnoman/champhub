@@ -86,6 +86,9 @@ test.describe("the counter", () => {
 
     await page.goto(`/turfs/${slug}/bookings?date=${dhakaDate(1)}`);
 
+    // The form asks which kind of person is at the counter now (tasks.md); the name and
+    // number belong to the guest half of it.
+    await page.getByRole("tab", { name: "No account" }).click();
     await page.getByLabel("Name", { exact: true }).fill("Karim Uddin");
     await page.getByLabel("Phone", { exact: true }).fill("+8801711222333");
     await page.getByLabel("Start time").fill("10:00");

@@ -154,7 +154,15 @@ test.describe("launch journeys", () => {
       await staff.getByLabel("Area", { exact: true }).fill("Dhanmondi");
       await staff.getByRole("button", { name: "Next", exact: true }).click();
 
+      // The location step will not advance without one (DECISIONS D103). Pasting the
+      // Maps link is the path an owner takes; it also proves the parser works through
+      // the whole stack rather than only in a unit test.
       await expect(staff.getByRole("heading", { name: "Where is it?" })).toBeVisible();
+      await staff
+        .getByLabel("Google Maps link")
+        .fill(
+          "https://www.google.com/maps/place/Turf/@23.7465,90.3760,17z/data=!3d23.7465!4d90.3760",
+        );
       await staff.getByRole("button", { name: "Next", exact: true }).click();
       await staff.getByRole("button", { name: "Floodlights" }).click();
       await staff.getByRole("button", { name: "Create draft" }).click();

@@ -2,6 +2,10 @@ import type { Page } from "@playwright/test";
 
 import { expect, requiresClerk, test } from "./support/fixtures";
 
+/** A real shared place link; the backend reads the venue's own `!3d/!4d` out of it. */
+const MAPS_LINK =
+  "https://www.google.com/maps/place/Turf/@23.7465,90.3760,17z/data=!3d23.7465!4d90.3760";
+
 /** Register a turf, so this run owns a shelf nobody else is touching. */
 async function registerTurf(page: Page, name: string): Promise<string> {
   await page.goto("/new");
@@ -9,7 +13,10 @@ async function registerTurf(page: Page, name: string): Promise<string> {
   await page.getByLabel("Address").fill("Road 1, Dhanmondi, Dhaka");
   await page.getByLabel("Area", { exact: true }).fill("Dhanmondi");
   await page.getByRole("button", { name: "Next", exact: true }).click();
-  // Step 2 is the map picker; the default Dhaka pin is fine.
+  // Step 2 will not let a turf through without a location (DECISIONS D103) — a venue
+  // silently left on the Dhaka default is in the middle of the city. Pasting the link
+  // is the path an owner actually takes.
+  await page.getByLabel("Google Maps link").fill(MAPS_LINK);
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByRole("button", { name: "Floodlights" }).click();
   await page.getByRole("button", { name: "Create draft" }).click();
