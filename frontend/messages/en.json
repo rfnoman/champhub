@@ -218,7 +218,8 @@
     "motm": "MOTM",
     "noAttributes": "No attributes rated yet.",
     "verified": "Verified",
-    "provisional": "Finding level"
+    "provisional": "Finding level",
+    "ariaRating": "{name}'s {sport} rating"
   },
   "profile": {
     "edit": "Edit profile",
@@ -721,7 +722,8 @@
     "saving": "Saving…",
     "ratingsSaved": "Ratings saved",
     "voteFailed": "Your vote did not go through. Try again.",
-    "ratingsFailed": "Those ratings did not save. Try again."
+    "ratingsFailed": "Those ratings did not save. Try again.",
+    "tagsHint": "Give up to three stickers. They go on the player's profile."
   },
   "publicScorecard": {
     "tagline": "Played on ChampHub.",
@@ -1119,5 +1121,9 @@
     "heading": "That did not load",
     "body": "Something went wrong at our end. Nothing you booked or ordered has been affected.",
     "retry": "Try again"
+  },
+  "playerTags": {
+    "heading": "What people say",
+    "hint": "Stickers teammates and opponents gave after matches. Who gave what stays private."
   }
 }

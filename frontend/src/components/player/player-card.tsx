@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { sportTheme } from "@/lib/sport-theme";
 
 import { RatingBar, ratingTone } from "./rating";
+import { Stars } from "./stars";
 
 /**
  * The FIFA-style card for one (player, sport).
@@ -74,14 +75,24 @@ export async function PlayerSportCardView({
 
       <div className="relative flex items-start gap-4 p-5">
         <div className="flex shrink-0 flex-col items-center">
+          {/* Five stars rather than the 1–99 number this used to shout (tasks.md). The
+              engine still works in 1–99 — `card.stars` is the backend's conversion, so
+              both apps show the same answer — but "72" invites an argument about why it
+              is not 75, and three and a half stars says "good player" and stops. */}
           <span
             className={cn(
-              "num text-[3.25rem] leading-[0.85] font-extrabold",
+              "num text-[2.75rem] leading-[0.85] font-extrabold",
               ratingTone(card.overall),
             )}
           >
-            {card.overall}
+            {card.stars.toFixed(1)}
           </span>
+          <Stars
+            value={card.stars}
+            size="sm"
+            className="mt-1.5"
+            label={t("ariaRating", { name: player.name, sport: card.sport.name })}
+          />
           {/* Sentence case, not a tracked-out all-caps eyebrow — that treatment was
               here before and it is the commonest tell of a templated page. */}
           <span className="label-sm mt-1.5">{t("overall")}</span>

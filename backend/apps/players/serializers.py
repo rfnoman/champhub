@@ -38,6 +38,9 @@ class PlayerSportCardSerializer(serializers.Serializer):
     sport = SportSummarySerializer()
     positions = serializers.ListField(child=serializers.CharField())
     overall = serializers.IntegerField()
+    #: The same number as five stars, in half steps (tasks.md). The 1–99 overall stays
+    #: the engine's scale; this is what a player is shown.
+    stars = serializers.FloatField()
     is_provisional = serializers.BooleanField()
     is_verified = serializers.BooleanField()
     matches_played = serializers.IntegerField()

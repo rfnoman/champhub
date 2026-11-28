@@ -24,6 +24,9 @@ export type PublicPlayerProfile = Schemas["PublicPlayerProfile"];
 export type PlayerSportCard = Schemas["PlayerSportCard"];
 export type PlayerAttributeValue = Schemas["PlayerAttribute"];
 export type PlayerSkillValue = Schemas["PlayerSkill"];
+/** A sticker in the picker, and one a player has collected (tasks.md). */
+export type PlayerTag = Schemas["PlayerTag"];
+export type EarnedTag = Schemas["EarnedTag"];
 
 export type User = Schemas["User"];
 export type IdentityVerification = Schemas["IdentityVerification"];

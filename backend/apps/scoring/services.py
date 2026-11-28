@@ -716,10 +716,12 @@ def close_motm_voting(*, scorecard: Scorecard, decided_by=None) -> Scorecard:
 # ---------------------------------------------------------------------------
 @transaction.atomic
 def submit_peer_ratings(*, match: Match, rater, ratings: list[dict]) -> list[PeerRating]:
-    """Rate other players 1–5 after the match. Anonymous to the recipients.
+    """Rate other players 1–5 after the match, and hand out stickers. Anonymous.
 
     Re-submitting replaces the earlier rating rather than adding a second — a player
-    changing their mind is normal, stuffing the ballot is not.
+    changing their mind is normal, stuffing the ballot is not. The same applies to the
+    tags: each entry's `tags` is the **complete** set this rater gives this player for
+    this match, so unticking one and saving again takes it back.
     """
     roster = {
         str(entry.player_id): entry.player for entry in match.players.select_related("player")
@@ -753,9 +755,49 @@ def submit_peer_ratings(*, match: Match, rater, ratings: list[dict]) -> list[Pee
             ratee=roster[ratee_id],
             defaults={"overall": overall, "skill_taps": entry.get("skill_taps") or []},
         )
+        _set_tag_awards(
+            match=match,
+            giver=rater,
+            receiver=roster[ratee_id],
+            keys=entry.get("tags") or [],
+        )
         saved.append(rating)
 
     return saved
+
+
+def _set_tag_awards(*, match: Match, giver, receiver, keys: list[str]) -> None:
+    """Make this rater's stickers for this player exactly `keys`.
+
+    Replace rather than append, so the picker is honest: what is ticked when they save is
+    what they gave. Retired tags are refused rather than ignored — a client offering one
+    is out of date, and silently dropping it would look like the save worked.
+    """
+    from apps.ratings.models import PlayerTag, PlayerTagAward
+
+    wanted = {key for key in keys if key}
+    limit = int(settings.PEER_TAGS_MAX_PER_PLAYER)
+    if len(wanted) > limit:
+        raise ValidationError({"tags": f"Pick at most {limit} tags for one player."})
+
+    existing = PlayerTagAward.objects.filter(match=match, giver=giver, receiver=receiver)
+    if not wanted:
+        existing.delete()
+        return
+
+    tags = {tag.key: tag for tag in PlayerTag.objects.filter(key__in=wanted, is_active=True)}
+    unknown = wanted - set(tags)
+    if unknown:
+        raise ValidationError({"tags": f"No such tag: {', '.join(sorted(unknown))}."})
+
+    existing.exclude(tag__key__in=wanted).delete()
+    already = set(existing.values_list("tag__key", flat=True))
+    PlayerTagAward.objects.bulk_create(
+        [
+            PlayerTagAward(match=match, giver=giver, receiver=receiver, tag=tags[key])
+            for key in wanted - already
+        ]
+    )
 
 
 # ---------------------------------------------------------------------------

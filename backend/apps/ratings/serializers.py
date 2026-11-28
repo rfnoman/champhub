@@ -9,7 +9,7 @@ from apps.players.serializers import (
     PublicPlayerProfileSerializer,
 )
 
-from .models import Availability, ConductReport, LeaderboardEntry, RatingChange
+from .models import Availability, ConductReport, LeaderboardEntry, PlayerTag, RatingChange
 
 
 class RatingChangeSerializer(serializers.ModelSerializer):
@@ -208,3 +208,28 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.CharField())
     def get_player_name(self, obj) -> str:
         return obj.profile.name
+
+
+class PlayerTagSerializer(serializers.ModelSerializer):
+    """One sticker in the picker (tasks.md)."""
+
+    class Meta:
+        model = PlayerTag
+        fields = ["key", "label", "label_bn", "emoji", "description", "tone"]
+        read_only_fields = fields
+
+
+class EarnedTagSerializer(serializers.Serializer):
+    """A sticker on a profile, with how often it has been given.
+
+    Assembled by `selectors.tags_for` rather than read off a model — the count is the
+    point, and it is a `GROUP BY`.
+    """
+
+    key = serializers.CharField()
+    label = serializers.CharField()
+    label_bn = serializers.CharField()
+    emoji = serializers.CharField()
+    tone = serializers.CharField()
+    description = serializers.CharField()
+    count = serializers.IntegerField()

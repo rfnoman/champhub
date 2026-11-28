@@ -642,6 +642,12 @@ SCORECARD_AUTO_CONFIRM_HOURS = 24
 MOTM_VOTE_WINDOW_HOURS = 24
 # How many other players one person may rate after a match (DOMAIN §7's "up to N").
 PEER_RATING_MAX_PER_MATCH = 10
+# Stickers one person may give one other player for one match (tasks.md). Three keeps a
+# tag meaningful: somebody who ticks everything says nothing, and the profile shows the
+# tags a player earns *often*, which only separates people if giving one costs something.
+PEER_TAGS_MAX_PER_PLAYER = 3
+# How many distinct tags a profile shows, highest count first.
+PROFILE_TAGS_SHOWN = 6
 SELF_ASSESSED_RATING_CAP = 75
 RATING_PROVISIONAL_MATCHES = 10
 RATING_VERIFIED_SCORECARD_WEIGHT = 1.5

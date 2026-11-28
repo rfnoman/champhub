@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from django.db.models import Case, F, FloatField, Q, QuerySet, Value, When
+from django.db.models import Case, Count, F, FloatField, Q, QuerySet, Value, When
 from django.db.models.functions import Coalesce
 from django.utils.timezone import now
 
@@ -13,7 +13,14 @@ from apps.players.models import PlayerProfile
 from apps.players.selectors import profile_queryset
 from apps.sports.models import Sport
 
-from .models import Availability, ConductReport, LeaderboardEntry, PlayerGroundStats
+from .models import (
+    Availability,
+    ConductReport,
+    LeaderboardEntry,
+    PlayerGroundStats,
+    PlayerTag,
+    PlayerTagAward,
+)
 
 
 def search_players(
@@ -221,3 +228,50 @@ def rating_history(*, profile: PlayerProfile, sport: Sport, limit: int = 20) -> 
 
 def _stat_total(row, key: str) -> Decimal:
     return Decimal((row.stat_totals or {}).get(key, "0"))
+
+
+def tag_catalogue() -> QuerySet[PlayerTag]:
+    """The stickers that can currently be given. Retired ones stay on profiles."""
+    return PlayerTag.objects.filter(is_active=True)
+
+
+def tags_for(*, profile: PlayerProfile, limit: int | None = None) -> list[dict]:
+    """The stickers this player has been given, commonest first (tasks.md).
+
+    A `GROUP BY` over `PlayerTagAward` rather than a scan through JSON, which is why the
+    awards are rows — this runs on every profile view.
+
+    Retired tags are **included**: a player who collected "Baap ka beta" fifteen times
+    keeps it on their profile after an admin takes it out of the picker. Nothing here
+    says who gave what; the awards are anonymous to the recipient exactly like the peer
+    ratings they arrive with (DOMAIN §7).
+    """
+    rows = (
+        PlayerTagAward.objects.filter(receiver=profile.user_id)
+        .values(
+            "tag__key",
+            "tag__label",
+            "tag__label_bn",
+            "tag__emoji",
+            "tag__tone",
+            "tag__description",
+        )
+        .annotate(count=Count("id"))
+        # Ties broken by key so the order is stable between two requests a second apart.
+        .order_by("-count", "tag__key")
+    )
+    if limit is not None:
+        rows = rows[:limit]
+
+    return [
+        {
+            "key": row["tag__key"],
+            "label": row["tag__label"],
+            "label_bn": row["tag__label_bn"],
+            "emoji": row["tag__emoji"],
+            "tone": row["tag__tone"],
+            "description": row["tag__description"],
+            "count": row["count"],
+        }
+        for row in rows
+    ]

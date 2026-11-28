@@ -10,6 +10,8 @@ from .views import (
     PlayerFairPlayView,
     PlayerRatingHistoryView,
     PlayerSearchView,
+    PlayerTagCatalogueView,
+    PlayerTagsView,
     PlayerTrackRecordView,
 )
 
@@ -47,5 +49,7 @@ urlpatterns = [
         ConductReviewView.as_view(),
         name="conduct-review",
     ),
+    path("player-tags", PlayerTagCatalogueView.as_view(), name="player-tag-catalogue"),
+    path("players/<uuid:player_id>/tags", PlayerTagsView.as_view(), name="player-tags"),
     path("leaderboard", LeaderboardView.as_view(), name="leaderboard"),
 ]

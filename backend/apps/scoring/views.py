@@ -329,6 +329,7 @@ class PeerRatingView(MatchScopedView):
                 "player_id": str(_player_from_profile(entry["player_id"]).id),
                 "overall": entry["overall"],
                 "skill_taps": entry.get("skill_taps") or [],
+                "tags": entry.get("tags") or [],
             }
             for entry in payload.validated_data["ratings"]
         ]

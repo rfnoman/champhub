@@ -370,6 +370,75 @@ class TestMotmAndRatings:
         assert response.status_code == 200
         assert response.data["saved"] == 1
 
+    def test_tags_go_in_with_the_rating_and_come_back_ticked(self, client):
+        """The picker has to reload ticked, or a save would silently clear it."""
+        match, teams, _ = ready_to_score(players=4)
+        client.force_authenticate(match.organiser)
+        client.patch(f"/api/v1/matches/{match.id}/scorecard", {"team_a_score": 1}, format="json")
+        client.post(f"/api/v1/matches/{match.id}/scorecard/submit")
+
+        players = roster(match)
+        ratee = get_or_create_profile(players[1])
+        client.force_authenticate(players[0])
+
+        response = client.post(
+            f"/api/v1/matches/{match.id}/peer-ratings",
+            {
+                "ratings": [
+                    {
+                        "player_id": str(ratee.id),
+                        "overall": 5,
+                        "tags": ["cool_as_cucumber", "baap_ka_beta"],
+                    }
+                ]
+            },
+            format="json",
+        )
+        assert response.status_code == 200, response.data
+
+        card = client.get(f"/api/v1/matches/{match.id}/scorecard").data
+        assert set(card["my_peer_tags"][str(ratee.id)]) == {
+            "cool_as_cucumber",
+            "baap_ka_beta",
+        }
+
+    def test_the_tag_catalogue_lists_every_sticker(self, client):
+        match, _, _ = ready_to_score(players=4)
+        client.force_authenticate(roster(match)[0])
+        response = client.get("/api/v1/player-tags")
+        assert response.status_code == 200
+        keys = {row["key"] for row in response.data}
+        assert {"cool_as_cucumber", "strong_as_bricks", "powerful_as_train"} <= keys
+        assert all(row["emoji"] for row in response.data)
+
+    def test_a_players_tags_are_counted(self, client):
+        match, teams, _ = ready_to_score(players=4)
+        client.force_authenticate(match.organiser)
+        client.patch(f"/api/v1/matches/{match.id}/scorecard", {"team_a_score": 1}, format="json")
+        client.post(f"/api/v1/matches/{match.id}/scorecard/submit")
+
+        players = roster(match)
+        ratee = get_or_create_profile(players[1])
+        for rater in (players[0], players[2]):
+            client.force_authenticate(rater)
+            client.post(
+                f"/api/v1/matches/{match.id}/peer-ratings",
+                {
+                    "ratings": [
+                        {"player_id": str(ratee.id), "overall": 5, "tags": ["powerful_as_train"]}
+                    ]
+                },
+                format="json",
+            )
+
+        client.force_authenticate(players[0])
+        response = client.get(f"/api/v1/players/{ratee.id}/tags")
+        assert response.status_code == 200, response.data
+        assert response.data[0]["key"] == "powerful_as_train"
+        assert response.data[0]["count"] == 2
+        # Who gave it is never returned (DOMAIN §7).
+        assert "giver" not in response.data[0]
+
     def test_rating_yourself_is_refused(self, client):
         match, teams, _ = ready_to_score(players=4)
         client.force_authenticate(match.organiser)

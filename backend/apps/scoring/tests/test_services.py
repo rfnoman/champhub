@@ -666,6 +666,106 @@ class TestPeerRatings:
         assert len(saved) == 2
         assert PeerRating.objects.filter(match=match, rater=players[0]).count() == 2
 
+    def test_tags_are_handed_out_with_the_rating(self):
+        """A sticker is given alongside the stars, not through a second screen."""
+        from apps.ratings.models import PlayerTagAward
+
+        match, _, _ = submitted()
+        players = roster(match)
+        submit_peer_ratings(
+            match=match,
+            rater=players[0],
+            ratings=[
+                {
+                    "player_id": str(players[1].id),
+                    "overall": 5,
+                    "tags": ["cool_as_cucumber", "engine"],
+                }
+            ],
+        )
+
+        given = PlayerTagAward.objects.filter(match=match, giver=players[0], receiver=players[1])
+        assert set(given.values_list("tag__key", flat=True)) == {"cool_as_cucumber", "engine"}
+
+    def test_saving_again_replaces_the_tags_rather_than_adding_to_them(self):
+        """What is ticked when they save is what they gave — unticking takes it back."""
+        from apps.ratings.models import PlayerTagAward
+
+        match, _, _ = submitted()
+        players = roster(match)
+        entry = {"player_id": str(players[1].id), "overall": 4}
+
+        submit_peer_ratings(
+            match=match, rater=players[0], ratings=[{**entry, "tags": ["engine", "wall"]}]
+        )
+        submit_peer_ratings(match=match, rater=players[0], ratings=[{**entry, "tags": ["wall"]}])
+
+        given = PlayerTagAward.objects.filter(match=match, giver=players[0], receiver=players[1])
+        assert list(given.values_list("tag__key", flat=True)) == ["wall"]
+
+    def test_clearing_every_tag_removes_them(self):
+        from apps.ratings.models import PlayerTagAward
+
+        match, _, _ = submitted()
+        players = roster(match)
+        entry = {"player_id": str(players[1].id), "overall": 4}
+
+        submit_peer_ratings(match=match, rater=players[0], ratings=[{**entry, "tags": ["wall"]}])
+        submit_peer_ratings(match=match, rater=players[0], ratings=[{**entry, "tags": []}])
+
+        assert not PlayerTagAward.objects.filter(match=match, giver=players[0]).exists()
+
+    def test_more_than_the_limit_is_refused(self):
+        match, _, _ = submitted()
+        players = roster(match)
+        with pytest.raises(ValidationError):
+            submit_peer_ratings(
+                match=match,
+                rater=players[0],
+                ratings=[
+                    {
+                        "player_id": str(players[1].id),
+                        "overall": 4,
+                        "tags": ["wall", "engine", "sniper", "baap_ka_beta"],
+                    }
+                ],
+            )
+
+    def test_an_unknown_tag_is_refused_rather_than_ignored(self):
+        """A client offering a retired tag is out of date; silence would look like a save."""
+        from apps.ratings.models import PlayerTag
+
+        match, _, _ = submitted()
+        players = roster(match)
+        PlayerTag.objects.filter(key="sniper").update(is_active=False)
+
+        for key in ("sniper", "no_such_tag"):
+            with pytest.raises(ValidationError):
+                submit_peer_ratings(
+                    match=match,
+                    rater=players[0],
+                    ratings=[{"player_id": str(players[1].id), "overall": 4, "tags": [key]}],
+                )
+
+    def test_two_people_may_give_the_same_sticker(self):
+        from apps.ratings.models import PlayerTagAward
+
+        match, _, _ = submitted()
+        players = roster(match)
+        for rater in (players[0], players[2]):
+            submit_peer_ratings(
+                match=match,
+                rater=rater,
+                ratings=[{"player_id": str(players[1].id), "overall": 5, "tags": ["baap_ka_beta"]}],
+            )
+
+        assert (
+            PlayerTagAward.objects.filter(
+                match=match, receiver=players[1], tag__key="baap_ka_beta"
+            ).count()
+            == 2
+        )
+
     def test_rating_the_same_player_twice_replaces_it(self):
         match, _, _ = submitted()
         players = roster(match)

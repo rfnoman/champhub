@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { PlayerAttributes, PlayerSportCardView } from "./player-card";
+import { PlayerTags } from "./player-tags";
 import { SportTabs, type SportTab } from "./sport-tabs";
 
 /**
@@ -98,6 +99,10 @@ export async function PlayerProfileView({
       ) : (
         <SportTabs tabs={tabs} />
       )}
+
+      {/* Between the sport cards and the attribute bars: the numbers say how good,
+          the stickers say what they are like (tasks.md). */}
+      <PlayerTags playerId={player.id} />
 
       <Card className="w-full max-w-xl">
         <CardHeader>

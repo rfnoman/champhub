@@ -9,12 +9,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.cache import LEADERBOARD_TTL, cached
+from apps.core.cache import LEADERBOARD_TTL, PUBLIC_TTL, cached
 from apps.core.permissions import IsPlatformAdmin
 from apps.core.throttling import PlayerSearchThrottle, ReportThrottle
 from apps.matches.models import Match
 from apps.matches.services import can_view_match
 from apps.players.models import PlayerProfile
+from apps.players.selectors import profile_queryset
 from apps.players.services import get_or_create_profile
 from apps.sports.models import Sport
 from apps.turfs.models import Turf
@@ -26,6 +27,8 @@ from .selectors import (
     open_conduct_reports,
     search_players,
     sport_totals,
+    tag_catalogue,
+    tags_for,
     track_record,
 )
 from .serializers import (
@@ -34,9 +37,11 @@ from .serializers import (
     ConductReportCreateSerializer,
     ConductReportSerializer,
     ConductReviewSerializer,
+    EarnedTagSerializer,
     FairPlaySerializer,
     LeaderboardEntrySerializer,
     PlayerSearchResultSerializer,
+    PlayerTagSerializer,
     RatingChangeSerializer,
     TrackRecordSerializer,
 )
@@ -352,3 +357,44 @@ class LeaderboardView(APIView):
 
         key = f"{sport.slug}:{turf.slug if turf else ''}:{metric}:{stat_key}:{period}"
         return Response(cached("leaderboard", key, LEADERBOARD_TTL, build))
+
+
+class PlayerTagCatalogueView(APIView):
+    """Every sticker that can currently be given (tasks.md).
+
+    Cached rather than public: it is the same list for everybody and changes only when
+    an admin edits it, but the only screen that needs it is the post-match sheet, which
+    is behind a sign-in anyway. Widening the anonymous surface for it would buy nothing.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="player_tags_list",
+        summary="The player tag catalogue",
+        responses={200: PlayerTagSerializer(many=True)},
+    )
+    def get(self, request):
+        def build():
+            return PlayerTagSerializer(tag_catalogue(), many=True).data
+
+        return Response(cached("player-tags", "all", PUBLIC_TTL, build))
+
+
+class PlayerTagsView(APIView):
+    """The stickers one player has been given, commonest first (tasks.md).
+
+    Signed in, like every other part of a profile — a player's track record, their
+    rating history and their fair-play record all sit behind the same door.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="player_tags",
+        summary="A player's tags",
+        responses={200: EarnedTagSerializer(many=True)},
+    )
+    def get(self, request, player_id):
+        profile = get_object_or_404(profile_queryset(), id=player_id)
+        return Response(EarnedTagSerializer(tags_for(profile=profile), many=True).data)

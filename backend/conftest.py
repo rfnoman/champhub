@@ -22,12 +22,14 @@ def reseed_reference_data() -> None:
     """Put back everything a data migration seeds."""
     from apps.inventory.catalogue import sync_categories
     from apps.inventory.models import ProductCategory
+    from apps.ratings.tags import sync_tags
     from apps.sports.catalogue import sync_catalogue
     from apps.turfs.catalogue import sync_amenities
 
     sync_catalogue()
     sync_amenities()
     sync_categories(ProductCategory)
+    sync_tags()
 
 
 def _is_transactional(node) -> bool:

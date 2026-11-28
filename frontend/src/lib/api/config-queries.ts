@@ -17,6 +17,7 @@ export const CLIENT_CONFIG_FALLBACK: ClientConfig = {
   self_assessed_rating_cap: 75,
   onboarding_default_rating: 50,
   rating_provisional_matches: 10,
+  peer_tags_max_per_player: 3,
   default_player_weight_kg: 70,
   booking_horizon_days: 30,
   turf_delivery_cutoff_hours: 16,

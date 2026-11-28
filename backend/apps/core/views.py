@@ -121,6 +121,7 @@ class ClientConfigView(APIView):
                     "self_assessed_rating_cap": serializers.IntegerField(),
                     "onboarding_default_rating": serializers.IntegerField(),
                     "rating_provisional_matches": serializers.IntegerField(),
+                    "peer_tags_max_per_player": serializers.IntegerField(),
                     "default_player_weight_kg": serializers.IntegerField(),
                     "booking_horizon_days": serializers.IntegerField(),
                     "turf_delivery_cutoff_hours": serializers.IntegerField(),
@@ -140,6 +141,10 @@ class ClientConfigView(APIView):
                 "self_assessed_rating_cap": setting("SELF_ASSESSED_RATING_CAP"),
                 "onboarding_default_rating": setting("ONBOARDING_DEFAULT_RATING"),
                 "rating_provisional_matches": setting("RATING_PROVISIONAL_MATCHES"),
+                # How many stickers one person may give one player (tasks.md). The
+                # picker hides the rest once the limit is reached, so it has to agree
+                # with the server or the save fails after the fact.
+                "peer_tags_max_per_player": setting("PEER_TAGS_MAX_PER_PLAYER"),
                 "default_player_weight_kg": setting("DEFAULT_PLAYER_WEIGHT_KG"),
                 "booking_horizon_days": setting("BOOKING_HORIZON_DAYS"),
                 "turf_delivery_cutoff_hours": setting("TURF_DELIVERY_CUTOFF_HOURS"),

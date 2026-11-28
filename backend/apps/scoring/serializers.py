@@ -124,6 +124,7 @@ class ScorecardSerializer(serializers.ModelSerializer):
     motm_voting_open = serializers.SerializerMethodField()
     my_motm_vote = serializers.SerializerMethodField()
     my_peer_ratings = serializers.SerializerMethodField()
+    my_peer_tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Scorecard
@@ -159,6 +160,7 @@ class ScorecardSerializer(serializers.ModelSerializer):
             "motm_voting_open",
             "my_motm_vote",
             "my_peer_ratings",
+            "my_peer_tags",
         ]
         read_only_fields = fields
 
@@ -276,6 +278,31 @@ class ScorecardSerializer(serializers.ModelSerializer):
             if profile_id_of(rating.ratee)
         }
 
+    @extend_schema_field(
+        serializers.DictField(child=serializers.ListField(child=serializers.CharField()))
+    )
+    def get_my_peer_tags(self, obj) -> dict:
+        """The stickers this reader already gave, keyed by profile id (tasks.md).
+
+        Same reason as `my_peer_ratings`: saving replaces the set, so the picker has to
+        come back ticked or a reload would silently offer to take them all away.
+        """
+        from apps.ratings.models import PlayerTagAward
+
+        user = self._user()
+        if not user or not user.is_authenticated:
+            return {}
+
+        given: dict[str, list[str]] = {}
+        awards = PlayerTagAward.objects.filter(match=obj.match_id, giver=user).select_related(
+            "tag", "receiver__player_profile"
+        )
+        for award in awards:
+            profile_id = profile_id_of(award.receiver)
+            if profile_id:
+                given.setdefault(str(profile_id), []).append(award.tag.key)
+        return given
+
 
 class PublicScorecardSerializer(ScorecardSerializer):
     """The shareable version: no reader-specific permissions or history."""
@@ -292,6 +319,7 @@ class PublicScorecardSerializer(ScorecardSerializer):
                 "motm_voting_open",
                 "my_motm_vote",
                 "my_peer_ratings",
+                "my_peer_tags",
                 "events",
                 "dispute_reason",
             }
@@ -343,6 +371,11 @@ class PeerRatingEntrySerializer(serializers.Serializer):
     overall = serializers.IntegerField(min_value=1, max_value=5)
     skill_taps = serializers.ListField(
         child=serializers.CharField(max_length=40), required=False, default=list
+    )
+    #: `PlayerTag.key`s. The complete set for this rater and player, not an addition —
+    #: saving with one removed takes that sticker back (tasks.md).
+    tags = serializers.ListField(
+        child=serializers.SlugField(max_length=40), required=False, default=list
     )
 
 

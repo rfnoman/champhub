@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
+import { fetchClientConfig } from "@/lib/api/config-queries";
 import { getServerApiClient } from "@/lib/api/server";
 import { ScorecardView } from "@/components/scoring/scorecard-view";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,7 @@ export default async function ScorecardPage({ params }: { params: Promise<{ matc
   const { matchId } = await params;
   const api = await getServerApiClient();
 
-  const [match, scorecard, teams, profile] = await Promise.all([
+  const [match, scorecard, teams, profile, tagCatalogue, config] = await Promise.all([
     api.GET("/api/v1/matches/{id}", { params: { path: { id: matchId } } }),
     api.GET("/api/v1/matches/{match_id}/scorecard", {
       params: { path: { match_id: matchId } },
@@ -35,6 +36,10 @@ export default async function ScorecardPage({ params }: { params: Promise<{ matc
       params: { path: { match_id: matchId } },
     }),
     api.GET("/api/v1/me/profile"),
+    // The stickers on offer, and how many of them one person may give (tasks.md). Both
+    // come from the server so the picker cannot disagree with what the save will accept.
+    api.GET("/api/v1/player-tags"),
+    fetchClientConfig(),
   ]);
 
   if (!match.data || !scorecard.data) notFound();
@@ -103,6 +108,8 @@ export default async function ScorecardPage({ params }: { params: Promise<{ matc
           match={match.data}
           scorecard={card}
           myProfileId={profile.data?.id ? String(profile.data.id) : null}
+          catalogue={tagCatalogue.data ?? []}
+          maxTags={config.peer_tags_max_per_player}
         />
       )}
 

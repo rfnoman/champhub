@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from django.db.models import Prefetch, QuerySet
 
+from apps.ratings.stars import stars_from
+
 from .models import (
     PlayerAttribute,
     PlayerProfile,
@@ -68,6 +70,9 @@ def player_sport_cards(profile: PlayerProfile) -> list[dict]:
                 "sport": player_sport.sport,
                 "positions": player_sport.positions or [],
                 "overall": rating.overall if rating else 0,
+                # The same 1–99 number as five stars (tasks.md). Computed here so both
+                # frontends render one answer rather than each doing the arithmetic.
+                "stars": stars_from(rating.overall if rating else 0),
                 "is_provisional": rating.is_provisional if rating else True,
                 "is_verified": player_sport.is_verified,
                 "matches_played": rating.matches_played if rating else 0,

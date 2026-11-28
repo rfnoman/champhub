@@ -2592,6 +2592,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/player-tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The player tag catalogue
+         * @description Every sticker that can currently be given (tasks.md).
+         *
+         *     Cached rather than public: it is the same list for everybody and changes only when
+         *     an admin edits it, but the only screen that needs it is the post-match sheet, which
+         *     is behind a sign-in anyway. Widening the anonymous surface for it would buy nothing.
+         */
+        get: operations["player_tags_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/players/{player_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A player's tags
+         * @description The stickers one player has been given, commonest first (tasks.md).
+         *
+         *     Signed in, like every other part of a profile — a player's track record, their
+         *     rating history and their fair-play record all sit behind the same door.
+         */
+        get: operations["player_tags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/leaderboard": {
         parameters: {
             query?: never;
@@ -4154,6 +4201,7 @@ export interface components {
             self_assessed_rating_cap: number;
             onboarding_default_rating: number;
             rating_provisional_matches: number;
+            peer_tags_max_per_player: number;
             default_player_weight_kg: number;
             booking_horizon_days: number;
             turf_delivery_cutoff_hours: number;
@@ -4325,6 +4373,21 @@ export interface components {
         };
         DisputeRequest: {
             reason: string;
+        };
+        /**
+         * @description A sticker on a profile, with how often it has been given.
+         *
+         *     Assembled by `selectors.tags_for` rather than read off a model — the count is the
+         *     point, and it is a `GROUP BY`.
+         */
+        EarnedTag: {
+            key: string;
+            label: string;
+            label_bn: string;
+            emoji: string;
+            tone: string;
+            description: string;
+            count: number;
         };
         FairPlay: {
             score: number;
@@ -5770,6 +5833,7 @@ export interface components {
             player_id: string;
             overall: number;
             skill_taps?: string[];
+            tags?: string[];
         };
         PeerRatingsRequest: {
             ratings: components["schemas"]["PeerRatingEntryRequest"][];
@@ -6000,6 +6064,8 @@ export interface components {
             sport: components["schemas"]["SportSummary"];
             positions: string[];
             overall: number;
+            /** Format: double */
+            stars: number;
             is_provisional: boolean;
             is_verified: boolean;
             matches_played: number;
@@ -6028,6 +6094,17 @@ export interface components {
                 [key: string]: string;
             };
             is_motm: boolean;
+        };
+        /** @description One sticker in the picker (tasks.md). */
+        PlayerTag: {
+            readonly key: string;
+            readonly label: string;
+            /** Label (Bangla) */
+            readonly label_bn: string;
+            readonly emoji: string;
+            /** @description What giving this tag means, shown under it in the picker. */
+            readonly description: string;
+            readonly tone: components["schemas"]["ToneEnum"];
         };
         PriceCoverageGap: {
             weekday: components["schemas"]["WeekdayEnum"];
@@ -6556,6 +6633,9 @@ export interface components {
             readonly my_peer_ratings: {
                 [key: string]: number;
             };
+            readonly my_peer_tags: {
+                [key: string]: string[];
+            };
         };
         ScorecardEvent: {
             /** Format: uuid */
@@ -7059,6 +7139,15 @@ export interface components {
          * @enum {string}
          */
         TeamSideEnum: "A" | "B";
+        /**
+         * @description * `cool` - Cool
+         *     * `fire` - Fire
+         *     * `steel` - Steel
+         *     * `gold` - Gold
+         *     * `grass` - Grass
+         * @enum {string}
+         */
+        ToneEnum: "cool" | "fire" | "steel" | "gold" | "grass";
         TopTurf: {
             name: string;
             slug: string;
@@ -11063,6 +11152,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConductReport"];
+                };
+            };
+        };
+    };
+    player_tags_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerTag"][];
+                };
+            };
+        };
+    };
+    player_tags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                player_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EarnedTag"][];
                 };
             };
         };

@@ -7,6 +7,8 @@ from .models import (
     LeaderboardEntry,
     PlayerGroundStats,
     PlayerSportStats,
+    PlayerTag,
+    PlayerTagAward,
     RatingChange,
 )
 
@@ -67,4 +69,27 @@ class LeaderboardEntryAdmin(ModelAdmin):
     def has_add_permission(self, request) -> bool:
         # Written nightly by `ratings.rebuild_leaderboards`; a hand-added row would be
         # deleted by the next run.
+        return False
+
+
+@admin.register(PlayerTag)
+class PlayerTagAdmin(ModelAdmin):
+    """The sticker catalogue. Editable without a deploy, which is the point of it."""
+
+    list_display = ("emoji", "label", "key", "tone", "order", "is_active")
+    list_filter = ("tone", "is_active")
+    list_editable = ("order", "is_active")
+    search_fields = ("key", "label", "label_bn")
+    ordering = ("order", "label")
+
+
+@admin.register(PlayerTagAward)
+class PlayerTagAwardAdmin(ModelAdmin):
+    list_display = ("receiver", "tag", "match", "created_at")
+    list_filter = ("tag",)
+    search_fields = ("receiver__email", "giver__email")
+    raw_id_fields = ("match", "tag", "giver", "receiver")
+
+    def has_add_permission(self, request) -> bool:
+        # An award is somebody's opinion after a match, not an admin's to mint.
         return False

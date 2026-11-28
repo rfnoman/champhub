@@ -309,3 +309,100 @@ CONDUCT_REPORT_REASON_CHOICES = ConductReport.Reason.choices
 CONDUCT_REPORT_STATUS_CHOICES = ConductReport.Status.choices
 LEADERBOARD_METRIC_CHOICES = LeaderboardEntry.Metric.choices
 LEADERBOARD_PERIOD_CHOICES = LeaderboardEntry.Period.choices
+
+
+class PlayerTag(BaseModel):
+    """A sticker one player can give another after a match (tasks.md).
+
+    The 1–99 rating answers "how good"; a tag answers "what are they *like* to play
+    with", which is the thing people actually say to each other on the way off the
+    pitch. "Cool as a cucumber" is not a number and does not want to be one.
+
+    A model rather than a hard-coded list for the same reason `Amenity` is one: the
+    catalogue is a matter of taste and a new sticker should not need a deploy. `tone`
+    picks the sticker's colours from a small fixed set, so a tag an admin adds tomorrow
+    still looks like it belongs.
+    """
+
+    class Tone(models.TextChoices):
+        COOL = "cool", _("Cool")
+        FIRE = "fire", _("Fire")
+        STEEL = "steel", _("Steel")
+        GOLD = "gold", _("Gold")
+        GRASS = "grass", _("Grass")
+
+    key = models.SlugField(_("key"), max_length=40, unique=True)
+    label = models.CharField(_("label"), max_length=60)
+    label_bn = models.CharField(_("label (Bangla)"), max_length=80, blank=True)
+    emoji = models.CharField(_("emoji"), max_length=8, blank=True)
+    description = models.CharField(
+        _("description"),
+        max_length=160,
+        blank=True,
+        help_text="What giving this tag means, shown under it in the picker.",
+    )
+    tone = models.CharField(_("tone"), max_length=8, choices=Tone.choices, default=Tone.COOL)
+    order = models.PositiveSmallIntegerField(_("display order"), default=0)
+    is_active = models.BooleanField(
+        _("active"),
+        default=True,
+        help_text=(
+            "Retiring a tag hides it from the picker and keeps every award already "
+            "given — a sticker somebody earned is not an admin's to take back."
+        ),
+    )
+
+    class Meta:
+        verbose_name = _("player tag")
+        verbose_name_plural = _("player tags")
+        ordering = ["order", "label"]
+
+    def __str__(self) -> str:
+        return f"{self.emoji} {self.label}".strip()
+
+    @property
+    def display_label(self) -> str:
+        return self.label
+
+
+class PlayerTagAward(BaseModel):
+    """One player giving another one tag, once, for one match.
+
+    A row rather than a list on `PeerRating` so counting is a `GROUP BY` instead of a
+    scan through JSON — the profile shows "🥒 Cool as a cucumber ×7" and that query runs
+    on every profile view.
+
+    **Anonymous to the recipient**, exactly like the peer rating it is given alongside
+    (DOMAIN §7): `giver` exists so one person cannot stack the same sticker twice, and
+    is never returned by any endpoint.
+    """
+
+    match = models.ForeignKey("matches.Match", on_delete=models.CASCADE, related_name="tag_awards")
+    tag = models.ForeignKey(PlayerTag, on_delete=models.CASCADE, related_name="awards")
+    giver = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="tags_given"
+    )
+    receiver = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="tags_received"
+    )
+
+    class Meta:
+        verbose_name = _("player tag award")
+        verbose_name_plural = _("player tag awards")
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["match", "giver", "receiver", "tag"], name="one_tag_per_pair_per_match"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(giver=models.F("receiver")), name="no_self_tagging"
+            ),
+        ]
+        indexes = [
+            # The profile's "what are they like" query: every tag one player has ever
+            # been given, grouped.
+            models.Index(fields=["receiver", "tag"], name="tag_award_receiver_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.receiver}: {self.tag}"

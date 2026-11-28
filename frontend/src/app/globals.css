@@ -91,6 +91,17 @@
   --color-rating-strong-vivid: var(--rating-strong-vivid);
   --color-rating-fair-vivid: var(--rating-fair-vivid);
   --color-rating-low-vivid: var(--rating-low-vivid);
+
+  --color-tone-cool-bg: var(--tone-cool-bg);
+  --color-tone-cool-ink: var(--tone-cool-ink);
+  --color-tone-fire-bg: var(--tone-fire-bg);
+  --color-tone-fire-ink: var(--tone-fire-ink);
+  --color-tone-steel-bg: var(--tone-steel-bg);
+  --color-tone-steel-ink: var(--tone-steel-ink);
+  --color-tone-gold-bg: var(--tone-gold-bg);
+  --color-tone-gold-ink: var(--tone-gold-ink);
+  --color-tone-grass-bg: var(--tone-grass-bg);
+  --color-tone-grass-ink: var(--tone-grass-ink);
   --color-sport-vivid: var(--sport-vivid);
 
   /* Per-sport identity. Set by `[data-sport]` below, which an allowlist in
@@ -185,6 +196,21 @@
   --rating-fair-vivid: oklch(0.78 0.16 82);
   --rating-low-vivid: oklch(0.72 0.02 158);
 
+  /* Sticker tones (tasks.md). Five, because a tag catalogue an admin can extend needs a
+     fixed set to pick from — a free-text colour would make the next sticker look like a
+     different product. Each is a surface/ink pair, so the sticker stays legible whether
+     it sits on a card or on the pitch-night panel. */
+  --tone-cool-bg: oklch(0.93 0.05 215);
+  --tone-cool-ink: oklch(0.42 0.12 235);
+  --tone-fire-bg: oklch(0.93 0.06 40);
+  --tone-fire-ink: oklch(0.47 0.17 32);
+  --tone-steel-bg: oklch(0.92 0.015 255);
+  --tone-steel-ink: oklch(0.42 0.03 255);
+  --tone-gold-bg: oklch(0.94 0.07 90);
+  --tone-gold-ink: oklch(0.47 0.11 72);
+  --tone-grass-bg: oklch(0.93 0.06 150);
+  --tone-grass-ink: oklch(0.42 0.12 155);
+
   /* A categorical ramp, replacing five greys. Hues are spaced far enough apart to stay
      distinguishable for the commonest colour-vision deficiencies, and they deliberately
      are not the four sport hues — those already mean something. */
@@ -264,6 +290,19 @@
   --rating-strong-vivid: oklch(0.86 0.19 128);
   --rating-fair-vivid: oklch(0.82 0.16 72);
   --rating-low-vivid: oklch(0.72 0.02 158);
+
+  /* Stickers on the midnight base: a dim surface with a bright ink, rather than the
+     light theme's pale chip, which would glare. */
+  --tone-cool-bg: oklch(0.3 0.055 230);
+  --tone-cool-ink: oklch(0.85 0.12 215);
+  --tone-fire-bg: oklch(0.31 0.07 35);
+  --tone-fire-ink: oklch(0.85 0.14 45);
+  --tone-steel-bg: oklch(0.3 0.02 255);
+  --tone-steel-ink: oklch(0.86 0.03 250);
+  --tone-gold-bg: oklch(0.32 0.065 80);
+  --tone-gold-ink: oklch(0.88 0.13 90);
+  --tone-grass-bg: oklch(0.29 0.06 155);
+  --tone-grass-ink: oklch(0.86 0.15 150);
 
   --chart-1: oklch(0.8 0.18 158);
   --chart-2: oklch(0.7 0.16 250);
