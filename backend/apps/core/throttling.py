@@ -10,7 +10,11 @@ protect, and each rate lives in settings (CLAUDE.md: configurable rules in one p
 
 from __future__ import annotations
 
-from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
+from rest_framework.throttling import (
+    ScopedRateThrottle,
+    SimpleRateThrottle,
+    UserRateThrottle,
+)
 
 
 class ReachingPeopleThrottle(UserRateThrottle):
@@ -65,3 +69,32 @@ class WebhookThrottle(ScopedRateThrottle):
     """
 
     scope = "webhook"
+
+
+class GuestLookupThrottle(SimpleRateThrottle):
+    """The guest booking lookup, keyed on the **phone number being asked about**.
+
+    A six-character code is the only thing protecting a guest's bookings, so this is the
+    one limit that genuinely stands between a secret and a guessing script. It must not
+    key on the IP address: as the comment on ``DEFAULT_THROTTLE_RATES`` explains, every
+    server-rendered page reaches Django from the frontend server's single address, so an
+    IP-keyed limit would throttle the site long before it inconvenienced anybody — and a
+    determined guesser has more than one address anyway.
+
+    Keying on the number means a thousand guesses at *one* guest's code are stopped no
+    matter where they come from, while a busy evening of different guests checking their
+    own bookings is unaffected. A request with no readable number falls back to the IP,
+    which only has to be good enough to catch nonsense.
+    """
+
+    scope = "guest-lookup"
+
+    def get_cache_key(self, request, view):
+        from apps.accounts.phones import normalise_phone
+
+        try:
+            phone = normalise_phone((request.data or {}).get("phone", ""))
+        except AttributeError, TypeError:
+            phone = ""
+        ident = phone or self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}

@@ -488,12 +488,22 @@
     "noShow": "No-show",
     "failed": "That did not work. Please try again.",
     "walkIn": "Walk-in booking",
-    "walkInHint": "For someone at the counter with no account. Confirmed straight away.",
+    "walkInHint": "For whoever is at the counter, with or without an app account. Confirmed straight away.",
     "ground": "Ground",
     "time": "Start time",
     "customerName": "Name",
     "customerPhone": "Phone",
-    "book": "Book"
+    "book": "Book",
+    "walkInWho": "Who is this booking for?",
+    "hasAccount": "Has an app account",
+    "noAccount": "No account",
+    "findPlayer": "Find the player",
+    "findPlayerPlaceholder": "@handle, phone or name",
+    "findPlayerHint": "Ask for their @handle, or scan the QR code on their profile. The booking lands in their app.",
+    "changePlayer": "Change",
+    "searching": "Searching…",
+    "noPlayers": "Nobody matches that. Book them as a guest instead.",
+    "guestHint": "The number lets them look the booking up, and claim it if they join later."
   },
   "username": {
     "heading": "Username",
@@ -512,5 +522,12 @@
     "copy": "Copy",
     "copied": "Copied",
     "shareHint": "Send this to anyone — they can open your profile and invite you to play."
+  },
+  "counterScan": {
+    "heading": "Take a booking",
+    "body": "Pick the counter you are standing at.",
+    "bodyFor": "Booking for {handle}. Pick the counter you are standing at.",
+    "whichTurf": "Which turf?",
+    "noTurfs": "No approved turfs yet."
   }
 }

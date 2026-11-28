@@ -134,3 +134,32 @@ def no_clerk_backend_api(monkeypatch):
     ``apps.accounts.services.fetch_clerk_user`` themselves.
     """
     monkeypatch.setattr("apps.accounts.services.fetch_clerk_user", lambda clerk_id: None)
+
+
+@pytest.fixture
+def guest_with_booking():
+    """A guest who booked once at the counter — the thing a claim is about.
+
+    Built through `create_booking` rather than the factory so the match exists: the
+    claim's whole job is to put the player on that roster, and a booking without one
+    would make the test pass for the wrong reason.
+    """
+    from apps.accounts.guests import get_or_create_guest
+    from apps.accounts.tests.factories import UserFactory
+    from apps.bookings.services import create_booking
+    from apps.bookings.tests.factories import bookable_ground, next_offered_start
+
+    staff = UserFactory()
+    ground, sport_format = bookable_ground()
+    guest = get_or_create_guest(phone="01711234567", name="Rafi", created_by=staff)
+    booking = create_booking(
+        user=staff,
+        ground=ground,
+        start=next_offered_start(ground=ground, sport_format=sport_format),
+        sport_format=sport_format,
+        visibility="private",
+        booked_for_name=guest.name,
+        booked_for_phone=guest.phone,
+        guest=guest,
+    )
+    return guest, booking

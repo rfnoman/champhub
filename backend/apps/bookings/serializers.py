@@ -133,10 +133,49 @@ class BookingCreateSerializer(serializers.Serializer):
 
 
 class WalkInBookingSerializer(BookingCreateSerializer):
-    """Staff booking on behalf of someone at the counter."""
+    """Staff booking for whoever is standing at the counter (tasks.md).
 
-    booked_for_name = serializers.CharField(max_length=120)
+    Two kinds of person turn up, and the form is the same one:
+
+    * somebody **with an account**, who says their handle or shows the QR code on their
+      profile — `player` is their username or profile id, and the booking is theirs, so
+      it appears in their app and counts towards their record;
+    * somebody **without one**, who gives a name and a number — `booked_for_name` and
+      `booked_for_phone`, which become a `GuestProfile` so a regular's bookings group
+      together and can be claimed later.
+
+    One of the two is required; giving both is refused rather than guessed at, because
+    the two produce very different rows and the staff member meant one of them.
+    """
+
+    player = serializers.CharField(
+        max_length=64,
+        required=False,
+        allow_blank=True,
+        help_text="An existing player's @handle or profile id.",
+    )
+    booked_for_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
     booked_for_phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        player = (attrs.get("player") or "").strip()
+        name = (attrs.get("booked_for_name") or "").strip()
+
+        if player and name:
+            raise serializers.ValidationError(
+                {"player": "Book for the account or for a guest, not both."}
+            )
+        if not player and not name:
+            raise serializers.ValidationError(
+                {"booked_for_name": "Search for the player, or type a name and number."}
+            )
+        if name and not (attrs.get("booked_for_phone") or "").strip():
+            # The number is what makes a guest claimable later, and without it the
+            # booking is a dead end for everybody including the person who made it.
+            raise serializers.ValidationError(
+                {"booked_for_phone": "A phone number is needed to book for a guest."}
+            )
+        return attrs
 
 
 class CancelBookingSerializer(serializers.Serializer):
@@ -155,3 +194,26 @@ class MarkPaidSerializer(serializers.Serializer):
 
 class NoteSerializer(serializers.Serializer):
     note = serializers.CharField(max_length=300, required=False, allow_blank=True)
+
+
+class CounterPlayerSerializer(serializers.Serializer):
+    """A search hit at the counter: enough to be sure it is the right person.
+
+    The phone is **masked** (`•••••••4567`), matching how identity numbers are treated
+    everywhere but the reviewer's own screen (DOMAIN §1a). A cashier confirming "is that
+    your number ending 4567?" needs the last four; nobody needs to be able to read a
+    stranger's full number off a till.
+    """
+
+    id = serializers.UUIDField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    handle = serializers.CharField(source="user.handle", read_only=True, default="")
+    photo_url = serializers.CharField(read_only=True, default="")
+    area = serializers.CharField(read_only=True, default="")
+    phone_hint = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField())
+    def get_phone_hint(self, obj) -> str:
+        from apps.accounts.phones import mask_phone
+
+        return mask_phone(obj.user.phone) if obj.user.phone else ""

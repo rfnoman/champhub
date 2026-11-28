@@ -233,4 +233,19 @@ TEMPLATES: dict[str, Template] = {
         "body": "{reason} You can upload it again from your account page.",
         "email": True,
     },
+    NotificationKind.ACCOUNT_CLAIM_SUBMITTED: {
+        "title": "{person} is claiming guest bookings",
+        "body": "{bookings} booking(s) taken at a counter under {phone}. Nobody verified that number — check before approving.",
+        "email": False,
+    },
+    NotificationKind.ACCOUNT_CLAIM_APPROVED: {
+        "title": "Your earlier bookings are on your account",
+        "body": "{bookings} booking(s) you made at the counter now count towards your profile.",
+        "email": True,
+    },
+    NotificationKind.ACCOUNT_CLAIM_REJECTED: {
+        "title": "We could not join those bookings",
+        "body": "{reason} Ask the turf staff to vouch for you and try again.",
+        "email": True,
+    },
 }

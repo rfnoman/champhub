@@ -8,10 +8,12 @@ import pytest
 from psycopg.types.range import TimestamptzRange
 from rest_framework.test import APIClient
 
+from apps.accounts.models import GuestProfile
 from apps.accounts.tests.factories import UserFactory
 from apps.bookings.models import Booking, BookingStatus
 from apps.bookings.services import confirm_booking, create_booking
 from apps.core.utils import now
+from apps.players.services import get_or_create_profile
 from apps.turfs.models import TurfMembership
 from apps.turfs.tests.factories import TurfMembershipFactory
 
@@ -359,6 +361,199 @@ class TestWalkIn:
             format="json",
         )
         assert response.status_code == 400
+
+    def test_booking_for_an_existing_account_makes_it_theirs(self, client, setup):
+        """The whole point: it shows up in the player's app, not the cashier's."""
+        ground, sport_format, _, staff = setup
+        player = UserFactory(username="rafiq_hasan")
+        get_or_create_profile(player)
+        client.force_authenticate(staff)
+
+        response = client.post(
+            f"/api/v1/me/turfs/{ground.turf.slug}/bookings/walk-in",
+            {**payload(ground, sport_format), "player": "@rafiq_hasan"},
+            format="json",
+        )
+        assert response.status_code == 201, response.data
+
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.booked_by_id == player.id
+        assert booking.guest_id is None
+        assert booking.booked_for_name == ""
+        # And they are on the roster, because the booker is the player now.
+        assert booking.match.players.filter(player=player).exists()
+
+    def test_the_handle_may_be_written_without_the_at(self, client, setup):
+        ground, sport_format, _, staff = setup
+        player = UserFactory(username="rafiq_hasan")
+        get_or_create_profile(player)
+        client.force_authenticate(staff)
+
+        response = client.post(
+            f"/api/v1/me/turfs/{ground.turf.slug}/bookings/walk-in",
+            {**payload(ground, sport_format), "player": "rafiq_hasan"},
+            format="json",
+        )
+        assert response.status_code == 201
+        assert Booking.objects.get(id=response.data["id"]).booked_by_id == player.id
+
+    def test_an_unknown_handle_is_refused(self, client, setup):
+        ground, sport_format, _, staff = setup
+        client.force_authenticate(staff)
+
+        response = client.post(
+            f"/api/v1/me/turfs/{ground.turf.slug}/bookings/walk-in",
+            {**payload(ground, sport_format), "player": "@nobody_here"},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "player" in response.data
+
+    def test_a_guest_booking_creates_a_guest(self, client, setup):
+        ground, sport_format, _, staff = setup
+        client.force_authenticate(staff)
+
+        response = client.post(
+            f"/api/v1/me/turfs/{ground.turf.slug}/bookings/walk-in",
+            {
+                **payload(ground, sport_format),
+                "booked_for_name": "Karim",
+                "booked_for_phone": "01711-234567",
+            },
+            format="json",
+        )
+        assert response.status_code == 201
+
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.guest is not None
+        assert booking.guest.name == "Karim"
+        # Stored the way a claim will look for it, whatever was typed.
+        assert booking.guest.phone == "+8801711234567"
+        assert booking.booked_for_phone == "+8801711234567"
+
+    def test_the_same_number_next_week_is_the_same_guest(self, client, setup):
+        ground, sport_format, _, staff = setup
+        client.force_authenticate(staff)
+        body = {
+            "booked_for_name": "Karim",
+            "booked_for_phone": "01711234567",
+        }
+
+        first = client.post(
+            f"/api/v1/me/turfs/{ground.turf.slug}/bookings/walk-in",
+            {**payload(ground, sport_format), **body},
+            format="json",
+        )
+        second = client.post(
+            f"/api/v1/me/turfs/{ground.turf.slug}/bookings/walk-in",
+            {
+                **payload(ground, sport_format, start=next_slot_start(hours_ahead=48)),
+                **body,
+                "booked_for_phone": "+880 1711 234567",
+            },
+            format="json",
+        )
+        assert (first.status_code, second.status_code) == (201, 201)
+        assert GuestProfile.objects.count() == 1
+        assert GuestProfile.objects.first().bookings.count() == 2
+
+    def test_a_guest_needs_a_number(self, client, setup):
+        """Without one the booking is a dead end — nothing can ever claim it."""
+        ground, sport_format, _, staff = setup
+        client.force_authenticate(staff)
+
+        response = client.post(
+            f"/api/v1/me/turfs/{ground.turf.slug}/bookings/walk-in",
+            {**payload(ground, sport_format), "booked_for_name": "Karim"},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "booked_for_phone" in response.data
+
+    def test_both_an_account_and_a_guest_is_refused(self, client, setup):
+        ground, sport_format, _, staff = setup
+        player = UserFactory(username="rafiq_hasan")
+        get_or_create_profile(player)
+        client.force_authenticate(staff)
+
+        response = client.post(
+            f"/api/v1/me/turfs/{ground.turf.slug}/bookings/walk-in",
+            {
+                **payload(ground, sport_format),
+                "player": "@rafiq_hasan",
+                "booked_for_name": "Karim",
+                "booked_for_phone": "01711234567",
+            },
+            format="json",
+        )
+        assert response.status_code == 400
+
+
+class TestCounterSearch:
+    def test_staff_find_a_player_by_handle(self, client, setup):
+        ground, _, _, staff = setup
+        player = UserFactory(username="rafiq_hasan", first_name="Rafiqul")
+        get_or_create_profile(player)
+        client.force_authenticate(staff)
+
+        response = client.get(
+            f"/api/v1/me/turfs/{ground.turf.slug}/counter-players", {"q": "@rafiq_hasan"}
+        )
+        assert response.status_code == 200
+        assert [row["handle"] for row in response.data] == ["@rafiq_hasan"]
+
+    def test_a_hidden_player_is_still_findable_at_the_counter(self, client, setup):
+        """`discoverable` hides you from the directory, not from the manager in front of you."""
+        ground, _, _, staff = setup
+        player = UserFactory(username="rafiq_hasan")
+        profile = get_or_create_profile(player)
+        profile.discoverable = False
+        profile.save()
+        client.force_authenticate(staff)
+
+        response = client.get(
+            f"/api/v1/me/turfs/{ground.turf.slug}/counter-players", {"q": "@rafiq_hasan"}
+        )
+        assert len(response.data) == 1
+
+    def test_found_by_phone_however_it_is_written(self, client, setup):
+        ground, _, _, staff = setup
+        player = UserFactory(username="rafiq_hasan", phone="+8801711234567")
+        get_or_create_profile(player)
+        client.force_authenticate(staff)
+
+        response = client.get(
+            f"/api/v1/me/turfs/{ground.turf.slug}/counter-players", {"q": "01711-234567"}
+        )
+        assert len(response.data) == 1
+        # Masked: a cashier confirms the last four, nobody reads a full number off a till.
+        assert response.data[0]["phone_hint"].endswith("4567")
+        assert "1711" not in response.data[0]["phone_hint"]
+
+    def test_an_exact_handle_sorts_above_a_name_that_merely_starts_the_same(self, client, setup):
+        ground, _, _, staff = setup
+        get_or_create_profile(UserFactory(username="rafi", first_name="Zed"))
+        other = UserFactory(username="someone_else", first_name="Rafi")
+        get_or_create_profile(other)
+        client.force_authenticate(staff)
+
+        response = client.get(f"/api/v1/me/turfs/{ground.turf.slug}/counter-players", {"q": "rafi"})
+        assert response.data[0]["handle"] == "@rafi"
+
+    def test_a_one_character_query_returns_nothing(self, client, setup):
+        """This screen has a search box, not a user list."""
+        ground, _, _, staff = setup
+        get_or_create_profile(UserFactory(username="rafiq_hasan"))
+        client.force_authenticate(staff)
+
+        response = client.get(f"/api/v1/me/turfs/{ground.turf.slug}/counter-players", {"q": "r"})
+        assert response.data == []
+
+    def test_a_stranger_cannot_search(self, client, setup):
+        ground, *_ = setup
+        client.force_authenticate(UserFactory())
+        response = client.get(f"/api/v1/me/turfs/{ground.turf.slug}/counter-players", {"q": "ra"})
+        assert response.status_code == 404
 
     def test_a_player_cannot_take_walk_ins(self, client, setup):
         ground, sport_format, *_ = setup

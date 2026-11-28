@@ -3,6 +3,7 @@ from rest_framework.routers import SimpleRouter
 
 from .views import (
     BookingViewSet,
+    CounterPlayerSearchView,
     MyBookingsView,
     TurfBookingsView,
     TurfPendingBookingsView,
@@ -28,6 +29,11 @@ urlpatterns = [
         "me/turfs/<slug:slug>/bookings/walk-in",
         WalkInBookingView.as_view(),
         name="turf-bookings-walk-in",
+    ),
+    path(
+        "me/turfs/<slug:slug>/counter-players",
+        CounterPlayerSearchView.as_view(),
+        name="turf-counter-players",
     ),
     path("", include(router.urls)),
 ]

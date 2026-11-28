@@ -343,3 +343,144 @@ IDENTITY_FILE_FIELDS = ("document_front", "document_back")
 #: Importable aliases for ENUM_NAME_OVERRIDES (see apps/turfs/models.py).
 IDENTITY_DOCUMENT_TYPE_CHOICES = IdentityDocumentType.choices
 IDENTITY_STATUS_CHOICES = IdentityStatus.choices
+
+
+def _new_access_code() -> str:
+    """Six unambiguous characters, generated with `secrets` because it is a password.
+
+    No `0`/`O`, no `1`/`I`/`L`: this is read off a phone screen at a counter and typed
+    into another phone, often by somebody who has just played ninety minutes.
+    """
+    import secrets
+
+    alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    return "".join(secrets.choice(alphabet) for _ in range(6))
+
+
+class GuestProfile(BaseModel):
+    """Somebody who booked at the counter without an account (tasks.md).
+
+    Not a `User`: there is no Clerk identity behind it, nothing has been verified, and
+    giving it one would mean an account that cannot sign in sitting in the same table as
+    accounts that can. It is a name and a phone number that several bookings can hang
+    off, so a regular who turns up every Friday is one guest rather than eight.
+
+    Keyed on the **normalised** phone (`apps.accounts.phones`), because `01711-234567`
+    and `+8801711234567` are the same person and keying on the raw string would make
+    them three — which would hide bookings from the very person trying to claim them.
+
+    `access_code` is how a guest reads their own bookings back (DOMAIN §1a's reasoning
+    about private things applies: the phone number alone cannot be the key, or anybody
+    who knows a number could read a stranger's evening plans).
+    """
+
+    phone = models.CharField(
+        _("phone number"),
+        max_length=32,
+        unique=True,
+        db_index=True,
+        help_text="E.164, normalised. Unverified (DECISIONS D9) — which is why claiming is reviewed.",
+    )
+    name = models.CharField(_("name"), max_length=120)
+    access_code = models.CharField(
+        _("access code"),
+        max_length=12,
+        default=_new_access_code,
+        help_text="What the guest types with their number to see their own bookings.",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="guests_created",
+        help_text="The staff member who took the first booking.",
+    )
+    claimed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="claimed_guests",
+        help_text=(
+            "Set when an admin approves a claim. A claimed guest keeps its row so the "
+            "bookings' history stays readable, but stops being bookable as a guest."
+        ),
+    )
+    claimed_at = models.DateTimeField(_("claimed at"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("guest")
+        verbose_name_plural = _("guests")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        from .phones import mask_phone
+
+        return f"{self.name} ({mask_phone(self.phone)})"
+
+    @property
+    def is_claimed(self) -> bool:
+        return self.claimed_by_id is not None
+
+
+class AccountClaim(BaseModel):
+    """A signed-up account asking for a guest's booking history (tasks.md).
+
+    **Always reviewed by a person.** Phone numbers are unverified (DECISIONS D9), so a
+    matching string is a hint and not a proof — approving automatically would hand one
+    person another's match history to anybody who guessed a number. The review is the
+    whole security model, which is why `approve` records who did it.
+
+    One pending claim per account per guest; a rejected one may be made again, because
+    the usual fix is for the person to go to the turf and have staff vouch for them.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", _("Pending")
+        APPROVED = "approved", _("Approved")
+        REJECTED = "rejected", _("Rejected")
+        WITHDRAWN = "withdrawn", _("Withdrawn")
+
+    OPEN_STATUSES = (Status.PENDING,)
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="account_claims"
+    )
+    guest = models.ForeignKey(GuestProfile, on_delete=models.CASCADE, related_name="claims")
+    status = models.CharField(
+        _("status"), max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True
+    )
+    message = models.CharField(
+        _("message"),
+        max_length=300,
+        blank=True,
+        help_text="Anything the person wants the reviewer to know.",
+    )
+    decision_reason = models.TextField(_("decision reason"), blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_account_claims",
+    )
+    reviewed_at = models.DateTimeField(_("reviewed at"), null=True, blank=True)
+    #: How many bookings moved, recorded at approval so the queue stays readable after
+    #: the fact — the bookings themselves no longer point at the guest once moved.
+    bookings_moved = models.PositiveIntegerField(_("bookings moved"), default=0)
+
+    class Meta:
+        verbose_name = _("account claim")
+        verbose_name_plural = _("account claims")
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "guest"],
+                condition=models.Q(status="pending"),
+                name="one_open_claim_per_user_and_guest",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} claims {self.guest} ({self.status})"

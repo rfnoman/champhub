@@ -117,6 +117,8 @@ UNFOLD = {
                 "items": [
                     _item(_("Accounts"), "accounts.user", "person"),
                     _item(_("Identity checks"), "accounts.identityverification", "verified_user"),
+                    _item(_("Account claims"), "accounts.accountclaim", "merge"),
+                    _item(_("Guests"), "accounts.guestprofile", "person_add"),
                     _item(_("Player profiles"), "players.playerprofile", "sports_handball"),
                     _item(_("Conduct reports"), "ratings.conductreport", "report"),
                 ],

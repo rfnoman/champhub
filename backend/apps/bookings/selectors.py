@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import date, datetime, time, timedelta
 
-from django.db.models import Prefetch, Q, QuerySet
+from django.db.models import Case, IntegerField, Prefetch, Q, QuerySet, When
 from psycopg.types.range import TimestamptzRange
 
 from apps.core.utils import DHAKA, now
@@ -90,3 +91,76 @@ def bookings_visible_to(user) -> QuerySet[Booking]:
     return _with_related(
         Booking.objects.filter(Q(booked_by=user) | Q(ground__turf_id__in=staffed_turf_ids(user)))
     ).distinct()
+
+
+def counter_player_search(query: str, *, limit: int = 8):
+    """Players a staff member can book for, found by handle, phone or name (tasks.md).
+
+    Three lookups, narrowest first, because the three are not equally trustworthy:
+
+    * an **exact handle** — the thing the person said out loud, or that their QR code
+      carried. A leading `@` is stripped, matching DOMAIN §1b's "normalised away";
+    * an **exact normalised phone**, so `01711-234567` finds `+8801711234567`;
+    * a **name prefix**, which is the fuzzy one and is last for that reason.
+
+    `discoverable` is deliberately ignored. It controls appearance in the player
+    directory, and a player who hides there still expects the manager to find them when
+    they are standing at the counter saying their own handle (DOMAIN §1b).
+
+    An empty query returns nothing rather than everybody: this screen has a search box,
+    not a user list.
+    """
+    from apps.accounts.phones import normalise_phone
+    from apps.players.models import PlayerProfile
+
+    text = (query or "").strip()
+    if len(text) < 2:
+        return PlayerProfile.objects.none()
+
+    handle = text.lstrip("@").lower()
+    phone = normalise_phone(text)
+
+    matches = Q(user__username=handle) | Q(display_name__istartswith=text)
+    matches |= Q(user__first_name__istartswith=text) | Q(user__last_name__istartswith=text)
+    if phone:
+        matches |= Q(user__phone=phone)
+
+    return (
+        PlayerProfile.objects.select_related("user")
+        .filter(matches, user__is_active=True)
+        # An exact handle is the certain match and must not be pushed below a name that
+        # happens to start with the same letters.
+        .order_by(
+            Case(When(user__username=handle, then=0), default=1, output_field=IntegerField()),
+            "display_name",
+        )[:limit]
+    )
+
+
+def resolve_counter_player(reference: str):
+    """The account behind a handle or a profile id, or ``None``.
+
+    What the counter screen sends back after a search: the staff member picked a row, so
+    this is a lookup of something already chosen rather than a second search. Accepts a
+    profile id (what the picker sends) and a `@handle` (what the QR code carries and
+    what somebody says out loud), and nothing else — a name is ambiguous and booking the
+    wrong Rafi is worse than asking again.
+    """
+    from apps.players.models import PlayerProfile
+
+    text = (reference or "").strip()
+    if not text:
+        return None
+
+    try:
+        profile = PlayerProfile.objects.select_related("user").get(id=uuid.UUID(text))
+    except ValueError, AttributeError, PlayerProfile.DoesNotExist:
+        profile = (
+            PlayerProfile.objects.select_related("user")
+            .filter(user__username=text.lstrip("@").lower())
+            .first()
+        )
+
+    if profile is None or not profile.user.is_active:
+        return None
+    return profile.user

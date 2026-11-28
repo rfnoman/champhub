@@ -32,6 +32,11 @@ PUBLIC_ROUTES = {
     "api/v1/turfs/<slug:slug>/products": "the store's shop window",
     "api/v1/store/products": "the store's shop window",
     "api/v1/payments/ipn/<str:provider>": "the gateway calls it; authenticated by validation (D57)",
+    # The whole point is somebody who never signed up (tasks.md). It is not *open*: it
+    # takes a phone number and a six-character code issued at the counter, answers the
+    # same way for a wrong number and a wrong code, and is rate-limited on the number
+    # rather than on an address — see `GuestLookupThrottle`.
+    "api/v1/guest/bookings": "a guest has no account by definition; a code is the key (D108)",
 }
 
 #: Values to stand in for path converters, so a route can actually be requested.

@@ -238,6 +238,107 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/guest/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A guest's bookings
+         * @description A guest reading their own bookings, with no account (tasks.md).
+         *
+         *     Phone **and** code. The number alone identifies a guest but proves nothing, so a
+         *     lookup on it would let anybody who knows a number read a stranger's evening plans.
+         *     The code is handed over at the counter with the booking.
+         *
+         *     Public by necessity — the whole point is somebody who has not signed up — and
+         *     throttled for the same reason a sign-in form is: this is a six-character secret and
+         *     the only thing between it and a guessing script is the rate limit.
+         */
+        post: operations["guest_bookings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/account-claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Guest bookings this account could claim
+         * @description What this account could claim, and what it has already asked for (tasks.md).
+         *
+         *     The offer is driven entirely by the number **this account** gave Clerk — there is no
+         *     way to ask what sits behind somebody else's. See `apps.accounts.guests`.
+         */
+        get: operations["my_account_claim"];
+        put?: never;
+        /**
+         * Ask for a guest's bookings
+         * @description What this account could claim, and what it has already asked for (tasks.md).
+         *
+         *     The offer is driven entirely by the number **this account** gave Clerk — there is no
+         *     way to ask what sits behind somebody else's. See `apps.accounts.guests`.
+         */
+        post: operations["my_account_claim_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/account-claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Account claims to review
+         * @description Claims waiting for a person to look at them (tasks.md).
+         */
+        get: operations["admin_account_claims"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/account-claims/{claim_id}/{decision}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or reject a claim
+         * @description Approving or rejecting one claim.
+         *
+         *     The approval is the whole security model: a phone number is unverified (D9), so a
+         *     person has to decide, and this records who.
+         */
+        post: operations["admin_account_claim_decide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/webhooks/clerk": {
         parameters: {
             query?: never;
@@ -617,6 +718,33 @@ export interface paths {
          * @description Add a sport to my profile, or remove one, after onboarding.
          */
         post: operations["my_sports_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/counter-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My counter QR code
+         * @description The QR a player shows at a turf counter (tasks.md).
+         *
+         *     Returns the SVG rather than an image URL: the profile page renders on the server, so
+         *     it inlines this straight into the HTML — no second request, no image that needs its
+         *     own authentication, and the code inherits the page's colour in both themes.
+         *
+         *     Needs a handle. A player who has not chosen one has nothing for the code to carry
+         *     (DOMAIN §1b), and saying so is more use than an empty square.
+         */
+        get: operations["my_counter_code"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1666,6 +1794,35 @@ export interface paths {
          * @description Recorded against the staff member's account with the customer's name and phone, and confirmed immediately — they are standing at the counter.
          */
         post: operations["turf_bookings_walk_in"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/turfs/{slug}/counter-players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find a player at the counter (staff)
+         * @description Finding the person at the counter by handle, phone or name (tasks.md).
+         *
+         *     Deliberately **not** the player directory (`/players/search`): that one respects
+         *     `discoverable`, and a player who hides from search still expects the manager to find
+         *     them when they are standing there saying their own handle. A handle lookup is the
+         *     prettier form of handing somebody your profile link, and ignores `discoverable` by
+         *     the same rule (DOMAIN §1b).
+         *
+         *     Staff-only, scoped to a turf they work at, and throttled: it is an exact-ish lookup
+         *     for somebody who is present, not a way to walk the user table.
+         */
+        get: operations["turf_counter_player_search"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3800,6 +3957,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description A claim as its maker sees it. */
+        AccountClaim: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly status: components["schemas"]["Status99fEnum"];
+            readonly status_label: string;
+            /** @description Anything the person wants the reviewer to know. */
+            readonly message: string;
+            readonly decision_reason: string;
+            readonly phone_hint: string;
+            readonly booking_count: number;
+            readonly bookings_moved: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+        };
         ActivityLog: {
             /** Format: uuid */
             readonly id: string;
@@ -3860,6 +4034,38 @@ export interface components {
         AdjustStockRequest: {
             delta: number;
             reason: string;
+        };
+        /**
+         * @description The reviewer's view: the full number, and who is asking for what.
+         *
+         *     The number is shown **in full** here and masked everywhere else, which is the same
+         *     rule identity documents follow (DOMAIN §1a) — a reviewer deciding whether a person
+         *     really is the guest needs to compare what Clerk has against what the counter wrote
+         *     down, and cannot do that against four digits.
+         */
+        AdminAccountClaim: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly status: components["schemas"]["Status99fEnum"];
+            readonly status_label: string;
+            /** @description Anything the person wants the reviewer to know. */
+            readonly message: string;
+            readonly decision_reason: string;
+            readonly phone_hint: string;
+            readonly booking_count: number;
+            readonly bookings_moved: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+            readonly claimant_name: string;
+            readonly claimant_email: string;
+            readonly claimant_phone: string;
+            readonly claimant_handle: string;
+            readonly guest_name: string;
+            readonly guest_phone: string;
+            readonly numbers_match: boolean;
+            readonly turfs: string[];
         };
         /**
          * @description The reviewer's view: who it is, and the number in full.
@@ -4195,6 +4401,27 @@ export interface components {
         CheckoutRequest: {
             choices: components["schemas"]["CheckoutChoiceRequest"][];
         };
+        ClaimDecisionRequest: {
+            reason?: string;
+        };
+        ClaimRequestRequest: {
+            /** Format: uuid */
+            guest_id: string;
+            message?: string;
+        };
+        /**
+         * @description What the app offers a newly signed-up account whose number matches a guest.
+         *
+         *     The name is **not** included. A person types their own number and is told there are
+         *     bookings under it; telling them whose would make "is this number yours?" into a
+         *     directory lookup for anybody willing to type numbers.
+         */
+        Claimable: {
+            /** Format: uuid */
+            readonly guest_id: string;
+            readonly phone_hint: string;
+            readonly booking_count: number;
+        };
         ClientConfig: {
             rating_min: number;
             rating_max: number;
@@ -4285,6 +4512,34 @@ export interface components {
         ConductReviewRequest: {
             uphold: boolean;
             note?: string;
+        };
+        CounterCode: {
+            handle: string;
+            url: string;
+            svg: string;
+        };
+        CounterCodeUnavailable: {
+            detail: string;
+        };
+        /**
+         * @description A search hit at the counter: enough to be sure it is the right person.
+         *
+         *     The phone is **masked** (`•••••••4567`), matching how identity numbers are treated
+         *     everywhere but the reviewer's own screen (DOMAIN §1a). A cashier confirming "is that
+         *     your number ending 4567?" needs the last four; nobody needs to be able to read a
+         *     stranger's full number off a till.
+         */
+        CounterPlayer: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly name: string;
+            /** @default  */
+            readonly handle: string;
+            /** @default  */
+            readonly photo_url: string;
+            /** @default  */
+            readonly area: string;
+            readonly phone_hint: string;
         };
         CounterSale: {
             /** Format: uuid */
@@ -4554,6 +4809,65 @@ export interface components {
             slot_minutes?: components["schemas"]["SlotMinutesEnum"];
             notes?: string;
             sport_format_ids?: string[];
+        };
+        /**
+         * @description One booking as a guest sees it, with no account behind the request.
+         *
+         *     Deliberately thin. A signed-in player's booking detail carries the match, the roster,
+         *     payment history and the turf's whole record; a guest typed a phone number and a code
+         *     into a box, so they get what they need to turn up at the right place at the right
+         *     time and nothing that would be worth guessing a code for.
+         */
+        GuestBooking: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly turf_name: string;
+            readonly turf_area: string;
+            readonly turf_slug: string;
+            readonly ground_name: string;
+            readonly sport_name: string;
+            readonly format_name: string;
+            /** Format: date-time */
+            readonly start: string;
+            /** Format: date-time */
+            readonly end: string;
+            /** Format: decimal */
+            readonly price: string;
+            readonly status: string;
+            readonly status_label: string;
+            readonly directions_url: string;
+        };
+        GuestBookings: {
+            guest: components["schemas"]["GuestSummary"];
+            bookings: components["schemas"]["GuestBooking"][];
+        };
+        /**
+         * @description What a guest types to see their own bookings.
+         *
+         *     The code is the secret, not the phone number: a number alone would let anybody who
+         *     knows one read a stranger's evening plans, which is exactly the kind of thing DOMAIN
+         *     §1a refuses to do with anything private.
+         */
+        GuestLookup: {
+            phone: string;
+            code: string;
+        };
+        /**
+         * @description What a guest types to see their own bookings.
+         *
+         *     The code is the secret, not the phone number: a number alone would let anybody who
+         *     knows one read a stranger's evening plans, which is exactly the kind of thing DOMAIN
+         *     §1a refuses to do with anything private.
+         */
+        GuestLookupRequest: {
+            phone: string;
+            code: string;
+        };
+        /** @description A guest's own view of themselves, after a successful lookup. */
+        GuestSummary: {
+            readonly name: string;
+            readonly phone_hint: string;
+            readonly booking_count: number;
         };
         Health: {
             status: string;
@@ -4888,6 +5202,10 @@ export interface components {
              */
             player_id: string;
         };
+        MyAccountClaim: {
+            claimable: components["schemas"]["Claimable"] | null;
+            claims: components["schemas"]["AccountClaim"][];
+        };
         NoteRequest: {
             note?: string;
         };
@@ -4951,9 +5269,12 @@ export interface components {
          *     * `identity_submitted` - Identity check to review
          *     * `identity_approved` - Identity verified
          *     * `identity_rejected` - Identity check needs more
+         *     * `account_claim_submitted` - Account claim to review
+         *     * `account_claim_approved` - Guest bookings joined
+         *     * `account_claim_rejected` - Account claim declined
          * @enum {string}
          */
-        NotificationKindEnum: "booking_created" | "booking_pending_confirmation" | "booking_confirmed" | "booking_expired" | "booking_cancelled" | "booking_paid" | "booking_no_show" | "booking_completed" | "booking_reminder" | "squad_invite" | "squad_joined" | "match_added" | "match_removed" | "match_player_left" | "match_join_request" | "match_join_approved" | "match_join_declined" | "match_invite" | "match_invite_proposed" | "match_invite_accepted" | "match_invite_declined" | "scorecard_submitted" | "scorecard_disputed" | "scorecard_locked" | "motm_awarded" | "stock_low" | "rental_out" | "rental_overdue" | "order_placed" | "order_accepted" | "order_ready" | "order_assigned" | "order_delivered" | "order_cancelled" | "order_cutoff_soon" | "match_day" | "hydration" | "recovery" | "weekly_recap" | "identity_submitted" | "identity_approved" | "identity_rejected";
+        NotificationKindEnum: "booking_created" | "booking_pending_confirmation" | "booking_confirmed" | "booking_expired" | "booking_cancelled" | "booking_paid" | "booking_no_show" | "booking_completed" | "booking_reminder" | "squad_invite" | "squad_joined" | "match_added" | "match_removed" | "match_player_left" | "match_join_request" | "match_join_approved" | "match_join_declined" | "match_invite" | "match_invite_proposed" | "match_invite_accepted" | "match_invite_declined" | "scorecard_submitted" | "scorecard_disputed" | "scorecard_locked" | "motm_awarded" | "stock_low" | "rental_out" | "rental_overdue" | "order_placed" | "order_accepted" | "order_ready" | "order_assigned" | "order_delivered" | "order_cancelled" | "order_cutoff_soon" | "match_day" | "hydration" | "recovery" | "weekly_recap" | "identity_submitted" | "identity_approved" | "identity_rejected" | "account_claim_submitted" | "account_claim_approved" | "account_claim_rejected";
         /** @description The nutrition panel, kept together so the UI can hide it in one go. */
         Nutrition: {
             serving_size: string;
@@ -7031,6 +7352,14 @@ export interface components {
             };
             entries: components["schemas"]["LedgerEntry"][];
         };
+        /**
+         * @description * `pending` - Pending
+         *     * `approved` - Approved
+         *     * `rejected` - Rejected
+         *     * `withdrawn` - Withdrawn
+         * @enum {string}
+         */
+        Status99fEnum: "pending" | "approved" | "rejected" | "withdrawn";
         StockItem: {
             /** Format: uuid */
             readonly id: string;
@@ -7422,7 +7751,21 @@ export interface components {
         VoidSaleRequest: {
             reason?: string;
         };
-        /** @description Staff booking on behalf of someone at the counter. */
+        /**
+         * @description Staff booking for whoever is standing at the counter (tasks.md).
+         *
+         *     Two kinds of person turn up, and the form is the same one:
+         *
+         *     * somebody **with an account**, who says their handle or shows the QR code on their
+         *       profile — `player` is their username or profile id, and the booking is theirs, so
+         *       it appears in their app and counts towards their record;
+         *     * somebody **without one**, who gives a name and a number — `booked_for_name` and
+         *       `booked_for_phone`, which become a `GuestProfile` so a regular's bookings group
+         *       together and can be claimed later.
+         *
+         *     One of the two is required; giving both is refused rather than guessed at, because
+         *     the two produce very different rows and the staff member meant one of them.
+         */
         WalkInBooking: {
             /** Format: uuid */
             ground_id: string;
@@ -7443,10 +7786,26 @@ export interface components {
             /** @default public */
             visibility: components["schemas"]["BookingVisibilityEnum"];
             notes?: string;
-            booked_for_name: string;
+            /** @description An existing player's @handle or profile id. */
+            player?: string;
+            booked_for_name?: string;
             booked_for_phone?: string;
         };
-        /** @description Staff booking on behalf of someone at the counter. */
+        /**
+         * @description Staff booking for whoever is standing at the counter (tasks.md).
+         *
+         *     Two kinds of person turn up, and the form is the same one:
+         *
+         *     * somebody **with an account**, who says their handle or shows the QR code on their
+         *       profile — `player` is their username or profile id, and the booking is theirs, so
+         *       it appears in their app and counts towards their record;
+         *     * somebody **without one**, who gives a name and a number — `booked_for_name` and
+         *       `booked_for_phone`, which become a `GuestProfile` so a regular's bookings group
+         *       together and can be claimed later.
+         *
+         *     One of the two is required; giving both is refused rather than guessed at, because
+         *     the two produce very different rows and the staff member meant one of them.
+         */
         WalkInBookingRequest: {
             /** Format: uuid */
             ground_id: string;
@@ -7467,7 +7826,9 @@ export interface components {
             /** @default public */
             visibility: components["schemas"]["BookingVisibilityEnum"];
             notes?: string;
-            booked_for_name: string;
+            /** @description An existing player's @handle or profile id. */
+            player?: string;
+            booked_for_name?: string;
             booked_for_phone?: string;
         };
         WebhookAccepted: {
@@ -7768,6 +8129,133 @@ export interface operations {
                 };
                 content: {
                     "image/*": string;
+                };
+            };
+        };
+    };
+    guest_bookings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestLookupRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GuestLookupRequest"];
+                "multipart/form-data": components["schemas"]["GuestLookupRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestBookings"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestLookup"];
+                };
+            };
+        };
+    };
+    my_account_claim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAccountClaim"];
+                };
+            };
+        };
+    };
+    my_account_claim_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClaimRequestRequest"];
+                "multipart/form-data": components["schemas"]["ClaimRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountClaim"];
+                };
+            };
+        };
+    };
+    admin_account_claims: {
+        parameters: {
+            query?: {
+                /** @description Default `pending`. */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccountClaim"][];
+                };
+            };
+        };
+    };
+    admin_account_claim_decide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: string;
+                decision: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ClaimDecisionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClaimDecisionRequest"];
+                "multipart/form-data": components["schemas"]["ClaimDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccountClaim"];
                 };
             };
         };
@@ -8289,6 +8777,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerSport"];
+                };
+            };
+        };
+    };
+    my_counter_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CounterCode"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CounterCodeUnavailable"];
                 };
             };
         };
@@ -9827,6 +10342,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WalkInBooking"];
+                };
+            };
+        };
+    };
+    turf_counter_player_search: {
+        parameters: {
+            query?: {
+                /** @description A @handle, phone number or name. */
+                q?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CounterPlayer"][];
                 };
             };
         };

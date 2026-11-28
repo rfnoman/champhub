@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 
 from apps.ratings.models import PlayerTag, PlayerTagAward
 from apps.ratings.selectors import tag_catalogue, tags_for
@@ -128,7 +128,8 @@ class TestConstraints:
     def test_nobody_tags_themselves(self, player_profile, match_with_roster):
         match, _ = match_with_roster
         tag = PlayerTag.objects.get(key="wall")
-        with pytest.raises(Exception):
+        # The check constraint, not a service guard: nothing in the database may hold it.
+        with pytest.raises(IntegrityError), transaction.atomic():
             PlayerTagAward.objects.create(
                 match=match,
                 giver=player_profile.user,
@@ -142,7 +143,7 @@ class TestConstraints:
         PlayerTagAward.objects.create(
             match=match, giver=others[0], receiver=player_profile.user, tag=tag
         )
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError), transaction.atomic():
             PlayerTagAward.objects.create(
                 match=match, giver=others[0], receiver=player_profile.user, tag=tag
             )

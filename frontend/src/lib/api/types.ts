@@ -140,3 +140,8 @@ export type PlayerCardProfile = {
   attributes: readonly PlayerAttributeValue[];
   sport_cards: readonly PlayerSportCard[];
 };
+
+/** Guest bookings an account could claim, and the claims it has made (tasks.md). */
+export type Claimable = Schemas["Claimable"];
+export type AccountClaim = Schemas["AccountClaim"];
+export type AdminAccountClaim = Schemas["AdminAccountClaim"];

@@ -132,3 +132,6 @@ export type PlayerCardProfile = {
   attributes: readonly PlayerAttributeValue[];
   sport_cards: readonly PlayerSportCard[];
 };
+
+/** A player found at the counter, for a walk-in booking (tasks.md). */
+export type CounterPlayer = Schemas["CounterPlayer"];

@@ -19,9 +19,9 @@ export default async function TurfBookingsPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; player?: string }>;
 }) {
-  const [{ slug }, { date }] = await Promise.all([params, searchParams]);
+  const [{ slug }, { date, player }] = await Promise.all([params, searchParams]);
   const day = date ?? dhakaToday();
 
   const api = await getServerApiClient();
@@ -44,6 +44,9 @@ export default async function TurfBookingsPage({
         date={day}
         bookings={bookings.data ?? []}
         pending={pending.data ?? []}
+        // Arrives from a scanned QR code via `/counter` — the walk-in form opens with
+        // this player already searched for (tasks.md).
+        prefillPlayer={player ?? ""}
       />
     </div>
   );

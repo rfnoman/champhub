@@ -408,6 +408,11 @@ REST_FRAMEWORK = {
         # Generous enough for somebody trying names while they type, far short of
         # walking a dictionary through it (DOMAIN §1b).
         "username-check": env("THROTTLE_USERNAME_CHECK", default="240/hour"),
+        # A guest's six-character code, keyed on the number being asked about rather
+        # than on an address (see `GuestLookupThrottle`). Twenty an hour against one
+        # number is generous for somebody checking their own booking and hopeless as a
+        # way through 31**6 codes.
+        "guest-lookup": env("THROTTLE_GUEST_LOOKUP", default="20/hour"),
         "webhook": env("THROTTLE_WEBHOOK", default="600/min"),
     },
 }

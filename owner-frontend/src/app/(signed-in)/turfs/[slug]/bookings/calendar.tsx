@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 
-import type { Booking, Ground, OwnerTurf, SportFormat } from "@/lib/api/types";
+import type { Booking, CounterPlayer, Ground, OwnerTurf, SportFormat } from "@/lib/api/types";
 import { useApiClient } from "@/lib/api/use-api";
 import { BookingStatusBadge } from "@/components/booking/booking-status";
 import { BookingTime, ExpiresIn } from "@/components/booking/booking-time";
@@ -28,11 +28,14 @@ export function TurfCalendar({
   date,
   bookings,
   pending,
+  prefillPlayer = "",
 }: {
   turf: OwnerTurf;
   date: string;
   bookings: Booking[];
   pending: Booking[];
+  /** A handle from a scanned QR code: the walk-in form opens searching for it. */
+  prefillPlayer?: string;
 }) {
   const t = useTranslations("turfCalendar");
   const router = useRouter();
@@ -226,7 +229,7 @@ export function TurfCalendar({
         </CardContent>
       </Card>
 
-      <WalkInForm turf={turf} date={date} busy={busy} run={run} />
+      <WalkInForm turf={turf} date={date} busy={busy} run={run} prefillPlayer={prefillPlayer} />
     </div>
   );
 }
@@ -236,11 +239,13 @@ function WalkInForm({
   date,
   busy,
   run,
+  prefillPlayer,
 }: {
   turf: OwnerTurf;
   date: string;
   busy: string | null;
   run: (key: string, call: () => Promise<{ error?: unknown }>) => Promise<boolean>;
+  prefillPlayer: string;
 }) {
   const t = useTranslations("turfCalendar");
   const api = useApiClient();
@@ -251,10 +256,44 @@ function WalkInForm({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
 
+  // Which kind of person is standing there. "member" is first because it is the better
+  // outcome for everybody — the booking lands in their app and counts on their profile.
+  const [mode, setMode] = useState<"member" | "guest">("member");
+  // Seeded from a scanned QR: the search runs on mount and the manager picks the one
+  // row that comes back, which is one tap instead of a conversation.
+  const [query, setQuery] = useState(prefillPlayer);
+  const [results, setResults] = useState<CounterPlayer[]>([]);
+  const [picked, setPicked] = useState<CounterPlayer | null>(null);
+  const [searching, setSearching] = useState(false);
+
   const ground: Ground | undefined = grounds.find((item) => item.id === groundId);
   const format: SportFormat | undefined = ground?.sport_formats[0];
 
+  // Searched as they type, 250ms behind — the manager is reading a handle off a phone
+  // screen, and a Search button is one more thing to press with a queue waiting.
+  useEffect(() => {
+    const text = query.trim();
+    // Everything that writes state happens inside the timer rather than in the effect
+    // body, which is both what the lint rule wants and the honest shape: a too-short
+    // query is still an outcome ("nothing yet"), not a reason to skip the update.
+    const timer = setTimeout(async () => {
+      if (mode !== "member" || text.length < 2) {
+        setResults([]);
+        return;
+      }
+      setSearching(true);
+      const { data } = await api.GET("/api/v1/me/turfs/{slug}/counter-players", {
+        params: { path: { slug: turf.slug }, query: { q: text } },
+      });
+      setSearching(false);
+      setResults(data ?? []);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query, mode, api, turf.slug]);
+
   if (grounds.length === 0) return null;
+
+  const ready = mode === "member" ? picked !== null : name.trim() && phone.trim();
 
   return (
     <Card>
@@ -293,31 +332,125 @@ function WalkInForm({
             className="w-28"
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="walkin-name" className="text-xs">
-            {t("customerName")}
-          </Label>
-          <Input
-            id="walkin-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="w-40"
-          />
+        <div className="flex w-full flex-col gap-2">
+          <div className="flex items-center gap-1" role="tablist" aria-label={t("walkInWho")}>
+            {(["member", "guest"] as const).map((option) => (
+              <Button
+                key={option}
+                type="button"
+                size="xs"
+                role="tab"
+                aria-selected={mode === option}
+                variant={mode === option ? "default" : "outline"}
+                onClick={() => {
+                  setMode(option);
+                  setPicked(null);
+                }}
+              >
+                {option === "member" ? t("hasAccount") : t("noAccount")}
+              </Button>
+            ))}
+          </div>
+
+          {mode === "member" ? (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="walkin-search" className="text-xs">
+                {t("findPlayer")}
+              </Label>
+              {picked ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="bg-muted inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm">
+                    <span className="font-medium">{picked.name}</span>
+                    {picked.handle && (
+                      <span className="text-muted-foreground text-xs">{picked.handle}</span>
+                    )}
+                  </span>
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="ghost"
+                    onClick={() => {
+                      setPicked(null);
+                      setQuery("");
+                    }}
+                  >
+                    {t("changePlayer")}
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Input
+                    id="walkin-search"
+                    value={query}
+                    placeholder={t("findPlayerPlaceholder")}
+                    onChange={(event) => setQuery(event.target.value)}
+                    className="w-full sm:w-80"
+                  />
+                  {searching && (
+                    <span className="text-muted-foreground text-xs">{t("searching")}</span>
+                  )}
+                  {!searching && query.trim().length >= 2 && results.length === 0 && (
+                    <span className="text-muted-foreground text-xs">{t("noPlayers")}</span>
+                  )}
+                  <ul className="flex flex-col gap-1">
+                    {results.map((player) => (
+                      <li key={player.id}>
+                        <button
+                          type="button"
+                          onClick={() => setPicked(player)}
+                          className="press hover:bg-muted flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-left text-sm"
+                        >
+                          <span className="min-w-0 truncate">
+                            <span className="font-medium">{player.name}</span>{" "}
+                            <span className="text-muted-foreground text-xs">{player.handle}</span>
+                          </span>
+                          {player.phone_hint && (
+                            <span className="text-muted-foreground num shrink-0 text-xs">
+                              {player.phone_hint}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-muted-foreground text-xs">{t("findPlayerHint")}</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="walkin-name" className="text-xs">
+                  {t("customerName")}
+                </Label>
+                <Input
+                  id="walkin-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="w-40"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="walkin-phone" className="text-xs">
+                  {t("customerPhone")}
+                </Label>
+                <Input
+                  id="walkin-phone"
+                  inputMode="tel"
+                  value={phone}
+                  placeholder="01711234567"
+                  onChange={(event) => setPhone(event.target.value)}
+                  className="w-40"
+                />
+              </div>
+              <p className="text-muted-foreground w-full text-xs">{t("guestHint")}</p>
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="walkin-phone" className="text-xs">
-            {t("customerPhone")}
-          </Label>
-          <Input
-            id="walkin-phone"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            className="w-40"
-          />
-        </div>
+
         <Button
           size="sm"
-          disabled={!name.trim() || !format || busy === "walk-in"}
+          disabled={!ready || !format || busy === "walk-in"}
           onClick={async () => {
             if (!format) return;
             // The API takes an exact slot start; Dhaka local time is what staff type.
@@ -329,14 +462,17 @@ function WalkInForm({
                   ground_id: groundId,
                   sport_format_id: format.id,
                   start,
-                  booked_for_name: name,
-                  booked_for_phone: phone,
+                  ...(mode === "member"
+                    ? { player: picked?.id }
+                    : { booked_for_name: name, booked_for_phone: phone }),
                 } as never,
               }),
             );
             if (ok) {
               setName("");
               setPhone("");
+              setPicked(null);
+              setQuery("");
             }
           }}
         >

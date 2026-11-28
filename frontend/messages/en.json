@@ -124,7 +124,9 @@
     "navFinanceHint": "Commissions, refunds and payouts owed to turfs.",
     "navSupportHint": "Look up an account to answer a question about it.",
     "navIdentity": "Identity checks",
-    "navIdentityHint": "Photos and documents waiting to be verified."
+    "navIdentityHint": "Photos and documents waiting to be verified.",
+    "navClaims": "Account claims",
+    "navClaimsHint": "People asking for the bookings they made before they had an account."
   },
   "me": {
     "heading": "Backend session",
@@ -1125,5 +1127,65 @@
   "playerTags": {
     "heading": "What people say",
     "hint": "Stickers teammates and opponents gave after matches. Who gave what stays private."
+  },
+  "adminClaims": {
+    "heading": "Account claims",
+    "body": "Somebody booked at a counter, then signed up. Nobody verified the phone number — that is why you are here.",
+    "filter": "Filter by status",
+    "status": {
+      "pending": "Waiting",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "empty": "Nothing waiting.",
+    "accountPhone": "Number on the account",
+    "guestPhone": "Number at the counter",
+    "noPhone": "None given",
+    "sameNumber": "same",
+    "guestName": "Name written down",
+    "bookings": "Bookings",
+    "bookingCount": "{count, plural, one {# booking} other {# bookings}}",
+    "turfs": "Played at",
+    "reason": "Reason",
+    "reasonPlaceholder": "Required to reject; the person reads it.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "working": "Working…",
+    "failed": "That did not go through.",
+    "approveWarning": "Approving moves those bookings onto this account and puts them on the match rosters. It cannot be undone from here."
+  },
+  "claim": {
+    "heading": "Bookings under your number",
+    "body": "{count, plural, one {# booking was} other {# bookings were}} taken at a turf counter for {phone}. Yours?",
+    "reviewNote": "We will ask a ChampHub admin to check — nobody has verified this number, so a person looks at it.",
+    "ask": "Yes, they are mine",
+    "asking": "Sending…",
+    "failed": "That did not go through.",
+    "pendingHeading": "We are checking",
+    "pendingBody": "{count, plural, one {# booking} other {# bookings}} waiting on an admin. You will get a notification.",
+    "rejectedHeading": "Those bookings stayed where they were",
+    "rejectedFallback": "Ask the turf staff to vouch for you and try again."
+  },
+  "counterCode": {
+    "heading": "At the counter",
+    "hint": "Show this and the manager's camera opens your booking form — no typing, no spelling your name.",
+    "ariaLabel": "QR code for {handle}",
+    "sayIt": "Or just say your handle."
+  },
+  "guest": {
+    "heading": "Your bookings",
+    "body": "Booked at a turf without an app account? Find it here with your number and the code the counter gave you.",
+    "lookupHeading": "Look it up",
+    "lookupHint": "The code is the six characters printed on your receipt.",
+    "phone": "Phone number",
+    "code": "Code",
+    "look": "Find my bookings",
+    "looking": "Looking…",
+    "notFound": "We could not find bookings for that number and code.",
+    "yours": "{name}'s bookings",
+    "none": "Nothing booked yet.",
+    "directions": "Directions",
+    "joinHint": "Open a ChampHub account with this number and you can ask for these to be added to it."
   }
 }

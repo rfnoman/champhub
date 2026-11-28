@@ -80,6 +80,11 @@ class NotificationKind(models.TextChoices):
     IDENTITY_APPROVED = "identity_approved", _("Identity verified")
     IDENTITY_REJECTED = "identity_rejected", _("Identity check needs more")
 
+    # Claiming a guest's booking history (tasks.md)
+    ACCOUNT_CLAIM_SUBMITTED = "account_claim_submitted", _("Account claim to review")
+    ACCOUNT_CLAIM_APPROVED = "account_claim_approved", _("Guest bookings joined")
+    ACCOUNT_CLAIM_REJECTED = "account_claim_rejected", _("Account claim declined")
+
 
 class Notification(BaseModel):
     user = models.ForeignKey(

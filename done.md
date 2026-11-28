@@ -125,3 +125,94 @@ the API round trip). Driven in Chrome: the profile shows 3.0 ★★★☆☆ and
 with Baap ka beta ×2, Cool as a cucumber ×2 and Engine; on a submitted scorecard the
 picker appeared only after a star was given, two stickers were picked and saved, and the
 rows landed in `PlayerTagAward`. Both frontends lint, typecheck, format and unit-test clean.
+
+---
+
+## Batch 3 — 2026-11-28
+
+### Walk-in bookings, guests, and claiming a history
+*From:* "Add a option for walk in booking on turf make it smoother. Like player can come
+to turf and ask manager to book a slot player can share qr or say username turf owner can
+quickly find it through search and do a booking. Also let people who does not have
+account book the turf with phone number and name. they will have a guest view and if they
+later open account through clerk and gives the same phone number a message with button
+will say this number was user for guest login do you want to claim the account…"
+
+**Built — the counter.** The walk-in form now asks *which kind of person is standing
+there*. With an account, staff find them by `@handle`, phone or name and the booking is
+**theirs**: `booked_by` is the player, so it lands in their app, puts them on the match
+roster and counts towards their record. Before this, a player with an account who turned
+up in person got a row recorded against the cashier that they could never see. The
+counter search ignores `discoverable` on purpose — that flag hides you from the
+directory, and somebody saying their own handle at a counter is the opposite of hiding
+(DOMAIN §1b) — and is throttled and needs two characters, because it is a lookup for a
+person who is present, not a way to walk the user table.
+
+**Built — the QR.** The player's profile shows a QR containing a plain https link to the
+owner app's `/counter?player=<handle>`, so the **manager's own phone camera** resolves
+it. No scanner, no camera permission, no QR dependency in either frontend, and it works
+for a manager who has installed nothing. It carries only the handle, which is public by
+design — a QR held up in a room full of strangers must not be a credential. Rendered
+server-side with `segno` and inlined with `currentColor`, so it inverts with the theme.
+A manager with one turf is redirected straight through to the booking form with that
+player already searched for.
+
+**Built — guests.** No account means a `GuestProfile` keyed on the **normalised** phone
+(`apps/accounts/phones.py`): `01711-234567`, `+8801711234567` and `8801711234567` are one
+person, and keying on the raw string would turn a Friday regular into eight guests and
+hide every one of them from a later claim. They read their own bookings at `/guest` with
+their number **and a six-character code** from the counter — a number alone would let
+anybody who knows one read a stranger's evening plans.
+
+**Built — claiming.** The app offers, the person asks, a platform admin decides. The
+offer is driven only by the number *that account* gave Clerk and never names the guest,
+so "is this number yours?" cannot become a directory lookup. Approval is one transaction:
+re-point the bookings, clear the walk-in fields (they are what kept the booker off the
+roster), **add the player to each match roster** — the point of claiming is for the
+history to count — mark the guest claimed, and withdraw any rival claim. The reviewer
+sees the guest's full number; everybody else gets `•••••••7766`.
+
+**Deviations and findings worth knowing.**
+
+- **The reviewer's "same number" hint was comparing strings and got it backwards.** Clerk
+  stores what the person typed (`01799887766`); the guest row is normalised
+  (`+8801799887766`). Driving it in the browser showed "different" for the case where a
+  reviewer most wants to be told "same". Moved to the backend as `numbers_match`, where
+  normalisation lives — and where the two frontends cannot disagree (D83).
+- **I clobbered the owner app's `counter` i18n namespace** (the POS till) by naming the
+  new QR landing page's namespace the same thing. Restored from HEAD; the new one is
+  `counterScan`.
+- **The guest lookup is the one new public route**, declared in `test_permission_matrix`
+  with its reason. Rate-limited on the **number being asked about**, not the address: as
+  that settings comment says, every server-rendered page reaches Django from the frontend
+  server's single IP, so an IP-keyed limit would throttle the site before it troubled a
+  code guesser.
+- **Both tag endpoints from batch 2 ended up authenticated** for the same permission-matrix
+  reason — see that batch.
+- New dependency: `segno` (pure Python, no transitive deps), noted in D109.
+
+**Verified.** 2102 backend tests pass (103 new across phones, guests, claims, the walk-in
+API, the counter search and the QR). Driven in Chrome end to end: booked for a found
+player and confirmed the row was theirs and on the roster; read a guest's two bookings at
+`/guest` with phone + code; claimed them from the profile; approved in the admin queue
+and watched both bookings move onto the account and onto their rosters; followed the QR
+link from `/counter?player=…` through the turf picker to a pre-filled form. Both
+frontends lint, typecheck, format and unit-test clean.
+
+*Decisions recorded:* D108, D109, D110.
+
+**Follow-ups, honestly.**
+
+- **The walk-in time field is free text against a per-match ground.** Typing 19:00 on a
+  badminton court that sells 45-minute matches gets "That slot is not offered on this
+  ground" — correct, and discovered by driving it, but the field should offer the slots
+  the ground actually has rather than letting staff guess. Pre-existing (D102), surfaced
+  here.
+- **A guest's access code cannot be reissued.** Lose the receipt and there is no path
+  back except staff reading it off the admin.
+- **Nothing tells a guest their code.** The booking is confirmed at the counter and the
+  code exists, but no receipt, SMS or printout carries it yet — today a staff member has
+  to read it out.
+- **A rejected claim gives no way to appeal in-app.** The copy says to ask turf staff to
+  vouch, and there is no mechanism for staff to do that vouching.
+- **The Bangla for all of this is mine**, and joins the queue waiting on a native speaker.

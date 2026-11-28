@@ -15,6 +15,7 @@ from apps.core.throttling import PlayerSearchThrottle
 from apps.sports.models import Sport
 
 from .models import PlayerProfile
+from .qr import counter_qr_svg, counter_url
 from .selectors import player_sport_cards, profile_queryset
 from .serializers import (
     OnboardingSerializer,
@@ -206,3 +207,50 @@ class PlayerByUsernameView(APIView):
             raise Http404("No player with that username.")
         profile = get_object_or_404(profile_queryset(), user=user)
         return Response(_render(profile, PublicPlayerProfileSerializer))
+
+
+class MyCounterCodeView(APIView):
+    """The QR a player shows at a turf counter (tasks.md).
+
+    Returns the SVG rather than an image URL: the profile page renders on the server, so
+    it inlines this straight into the HTML — no second request, no image that needs its
+    own authentication, and the code inherits the page's colour in both themes.
+
+    Needs a handle. A player who has not chosen one has nothing for the code to carry
+    (DOMAIN §1b), and saying so is more use than an empty square.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="my_counter_code",
+        summary="My counter QR code",
+        responses={
+            200: inline_serializer(
+                name="CounterCode",
+                fields={
+                    "handle": serializers.CharField(),
+                    "url": serializers.CharField(),
+                    "svg": serializers.CharField(),
+                },
+            ),
+            409: inline_serializer(
+                name="CounterCodeUnavailable",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
+    def get(self, request):
+        username = request.user.username
+        if not username:
+            return Response(
+                {"detail": "Choose a username first — the code carries your handle."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(
+            {
+                "handle": request.user.handle,
+                "url": counter_url(username),
+                "svg": counter_qr_svg(username),
+            }
+        )

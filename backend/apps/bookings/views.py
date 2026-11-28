@@ -11,6 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.guests import get_or_create_guest
+from apps.core.throttling import PlayerSearchThrottle
 from apps.core.utils import DHAKA, now
 from apps.sports.models import SportFormat
 from apps.turfs.models import Ground
@@ -21,14 +23,17 @@ from .permissions import CanViewBooking, IsBookingTurfStaff
 from .selectors import (
     bookings_for_turf,
     bookings_visible_to,
+    counter_player_search,
     past_for_player,
     pending_confirmation_for_turf,
+    resolve_counter_player,
     upcoming_for_player,
 )
 from .serializers import (
     BookingCreateSerializer,
     BookingSerializer,
     CancelBookingSerializer,
+    CounterPlayerSerializer,
     MarkPaidSerializer,
     NoteSerializer,
     WalkInBookingSerializer,
@@ -268,7 +273,18 @@ class TurfPendingBookingsView(APIView):
 
 
 class WalkInBookingView(APIView):
-    """Staff taking a booking at the counter for someone with no account."""
+    """Staff taking a booking at the counter (tasks.md).
+
+    For a player **with an account** the booking is theirs — `booked_by` is them, so it
+    turns up in their app, puts them on the match roster and counts towards their
+    record. Booking it against the cashier with the player's name typed in a box would
+    produce a row nobody can find afterwards, which is what this used to do for
+    everybody.
+
+    For a player **without one** it is still recorded against the staff member, with a
+    `GuestProfile` behind it so the same number next Friday is the same guest, and so
+    the history can be claimed when they eventually sign up.
+    """
 
     permission_classes = [IsAuthenticated]
 
@@ -293,17 +309,41 @@ class WalkInBookingView(APIView):
         )
         sport_format = get_object_or_404(SportFormat, id=data["sport_format_id"])
 
+        handle = (data.get("player") or "").strip()
+        guest = None
+        if handle:
+            player = resolve_counter_player(handle)
+            if player is None:
+                return Response(
+                    {"player": "No player with that handle."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            booker, name, phone = player, "", ""
+        else:
+            booker = request.user
+            name = data.get("booked_for_name", "")
+            phone = data.get("booked_for_phone", "")
+            try:
+                guest = get_or_create_guest(phone=phone, name=name, created_by=request.user)
+            except DjangoValidationError as exc:
+                return _drf_error(exc)
+            # Store the number the way everything else compares it, so a claim can find
+            # these bookings later.
+            phone = guest.phone
+
         try:
             booking = create_booking(
-                user=request.user,
+                user=booker,
                 ground=ground,
                 start=data["start"],
                 sport_format=sport_format,
                 mode=data.get("mode") or "individual",
                 visibility="private",
                 notes=data.get("notes", ""),
-                booked_for_name=data["booked_for_name"],
-                booked_for_phone=data.get("booked_for_phone", ""),
+                booked_for_name=name,
+                booked_for_phone=phone,
+                guest=guest,
+                actor=request.user,
             )
             # Somebody is standing at the counter with cash; there is nothing to confirm.
             if booking.status == "reserved":
@@ -317,3 +357,33 @@ class WalkInBookingView(APIView):
             BookingSerializer(bookings_visible_to(request.user).get(pk=booking.pk)).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class CounterPlayerSearchView(APIView):
+    """Finding the person at the counter by handle, phone or name (tasks.md).
+
+    Deliberately **not** the player directory (`/players/search`): that one respects
+    `discoverable`, and a player who hides from search still expects the manager to find
+    them when they are standing there saying their own handle. A handle lookup is the
+    prettier form of handing somebody your profile link, and ignores `discoverable` by
+    the same rule (DOMAIN §1b).
+
+    Staff-only, scoped to a turf they work at, and throttled: it is an exact-ish lookup
+    for somebody who is present, not a way to walk the user table.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [PlayerSearchThrottle]
+
+    @extend_schema(
+        operation_id="turf_counter_player_search",
+        summary="Find a player at the counter (staff)",
+        parameters=[
+            OpenApiParameter("q", str, description="A @handle, phone number or name."),
+        ],
+        responses={200: CounterPlayerSerializer(many=True)},
+    )
+    def get(self, request, slug):
+        get_object_or_404(turfs_for_staff(request.user), slug=slug)
+        query = (request.query_params.get("q") or "").strip()
+        return Response(CounterPlayerSerializer(counter_player_search(query), many=True).data)

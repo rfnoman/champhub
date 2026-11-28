@@ -82,6 +82,19 @@ class Booking(BaseModel):
         help_text="Set when staff book on behalf of someone with no account.",
     )
     booked_for_phone = models.CharField(_("walk-in phone"), max_length=32, blank=True)
+    guest = models.ForeignKey(
+        "accounts.GuestProfile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bookings",
+        help_text=(
+            "The guest this slot is for, when the booking was taken at the counter for "
+            "somebody with no account. `booked_for_name`/`booked_for_phone` stay beside "
+            "it as the snapshot of what was written down that evening; this is the row "
+            "that groups a regular's bookings together and that a claim moves."
+        ),
+    )
 
     sport = models.ForeignKey(Sport, on_delete=models.PROTECT, related_name="bookings")
     sport_format = models.ForeignKey(SportFormat, on_delete=models.PROTECT, related_name="bookings")

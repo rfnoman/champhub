@@ -7,6 +7,8 @@ import mimetypes
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from django.utils.crypto import constant_time_compare
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -24,12 +26,28 @@ from rest_framework.views import APIView
 from svix.webhooks import Webhook, WebhookVerificationError
 
 from apps.core.permissions import IsPlatformAdmin
-from apps.core.throttling import UsernameCheckThrottle, WebhookThrottle
+from apps.core.throttling import GuestLookupThrottle, UsernameCheckThrottle, WebhookThrottle
 
-from .models import IDENTITY_FILE_FIELDS, IdentityStatus, IdentityVerification
+from .guests import approve_claim, claimable_for, reject_claim, request_claim
+from .models import (
+    IDENTITY_FILE_FIELDS,
+    AccountClaim,
+    GuestProfile,
+    IdentityStatus,
+    IdentityVerification,
+)
+from .phones import normalise_phone
 from .serializers import (
+    AccountClaimSerializer,
     AccountPhotoSerializer,
+    AdminAccountClaimSerializer,
     AdminIdentityVerificationSerializer,
+    ClaimableSerializer,
+    ClaimDecisionSerializer,
+    ClaimRequestSerializer,
+    GuestBookingSerializer,
+    GuestLookupSerializer,
+    GuestSummarySerializer,
     IdentityDecisionSerializer,
     IdentityDocumentWriteSerializer,
     IdentityVerificationSerializer,
@@ -524,3 +542,180 @@ class ClerkWebhookView(APIView):
             )
             return False
         return True
+
+
+class GuestBookingsView(APIView):
+    """A guest reading their own bookings, with no account (tasks.md).
+
+    Phone **and** code. The number alone identifies a guest but proves nothing, so a
+    lookup on it would let anybody who knows a number read a stranger's evening plans.
+    The code is handed over at the counter with the booking.
+
+    Public by necessity — the whole point is somebody who has not signed up — and
+    throttled for the same reason a sign-in form is: this is a six-character secret and
+    the only thing between it and a guessing script is the rate limit.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    throttle_classes = [GuestLookupThrottle]
+
+    @extend_schema(
+        operation_id="guest_bookings",
+        summary="A guest's bookings",
+        request=GuestLookupSerializer,
+        responses={
+            200: inline_serializer(
+                name="GuestBookings",
+                fields={
+                    "guest": GuestSummarySerializer(),
+                    "bookings": GuestBookingSerializer(many=True),
+                },
+            ),
+            404: GuestLookupSerializer,
+        },
+    )
+    def post(self, request):
+        payload = GuestLookupSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+
+        phone = normalise_phone(payload.validated_data["phone"])
+        code = payload.validated_data["code"].strip().upper()
+        guest = GuestProfile.objects.filter(phone=phone).first() if phone else None
+
+        # One message for a wrong number and a wrong code, so the response cannot be
+        # used to find out which numbers exist.
+        if guest is None or not constant_time_compare(guest.access_code.upper(), code):
+            return Response(
+                {"detail": "We could not find bookings for that number and code."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        bookings = guest.bookings.select_related("ground__turf", "sport", "sport_format").order_by(
+            "-time_range"
+        )
+
+        return Response(
+            {
+                "guest": GuestSummarySerializer(guest).data,
+                "bookings": GuestBookingSerializer(bookings, many=True).data,
+            }
+        )
+
+
+class MyClaimView(APIView):
+    """What this account could claim, and what it has already asked for (tasks.md).
+
+    The offer is driven entirely by the number **this account** gave Clerk — there is no
+    way to ask what sits behind somebody else's. See `apps.accounts.guests`.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="my_account_claim",
+        summary="Guest bookings this account could claim",
+        responses={
+            200: inline_serializer(
+                name="MyAccountClaim",
+                fields={
+                    "claimable": ClaimableSerializer(allow_null=True),
+                    "claims": AccountClaimSerializer(many=True),
+                },
+            )
+        },
+    )
+    def get(self, request):
+        guest = claimable_for(request.user)
+        claims = AccountClaim.objects.filter(user=request.user).select_related("guest")
+        return Response(
+            {
+                "claimable": ClaimableSerializer(guest).data if guest else None,
+                "claims": AccountClaimSerializer(claims, many=True).data,
+            }
+        )
+
+    @extend_schema(
+        operation_id="my_account_claim_create",
+        summary="Ask for a guest's bookings",
+        request=ClaimRequestSerializer,
+        responses={201: AccountClaimSerializer},
+    )
+    def post(self, request):
+        payload = ClaimRequestSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+
+        guest = claimable_for(request.user)
+        # The id has to match what the offer actually was: accepting any guest id would
+        # turn this into "claim anybody's history and hope a reviewer says yes".
+        if guest is None or str(guest.id) != str(payload.validated_data["guest_id"]):
+            return Response(
+                {"guest_id": "There is nothing to claim for this account."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            claim = request_claim(
+                user=request.user,
+                guest=guest,
+                message=payload.validated_data.get("message", ""),
+            )
+        except DjangoValidationError as exc:
+            return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(AccountClaimSerializer(claim).data, status=status.HTTP_201_CREATED)
+
+
+class AdminClaimQueueView(APIView):
+    """Claims waiting for a person to look at them (tasks.md)."""
+
+    permission_classes = [IsAuthenticated, IsPlatformAdmin]
+
+    @extend_schema(
+        operation_id="admin_account_claims",
+        summary="Account claims to review",
+        parameters=[
+            OpenApiParameter("status", str, description="Default `pending`."),
+        ],
+        responses={200: AdminAccountClaimSerializer(many=True)},
+    )
+    def get(self, request):
+        wanted = request.query_params.get("status") or AccountClaim.Status.PENDING
+        claims = (
+            AccountClaim.objects.filter(status=wanted)
+            .select_related("user", "guest", "reviewed_by")
+            .order_by("created_at")
+        )
+        return Response(AdminAccountClaimSerializer(claims, many=True).data)
+
+
+class AdminClaimDecisionView(APIView):
+    """Approving or rejecting one claim.
+
+    The approval is the whole security model: a phone number is unverified (D9), so a
+    person has to decide, and this records who.
+    """
+
+    permission_classes = [IsAuthenticated, IsPlatformAdmin]
+
+    @extend_schema(
+        operation_id="admin_account_claim_decide",
+        summary="Approve or reject a claim",
+        request=ClaimDecisionSerializer,
+        responses={200: AdminAccountClaimSerializer},
+    )
+    def post(self, request, claim_id, decision):
+        claim = get_object_or_404(AccountClaim, id=claim_id)
+        payload = ClaimDecisionSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        reason = payload.validated_data.get("reason", "")
+
+        try:
+            if decision == "approve":
+                claim = approve_claim(claim=claim, actor=request.user, reason=reason)
+            else:
+                claim = reject_claim(claim=claim, actor=request.user, reason=reason)
+        except DjangoValidationError as exc:
+            return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(AdminAccountClaimSerializer(claim).data)

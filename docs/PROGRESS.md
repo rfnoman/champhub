@@ -2406,3 +2406,79 @@ per-match format it is not.
 - **The match board and the player's bookings list** still show times only; the overs are
   on the detail pages but not in the lists.
 - **The Bangla for the new keys is mine**, and joins the queue waiting on a native speaker.
+
+---
+
+## tasks.md — five asks, 2026-11-28
+
+Not a phase: five things the user wrote down in `tasks.md`, built in three batches.
+`done.md` carries the per-task write-up (what was built, deviations, how it was
+verified); this is the shape of it and what it cost. Decisions **D103–D110**.
+
+**Where a turf is.** An owner knows their venue's Google Maps link; they do not know its
+latitude, and registration was asking for the latter by making them drag a pin — then
+never letting them correct it, because location was set once and never again.
+`apps/turfs/maps.py` reads the coordinates out of every shape Google produces, including
+the `maps.app.goo.gl` short link the phone's Share button actually makes. That one case
+needs following a redirect, which makes it the only outbound request the backend makes on
+a user's behalf; it is fenced by a host allowlist checked **on the response**, so a
+redirect to `169.254.169.254` is refused rather than fetched. A shared place link carries
+two positions — the venue's `!3d/!4d` and wherever the camera was looking — and the venue
+wins, which is the kind of thing nobody notices until a player drives to the wrong block.
+Players get a "Getting there" section whose button starts navigation.
+
+**Futsal 4v4–8v8.** Owners with a 40×20 court were listing seven-a-side games under
+*football* to get a format that fit.
+
+**The turf settings page.** Four unfolded cards became `<details>` disclosures that state
+their own condition while shut — "2 grounds · 2 active", "No opening hours set, nothing
+can be booked" — and the first incomplete one opens on arrival. Native `<details>` rather
+than a Radix accordion, because these sections hold half-filled forms and Radix unmounts
+closed content.
+
+**Stars and stickers.** The engine keeps 1–99; the profile shows five. And because a
+number cannot say somebody never loses their head, there are 12 admin-editable stickers
+given alongside the peer rating and counted on the profile — "🥒 Cool as a cucumber ×7".
+An award is a row rather than JSON on `PeerRating`, because that count runs on every
+profile view. Saving replaces the rater's set rather than appending, which is what forces
+`my_peer_tags` onto the scorecard payload.
+
+**The counter.** The biggest of the five. A walk-in now asks which kind of person is
+standing there: with an account the booking is **theirs** (it lands in their app, on the
+roster, on their record — it used to be a row against the cashier that the player could
+never see); without one it creates a `GuestProfile` keyed on the normalised phone, so a
+Friday regular is one guest rather than eight. They read their own bookings at `/guest`
+with their number and a six-character code. When they eventually sign up with that
+number the app offers the history, they ask, and a **platform admin decides** — a phone
+number is unverified (D9), so a matching string is a hint and approving automatically
+would hand one person another's history to anybody who guessed a number. Approval moves
+the bookings *and puts the player on each match roster*, which is the point of claiming.
+The QR on a player's profile is a plain https link, so the manager's own camera opens it
+and neither app carries a scanner.
+
+**Verification.** Backend **2102 passed, 6 skipped** — 103 new. Vitest 87 (player) and 71
+(owner), lint, typecheck and `format:check` clean in both apps. Playwright against the
+production build. Driven by hand in Chrome for every one of the five, which is where
+three of the findings below came from.
+
+**Found on the way.**
+
+- The reviewer's "same number" hint compared raw strings, so it said *different* for
+  `01799887766` against `+8801799887766` — the exact case it exists to flag. Moved to the
+  backend as `numbers_match`, where normalisation lives and where two frontends cannot
+  disagree (D83).
+- `conftest.reseed_reference_data` had to learn about the tag catalogue. Without it,
+  anything running after a `transaction=True` test saw an empty catalogue and every tag
+  was "no such tag" — the same failure mode that function was written for.
+- The new tag endpoints and the guest lookup were all caught by
+  `test_permission_matrix`: the tag ones became authenticated (a profile's other parts
+  are), and the guest lookup is declared public with its reason, since a guest has no
+  account by definition.
+- Naming the QR landing page's i18n namespace `counter` silently overwrote the owner
+  app's POS till namespace. Restored from HEAD; it is `counterScan`.
+
+**Follow-ups, honestly:** each batch entry in `done.md` ends with its own list. The one
+worth repeating here is that **the walk-in time field is free text against a per-match
+ground** — typing 19:00 on a badminton court that sells 45-minute matches is refused,
+correctly, but the field should offer the slots the ground has rather than letting staff
+guess. That is D102's edge showing through, and it was found by driving the form.

@@ -6,6 +6,8 @@ from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationFo
 
 from .models import (
     IDENTITY_FILE_FIELDS,
+    AccountClaim,
+    GuestProfile,
     IdentityVerification,
     IdentityVerificationEvent,
     User,
@@ -129,3 +131,43 @@ class IdentityVerificationAdmin(ModelAdmin):
     def documents_on_file(self, obj) -> str:
         names = [field for field in IDENTITY_FILE_FIELDS if getattr(obj, field)]
         return ", ".join(names) if names else _("none")
+
+
+@admin.register(GuestProfile)
+class GuestProfileAdmin(ModelAdmin):
+    """Somebody who booked at a counter without an account (tasks.md)."""
+
+    list_display = ("name", "masked_phone", "booking_count", "claimed_by", "created_at")
+    list_filter = ("claimed_by",)
+    search_fields = ("name", "phone")
+    raw_id_fields = ("created_by", "claimed_by")
+    readonly_fields = ("access_code", "claimed_at", "created_at", "updated_at")
+
+    @admin.display(description=_("phone"))
+    def masked_phone(self, obj) -> str:
+        from .phones import mask_phone
+
+        return mask_phone(obj.phone)
+
+    @admin.display(description=_("bookings"))
+    def booking_count(self, obj) -> int:
+        return obj.bookings.count()
+
+
+@admin.register(AccountClaim)
+class AccountClaimAdmin(ModelAdmin):
+    """The review queue, mirrored in the platform admin UI.
+
+    Read-only on the decision fields: approving has to go through
+    `apps.accounts.guests.approve_claim`, which moves the bookings and the rosters with
+    it. Flipping `status` here would mark a claim approved and move nothing.
+    """
+
+    list_display = ("user", "guest", "status", "bookings_moved", "created_at", "reviewed_by")
+    list_filter = ("status",)
+    search_fields = ("user__email", "guest__phone", "guest__name")
+    raw_id_fields = ("user", "guest", "reviewed_by")
+    readonly_fields = ("status", "bookings_moved", "reviewed_by", "reviewed_at")
+
+    def has_add_permission(self, request) -> bool:
+        return False

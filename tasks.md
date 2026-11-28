@@ -1,4 +1,10 @@
-#Add a option for walk in booking on turf make it smoother. Like player can come to turf and ask manager to book a slot player can share qr or say username turf owner can quickly find it through search and
- do a booking. Also let people who does not have account book the turf with phone number and name. they will have a guest view and if they later open account through clerk and gives the same phone number a 
-message with button will say this number was user for guest login do you want to claim the account. If yes a request will go to admin panel and admin will later manually verify the request. If accepted user
-will have that number with the account and all the matches booked will show to new account.
+# ChampHub — Tasks
+
+<!-- One task per line or block. Completed ones move to `done.md`, which carries what was
+     actually built, the deviations, and how it was verified. -->
+
+<!-- 2026-11-28: the five tasks in this file were built, driven in Chrome and shipped.
+     See done.md batches 1–3 (Google Maps location, futsal formats, the turf settings
+     page, stars and stickers, walk-in/guest/claim). Follow-ups from that work are at the
+     end of each batch entry rather than queued here — pull one up into this file when it
+     is ready to be picked up. -->

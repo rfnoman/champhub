@@ -219,6 +219,7 @@ def create_booking(
     notes: str = "",
     booked_for_name: str = "",
     booked_for_phone: str = "",
+    guest=None,
     squad=None,
     actor=None,
 ) -> Booking:
@@ -284,6 +285,7 @@ def create_booking(
                 booked_by=user,
                 booked_for_name=booked_for_name.strip(),
                 booked_for_phone=booked_for_phone.strip(),
+                guest=guest,
                 sport=sport_format.sport,
                 sport_format=sport_format,
                 time_range=TimestamptzRange(slot.start, slot.end),
