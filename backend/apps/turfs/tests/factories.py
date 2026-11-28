@@ -12,6 +12,7 @@ from apps.turfs.models import (
     Amenity,
     Closure,
     Ground,
+    GroundFormatSetting,
     OperatingHours,
     PriceRule,
     Turf,
@@ -81,6 +82,15 @@ class PriceRuleFactory(DjangoModelFactory):
     end_time = time(0, 0)  # a full day: start == end reads as crossing midnight
     price = "1500.00"
     label = "Standard"
+
+
+class GroundFormatSettingFactory(DjangoModelFactory):
+    """A ground's override of a per-match format's terms (DECISIONS D102)."""
+
+    class Meta:
+        model = GroundFormatSetting
+
+    ground = factory.SubFactory(GroundFactory)
 
 
 class ClosureFactory(DjangoModelFactory):

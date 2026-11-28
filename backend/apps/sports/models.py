@@ -7,7 +7,8 @@ the catalogue never grows duplicates.
 A ``Sport`` is the hub for everything later phases need to know about a game:
 
 * ``SportFormat`` — 5v5, nets, doubles… each with ``players_per_side``, which Phase 04
-  turns into ``Match.capacity``.
+  turns into ``Match.capacity``, and a ``booking_unit`` saying whether the ground is sold
+  by the clock or one match at a time (DECISIONS D102).
 * ``SportSkill`` — sport-specific skills (finishing, bowling) that a player is rated on.
 * ``SportAttributeWeight`` — how much each shared ``Attribute`` (stamina, agility, speed,
   strength) counts toward this sport's overall rating.
@@ -18,7 +19,8 @@ A ``Sport`` is the hub for everything later phases need to know about a game:
 from __future__ import annotations
 
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -108,8 +110,38 @@ class Sport(BaseModel):
         return in_readers_language(self)
 
 
+class BookingUnit(models.TextChoices):
+    """What a booking of this format actually buys (DECISIONS D102)."""
+
+    TIME = "time", _("By the clock")
+    MATCH = "match", _("Per match")
+
+
+class MatchUnit(models.TextChoices):
+    """What a per-match format is counted in.
+
+    A closed set rather than free text: the player-facing string is pluralised and
+    translated in the frontend catalogues (``matchUnit.overs``), so a Bangla reader gets
+    "১০ ওভার" without an owner having to type it.
+    """
+
+    OVERS = "overs", _("overs")
+    GAMES = "games", _("games")
+    SETS = "sets", _("sets")
+    INNINGS = "innings", _("innings")
+    ROUNDS = "rounds", _("rounds")
+
+
 class SportFormat(BaseModel):
-    """A way of playing a sport, e.g. football 5v5 or cricket nets."""
+    """A way of playing a sport, e.g. football 5v5 or cricket nets.
+
+    Most formats are sold **by the clock**: an hour of football is an hour. Cricket and
+    badminton are not — nobody books "90 minutes of cricket", they book a 10-over match
+    — so a format may instead declare ``booking_unit = MATCH`` with the unit it is
+    counted in (``10 overs``) and how long one such match usually runs. That duration is
+    what the calendar reserves and what the price is scaled to; it is shown to the player
+    as an approximation ("10 overs · about 2 hrs"), never as the thing being bought.
+    """
 
     sport = models.ForeignKey(Sport, on_delete=models.CASCADE, related_name="formats")
     name = models.CharField(_("name"), max_length=60)
@@ -125,6 +157,40 @@ class SportFormat(BaseModel):
         validators=[MinValueValidator(1)],
         help_text="Match capacity is players_per_side x 2 unless the ground caps it lower.",
     )
+    booking_unit = models.CharField(
+        _("booking unit"),
+        max_length=8,
+        choices=BookingUnit.choices,
+        default=BookingUnit.TIME,
+        help_text=(
+            "`time` sells the ground by the clock in the ground's own slot length. "
+            "`match` sells one match, and the three fields below say what a match is."
+        ),
+    )
+    match_unit = models.CharField(
+        _("counted in"),
+        max_length=12,
+        choices=MatchUnit.choices,
+        blank=True,
+        help_text="Per-match formats only. Overs for cricket, games for badminton.",
+    )
+    match_unit_count = models.PositiveSmallIntegerField(
+        _("units per match"),
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        help_text="Per-match formats only, e.g. 10 for a 10-over match. A ground may override it.",
+    )
+    approx_minutes = models.PositiveSmallIntegerField(
+        _("approximate minutes"),
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(15), MaxValueValidator(480)],
+        help_text=(
+            "Per-match formats only: how long one match usually runs. This is the span "
+            "the booking reserves, and the player sees it as an estimate."
+        ),
+    )
     is_active = models.BooleanField(_("active"), default=True)
     order = models.PositiveSmallIntegerField(_("display order"), default=0)
 
@@ -134,6 +200,17 @@ class SportFormat(BaseModel):
         ordering = ["sport__order", "order", "name"]
         constraints = [
             models.UniqueConstraint(fields=["sport", "slug"], name="unique_format_slug_per_sport"),
+            # A per-match format with no unit and no duration is unsellable: availability
+            # would have no slot length to slice by. Refuse it at the database.
+            models.CheckConstraint(
+                condition=models.Q(booking_unit=BookingUnit.TIME)
+                | models.Q(
+                    match_unit__in=MatchUnit.values,
+                    match_unit_count__isnull=False,
+                    approx_minutes__isnull=False,
+                ),
+                name="per_match_format_declares_its_unit",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -142,6 +219,24 @@ class SportFormat(BaseModel):
     @property
     def capacity(self) -> int:
         return self.players_per_side * 2
+
+    @property
+    def is_per_match(self) -> bool:
+        """Sold as a match rather than as an hour (DECISIONS D102)."""
+        return self.booking_unit == BookingUnit.MATCH
+
+    def clean(self) -> None:
+        """Say in the admin what the check constraint would otherwise say in Postgres."""
+        super().clean()
+        if self.booking_unit != BookingUnit.MATCH:
+            return
+        missing = {
+            field: _("Required for a per-match format.")
+            for field in ("match_unit", "match_unit_count", "approx_minutes")
+            if not getattr(self, field)
+        }
+        if missing:
+            raise DjangoValidationError(missing)
 
     @property
     def display_name(self) -> str:

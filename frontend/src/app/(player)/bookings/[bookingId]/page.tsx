@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import { getServerApiClient } from "@/lib/api/server";
 import { canCancel } from "@/lib/bookings";
+import { approxDuration, matchUnitLabel } from "@/lib/match-terms";
 import { BookingStatusBadge } from "@/components/booking/booking-status";
 import { BookingTime, DhakaMoment } from "@/components/booking/booking-time";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,13 @@ export default async function BookingPage({ params }: { params: Promise<{ bookin
   if (!booking.data) notFound();
   const data = booking.data;
   const t = await getTranslations("bookingDetail");
+  const c = await getTranslations("common");
+  // What was bought, as it was sold (DECISIONS D102): a cricket booking is 10 overs,
+  // and the hours are the estimate the turf reserved for them.
+  const unit = matchUnitLabel(data);
+  const approx = unit
+    ? approxDuration(Math.round((Date.parse(data.ends_at) - Date.parse(data.starts_at)) / 60_000))
+    : null;
 
   // The advance is a turf setting, so it comes from the public turf record rather than
   // from the booking itself.
@@ -42,9 +50,13 @@ export default async function BookingPage({ params }: { params: Promise<{ bookin
           <h1 className="font-display text-2xl font-bold tracking-tight">{data.turf_name}</h1>
           <p className="text-muted-foreground text-sm">
             {data.ground_name} · {data.sport.name} {data.sport_format.name}
+            {unit && <> · {c(unit.key, unit.values)}</>}
           </p>
           <p className="mt-1 text-sm">
             <BookingTime start={data.starts_at} end={data.ends_at} />
+            {approx && (
+              <span className="text-muted-foreground"> · {c(approx.key, approx.values)}</span>
+            )}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">

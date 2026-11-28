@@ -6,6 +6,7 @@ import { cn } from "cn";
 
 import type { Slot } from "@/lib/api/types";
 import { Money } from "@/components/ui/money";
+import { approxDuration, matchUnitLabel, type MatchTerms } from "@/lib/match-terms";
 
 /**
  * A day's slots for one ground.
@@ -13,20 +14,29 @@ import { Money } from "@/components/ui/money";
  * Unavailable slots are rendered, not hidden: a greyed-out 7pm tells a player the turf
  * is busy, where a gap would read as "closed". `onSelect` is what Phase 03 hangs the
  * booking flow on; without it the grid is a read-only price board.
+ *
+ * `terms` is how the chosen format is sold (DECISIONS D102). For cricket and badminton
+ * a tile is one **match** — "10 overs", priced per match, with the clock reduced to the
+ * estimate it actually is.
  */
 export function SlotGrid({
   slots,
   selected,
   onSelect,
+  terms,
   className,
 }: {
   slots: Slot[];
   selected?: string;
   onSelect?: (slot: Slot) => void;
+  terms?: MatchTerms;
   className?: string;
 }) {
   const t = useTranslations("turfs");
+  const c = useTranslations("common");
   const format = useFormatter();
+  const unit = matchUnitLabel(terms);
+  const approx = unit ? approxDuration(terms?.minutes) : null;
 
   const grouped = useMemo(() => {
     // Slots that run past midnight belong to the evening they started in, so grouping
@@ -82,6 +92,19 @@ export function SlotGrid({
             )}
           >
             <span className="num text-sm font-semibold">{time}</span>
+            {unit && (
+              /* What is being bought comes before what it costs: a cricket tile is a
+                 match, and the hours are only roughly how long it will take. */
+              <span className="text-xs leading-tight font-medium">
+                {c(unit.key, unit.values)}
+                {approx && (
+                  <span className="text-muted-foreground font-normal">
+                    {" · "}
+                    {c(approx.key, approx.values)}
+                  </span>
+                )}
+              </span>
+            )}
             <span className="flex w-full items-center justify-between gap-1 text-xs">
               <Money amount={slot.price} className="font-sans" />
               {slot.label && <span className="text-muted-foreground">{slot.label}</span>}

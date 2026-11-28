@@ -14,6 +14,7 @@ from .views import (
     GroundAvailabilityView,
     MyClosureViewSet,
     MyGroundViewSet,
+    MyMatchSettingViewSet,
     MyOperatingHoursViewSet,
     MyPriceRuleViewSet,
     MyTurfPhotoViewSet,
@@ -67,6 +68,16 @@ nested = [
         "me/turfs/<slug:slug>/grounds/<uuid:ground_pk>/prices/<uuid:pk>",
         MyPriceRuleViewSet.as_view(DETAIL),
         name="my-price-detail",
+    ),
+    path(
+        "me/turfs/<slug:slug>/grounds/<uuid:ground_pk>/match-settings",
+        MyMatchSettingViewSet.as_view(LIST),
+        name="my-match-setting-list",
+    ),
+    path(
+        "me/turfs/<slug:slug>/grounds/<uuid:ground_pk>/match-settings/<uuid:pk>",
+        MyMatchSettingViewSet.as_view(DETAIL),
+        name="my-match-setting-detail",
     ),
     path("me/turfs/<slug:slug>/hours", MyOperatingHoursViewSet.as_view(LIST), name="my-hours-list"),
     path(

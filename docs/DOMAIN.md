@@ -77,6 +77,10 @@ how one person names another anywhere in the product.
   approves (creates the Sport) or merges it into an existing one. No duplicates.
 - Each Sport defines:
   - `formats` (e.g. 5v5, 7v7, singles, doubles, nets) with `players_per_side`
+  - per format, **how it is sold**: `booking_unit` is `time` (an hour of football is an
+    hour) or `match` — cricket and badminton are bought as a match, so those formats
+    carry `match_unit` (overs, games, sets, innings, rounds), `match_unit_count` and
+    `approx_minutes`, roughly how long one match runs (DECISIONS D102)
   - `SportSkill` list (sport-specific skills, e.g. finishing, bowling)
   - weights for shared `Attribute`s (stamina, agility, speed, strength) used in overall rating
   - `StatDefinition` list (scorecard fields, see §7)
@@ -107,10 +111,25 @@ how one person names another anywhere in the product.
   (peak/off-peak/night). Most specific matching rule wins; a ground must have full coverage
   of its operating hours before it can be activated.
 - Availability = operating hours − closures − existing active bookings, sliced by `slot_minutes`.
+- **Per-match formats** (§2) are sliced and priced per match instead (DECISIONS D102):
+  - the slot length is how long one match runs here, so a day of 10-over cricket is a
+    list of matches, not of hours; the clock is shown to the player as an estimate
+    ("10 overs · about 2 hrs"), never as the thing being bought;
+  - the price is the matching `PriceRule` **scaled** from the ground's slot length to the
+    match's — ৳1,500 an hour is ৳3,000 for a two-hour match, and the band is still the one
+    the match *starts* in;
+  - `GroundFormatSetting` lets a ground override the catalogue per format: its own over or
+    game count, its own length, and a flat `match_price` instead of the scaled figure. A
+    flat price overrides the amount, never the coverage — an hour no rule covers stays
+    unsellable;
+  - a turf's "from ৳x" quotes the cheapest thing that can actually be bought there, which
+    on a cricket-only ground is a match.
 
 ## 5. Bookings and payment
 - A booking reserves one ground for one time range: `Booking(ground, booked_by, time_range,
-  sport, format, price, mode, status)`.
+  sport, format, price, mode, status)`. A per-match booking also snapshots what it bought
+  (`match_unit`, `match_unit_count`) alongside the price, so a turf changing its over count
+  next month does not rewrite history.
 - **Double booking is impossible at DB level**: exclusion constraint on
   `(ground, time_range)` for statuses in {reserved, confirmed, paid}.
 - Modes: `individual` or `group` (linked to a Squad). See §6 for visibility.

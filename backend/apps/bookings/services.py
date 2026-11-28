@@ -32,7 +32,7 @@ from apps.notifications.models import NotificationKind
 from apps.notifications.services import notify, notify_many
 from apps.players.models import PlayerProfile
 from apps.players.services import get_or_create_profile
-from apps.turfs.availability import get_availability
+from apps.turfs.availability import get_availability, selling_terms
 from apps.turfs.models import Ground, Turf, TurfMembership
 
 from .hooks import booking_created, booking_transitioned
@@ -188,15 +188,20 @@ def confirmation_deadline(*, start):
 # ---------------------------------------------------------------------------
 # Creating a booking
 # ---------------------------------------------------------------------------
-def resolve_slot(*, ground: Ground, start) -> tuple:
+def resolve_slot(*, ground: Ground, start, sport_format=None) -> tuple:
     """Find the offered slot beginning at ``start``, and its price.
 
     Deliberately re-derived from ``get_availability`` rather than trusting the client:
     it is the same function the slot grid rendered from, so a booking can only ever be
-    made for a slot the turf actually offers, at the price it actually advertised.
+    made for a slot the turf actually offers, at the price it actually advertised. The
+    format is part of that: a per-match format is offered in match-length slots at a
+    match price, so pricing a cricket booking off the hourly grid would undercharge it
+    (DECISIONS D102).
     """
     local_day = start.astimezone(DHAKA).date()
-    for slot in get_availability(ground=ground, day=local_day, include_past=True):
+    for slot in get_availability(
+        ground=ground, day=local_day, include_past=True, sport_format=sport_format
+    ):
         if slot.start == start:
             return slot
     raise ValidationError({"start": "That slot is not offered on this ground."})
@@ -241,7 +246,8 @@ def create_booking(
             {"start": f"Bookings open {settings.BOOKING_HORIZON_DAYS} days ahead."}
         )
 
-    slot = resolve_slot(ground=ground, start=start)
+    slot = resolve_slot(ground=ground, start=start, sport_format=sport_format)
+    terms = selling_terms(ground=ground, sport_format=sport_format)
     if slot.price is None:
         raise ValidationError({"start": "That slot has no price set."})
     if not slot.available and slot.reason == "closed":
@@ -283,6 +289,8 @@ def create_booking(
                 time_range=TimestamptzRange(slot.start, slot.end),
                 price=Decimal(slot.price),
                 price_label=slot.label,
+                match_unit=terms.match_unit,
+                match_unit_count=terms.match_unit_count,
                 mode=mode,
                 visibility=visibility,
                 notes=notes.strip(),

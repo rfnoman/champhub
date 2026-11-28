@@ -41,6 +41,11 @@ export type PriceRule = Schemas["PriceRule"];
 export type TurfPhoto = Schemas["TurfPhoto"];
 export type TurfMembership = Schemas["TurfMembership"];
 export type Availability = Schemas["Availability"];
+/** A format as one ground sells it: the catalogue row plus that ground's match terms. */
+export type GroundSportFormat = Schemas["GroundSportFormat"];
+export type GroundFormatSetting = Schemas["GroundFormatSetting"];
+export type BookingUnit = Schemas["BookingUnitEnum"];
+export type MatchUnit = Schemas["MatchUnitEnum"];
 export type Slot = Schemas["Slot"];
 export type PriceCoverageGap = Schemas["PriceCoverageGap"];
 

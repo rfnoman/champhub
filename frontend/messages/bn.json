@@ -146,7 +146,18 @@
     "no": "না",
     "loading": "আসছে…",
     "notSet": "দেওয়া হয়নি",
-    "retry": "আবার চেষ্টা করুন"
+    "retry": "আবার চেষ্টা করুন",
+    "perMatch": "1 ম্যাচ",
+    "matchUnit": {
+      "overs": "{count, plural, one {# ওভার} other {# ওভার}}",
+      "games": "{count, plural, one {# গেম} other {# গেম}}",
+      "sets": "{count, plural, one {# সেট} other {# সেট}}",
+      "innings": "{count, plural, one {# ইনিংস} other {# ইনিংস}}",
+      "rounds": "{count, plural, one {# রাউন্ড} other {# রাউন্ড}}"
+    },
+    "approxHours": "প্রায় {hours, plural, one {# ঘণ্টা} other {# ঘণ্টা}}",
+    "approxMinutes": "প্রায় {minutes} মিনিট",
+    "approxHoursMinutes": "প্রায় {hours} ঘণ্টা {minutes} মিনিট"
   },
   "onboarding": {
     "stepCounter": "ধাপ {current} / {total}",
@@ -405,7 +416,11 @@
     "squad": "স্কোয়াড",
     "squadOpenHint": "এই দলটি খোলা, তাই ম্যাচটি বোর্ডে যাবে আর যে কেউ যোগ দিতে চাইতে পারবে।",
     "squadClosedHint": "এই দলটি বন্ধ, তাই ম্যাচটি শুধু সদস্যদের মধ্যেই থাকবে।",
-    "leaderboards": "{sport} লিডারবোর্ড"
+    "leaderboards": "{sport} লিডারবোর্ড",
+    "gettingThere": "কেমন যাবেন",
+    "directions": "পথনির্দেশ",
+    "directionsHint": "গুগল ম্যাপসে রুট আগে থেকেই দেওয়া অবস্থায় খুলবে।",
+    "viewOnGoogleMaps": "গুগল ম্যাপসে দেখুন"
   },
   "adminTurfs": {
     "heading": "টার্ফ",

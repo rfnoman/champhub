@@ -25,7 +25,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import BaseModel
-from apps.sports.models import Sport, SportFormat
+from apps.sports.models import MatchUnit, Sport, SportFormat
 from apps.turfs.models import Ground
 
 
@@ -97,6 +97,22 @@ class Booking(BaseModel):
         help_text="BDT, resolved from the ground's price rules when the booking is made.",
     )
     price_label = models.CharField(_("price label"), max_length=40, blank=True)
+    # Snapshotted for the same reason `price` is: a per-match booking was sold as "10
+    # overs", and the turf changing its over count next month must not rewrite history.
+    match_unit = models.CharField(
+        _("counted in"),
+        max_length=12,
+        choices=MatchUnit.choices,
+        blank=True,
+        help_text="Set when the format was sold per match (DECISIONS D102).",
+    )
+    match_unit_count = models.PositiveSmallIntegerField(
+        _("units per match"),
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        help_text="e.g. 10 for the 10-over match this booking bought.",
+    )
 
     mode = models.CharField(
         _("mode"), max_length=12, choices=BookingMode.choices, default=BookingMode.INDIVIDUAL

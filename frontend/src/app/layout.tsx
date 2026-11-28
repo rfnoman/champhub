@@ -9,6 +9,7 @@ import { getLocale } from "next-intl/server";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { InstallPrompt } from "@/components/layout/install-prompt";
 import { RegisterServiceWorker } from "@/components/layout/register-service-worker";
+import { clerkRoutes } from "@/lib/clerk-routes";
 import { env } from "@/lib/env";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -101,8 +102,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           "pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:pb-0",
         )}
       >
-        {/* ClerkProvider belongs inside <body>, not wrapping <html>. */}
-        <ClerkProvider nonce={nonce}>
+        {/* ClerkProvider belongs inside <body>, not wrapping <html>.
+
+            The routes are passed explicitly rather than left to
+            `NEXT_PUBLIC_CLERK_SIGN_IN_URL` and friends, which production never had:
+            empty, Clerk silently uses the Dashboard's answers and sends a player who
+            has just signed in to the marketing page (lib/clerk-routes.ts). The server
+            half is told separately, in src/proxy.ts. */}
+        <ClerkProvider nonce={nonce} {...clerkRoutes}>
           <NextIntlClientProvider>
             <Providers nonce={nonce}>
               <RegisterServiceWorker />

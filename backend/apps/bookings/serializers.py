@@ -4,6 +4,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.payments.serializers import PaymentSerializer
+from apps.sports.models import MatchUnit
 from apps.sports.serializers import SportFormatSerializer, SportSummarySerializer
 
 from .models import Booking, BookingEvent, BookingMode, BookingVisibility
@@ -38,6 +39,11 @@ class BookingSerializer(serializers.ModelSerializer):
     sport = SportSummarySerializer(read_only=True)
     sport_format = SportFormatSerializer(read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    # Declared so the generated client knows an hourly booking sends "" — a read-only
+    # model field loses `allow_blank` and would type as the enum alone.
+    match_unit = serializers.ChoiceField(
+        choices=MatchUnit.choices, read_only=True, allow_blank=True
+    )
     starts_at = serializers.DateTimeField(read_only=True)
     ends_at = serializers.DateTimeField(read_only=True)
     player_name = serializers.CharField(read_only=True)
@@ -70,6 +76,9 @@ class BookingSerializer(serializers.ModelSerializer):
             "ends_at",
             "price",
             "price_label",
+            # What this booking bought, when it was sold per match (D102): "10 overs".
+            "match_unit",
+            "match_unit_count",
             "mode",
             "visibility",
             "status",

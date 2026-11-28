@@ -4,6 +4,9 @@ Coordinates are real neighbourhood centroids so "near me" ordering is meaningful
 you drag the map around Dhaka, and prices follow the local market: a 5-a-side evening
 slot runs roughly ৳1,500–3,000, with peak Thursday/Friday nights at the top of that.
 
+Cricket and badminton grounds here are sold per match (DECISIONS D102): the catalogue's
+figures apply unless the ground carries a ``match_settings`` override.
+
 Idempotent, like every other seed: matched on slug and updated in place.
 """
 
@@ -203,6 +206,16 @@ DEMO_TURFS: list[dict[str, Any]] = [
                 "prices": [
                     ([], time(7, 0), time(17, 0), "1200.00", "Off-peak"),
                     ([], time(17, 0), time(1, 0), "2000.00", "Peak"),
+                ],
+                # This box sells a shorter match than the catalogue's 10 overs, at a
+                # flat fee rather than the hourly rate scaled up (DECISIONS D102).
+                "match_settings": [
+                    {
+                        "format": ("cricket", "box"),
+                        "match_unit_count": 6,
+                        "approx_minutes": 75,
+                        "match_price": "1800.00",
+                    },
                 ],
             },
         ],

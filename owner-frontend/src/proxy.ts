@@ -2,6 +2,7 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { clerkCspHosts } from "@/lib/clerk-hosts";
+import { clerkRoutes } from "@/lib/clerk-routes";
 
 /**
  * Next.js 16 renamed `middleware.ts` to `proxy.ts` (Node runtime only, no `edge`).
@@ -67,19 +68,29 @@ function policy(nonce: string): string {
   ].join("; ");
 }
 
-export default clerkMiddleware((_auth, request: NextRequest) => {
-  const nonce = crypto.randomUUID().replaceAll("-", "");
-  const csp = policy(nonce);
+export default clerkMiddleware(
+  (_auth, request: NextRequest) => {
+    const nonce = crypto.randomUUID().replaceAll("-", "");
+    const csp = policy(nonce);
 
-  // Next reads the policy off the *request* to find the nonce for its own scripts.
-  const headers = new Headers(request.headers);
-  headers.set("x-nonce", nonce);
-  headers.set("content-security-policy", csp);
+    // Next reads the policy off the *request* to find the nonce for its own scripts.
+    const headers = new Headers(request.headers);
+    headers.set("x-nonce", nonce);
+    headers.set("content-security-policy", csp);
 
-  const response = NextResponse.next({ request: { headers } });
-  response.headers.set("content-security-policy", csp);
-  return response;
-});
+    const response = NextResponse.next({ request: { headers } });
+    response.headers.set("content-security-policy", csp);
+    return response;
+  },
+  /**
+   * `auth.protect()` reads these back out of the request data this middleware
+   * encrypts, and they are the *only* way it learns where the sign-in page is: the
+   * server half of Clerk never sees `<ClerkProvider>`'s props. Left unset it falls
+   * back to the hosted account portal on another origin, which is what production was
+   * doing — see lib/clerk-routes.ts.
+   */
+  { signInUrl: clerkRoutes.signInUrl, signUpUrl: clerkRoutes.signUpUrl },
+);
 
 export const config = {
   matcher: [

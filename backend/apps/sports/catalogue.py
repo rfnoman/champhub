@@ -178,10 +178,20 @@ SPORTS: list[dict[str, Any]] = [
         "icon": "🥅",
         "met_value": "8.00",
         "order": 2,
-        "description": "Indoor five-a-side on a hard court with a low-bounce ball.",
+        "description": (
+            "Indoor football on a hard court with a low-bounce ball \u2014 five a side "
+            "by the book, and anything up to eight a side on a Dhaka court."
+        ),
+        # Ordered by side size: a court lists its options the way an owner thinks about
+        # them, smallest game first. 5v5 is still the one futsal means, which is why it
+        # is the default a ground gets offered, but a 40x20 court comfortably takes
+        # eight a side and owners were selling that as football to get the format.
         "formats": [
-            {"slug": "5v5", "name": "5v5", "players_per_side": 5, "order": 1},
-            {"slug": "4v4", "name": "4v4", "players_per_side": 4, "order": 2},
+            {"slug": "4v4", "name": "4v4", "players_per_side": 4, "order": 1},
+            {"slug": "5v5", "name": "5v5", "players_per_side": 5, "order": 2},
+            {"slug": "6v6", "name": "6v6", "players_per_side": 6, "order": 3},
+            {"slug": "7v7", "name": "7v7", "players_per_side": 7, "order": 4},
+            {"slug": "8v8", "name": "8v8", "players_per_side": 8, "order": 5},
         ],
         "attribute_weights": {
             "stamina": "0.900",
@@ -259,15 +269,30 @@ SPORTS: list[dict[str, Any]] = [
         "order": 3,
         "description": "Box cricket on a turf, or nets for batting and bowling practice.",
         "formats": [
+            # Cricket is bought as a match, not as an hour (DECISIONS D102). Nets are
+            # the exception: practice really is sold by the clock.
             {
                 "slug": "box",
                 "name": "Box cricket",
                 "name_bn": "বক্স ক্রিকেট",
                 "players_per_side": 8,
                 "order": 1,
+                "booking_unit": "match",
+                "match_unit": "overs",
+                "match_unit_count": 10,
+                "approx_minutes": 120,
             },
             {"slug": "nets", "name": "Nets", "name_bn": "নেট", "players_per_side": 4, "order": 2},
-            {"slug": "t20", "name": "T20", "players_per_side": 11, "order": 3},
+            {
+                "slug": "t20",
+                "name": "T20",
+                "players_per_side": 11,
+                "order": 3,
+                "booking_unit": "match",
+                "match_unit": "overs",
+                "match_unit_count": 20,
+                "approx_minutes": 180,
+            },
         ],
         "attribute_weights": {
             "stamina": "0.600",
@@ -351,12 +376,17 @@ SPORTS: list[dict[str, Any]] = [
         "order": 4,
         "description": "Indoor singles or doubles on a marked court.",
         "formats": [
+            # A badminton court is booked for a match of three games, not for an hour.
             {
                 "slug": "singles",
                 "name": "Singles",
                 "name_bn": "সিঙ্গেলস",
                 "players_per_side": 1,
                 "order": 1,
+                "booking_unit": "match",
+                "match_unit": "games",
+                "match_unit_count": 3,
+                "approx_minutes": 45,
             },
             {
                 "slug": "doubles",
@@ -364,6 +394,10 @@ SPORTS: list[dict[str, Any]] = [
                 "name_bn": "ডাবলস",
                 "players_per_side": 2,
                 "order": 2,
+                "booking_unit": "match",
+                "match_unit": "games",
+                "match_unit_count": 3,
+                "approx_minutes": 60,
             },
         ],
         "attribute_weights": {
@@ -518,6 +552,12 @@ def sync_catalogue(registry=None) -> dict[str, int]:
                         "name_bn": fmt.get("name_bn", ""),
                         "players_per_side": fmt["players_per_side"],
                         "order": fmt["order"],
+                        # Absent means "by the clock", which is every format but
+                        # cricket's and badminton's (DECISIONS D102).
+                        "booking_unit": fmt.get("booking_unit", "time"),
+                        "match_unit": fmt.get("match_unit", ""),
+                        "match_unit_count": fmt.get("match_unit_count"),
+                        "approx_minutes": fmt.get("approx_minutes"),
                         "is_active": True,
                     },
                 ),

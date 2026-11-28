@@ -81,9 +81,30 @@ class SportAdmin(ModelAdmin):
 
 @admin.register(SportFormat)
 class SportFormatAdmin(ModelAdmin):
-    list_display = ("sport", "name", "players_per_side", "is_active")
-    list_filter = ("sport", "is_active")
+    list_display = ("sport", "name", "players_per_side", "sold_as", "is_active")
+    list_filter = ("sport", "booking_unit", "is_active")
     search_fields = ("name", "sport__name")
+    fieldsets = (
+        (None, {"fields": ("sport", "name", "name_bn", "slug", "players_per_side")}),
+        (
+            _("How it is sold"),
+            {
+                "fields": ("booking_unit", "match_unit", "match_unit_count", "approx_minutes"),
+                "description": _(
+                    "Cricket and badminton are booked as a match, not as an hour "
+                    "(DECISIONS D102). A per-match format needs all three fields; the "
+                    "approximate length is what the calendar reserves."
+                ),
+            },
+        ),
+        (None, {"fields": ("is_active", "order")}),
+    )
+
+    @admin.display(description=_("sold as"), ordering="booking_unit")
+    def sold_as(self, obj) -> str:
+        if not obj.is_per_match:
+            return str(_("by the clock"))
+        return f"{obj.match_unit_count} {obj.get_match_unit_display()} · ~{obj.approx_minutes}m"
 
 
 @admin.register(SportSkill)

@@ -727,6 +727,8 @@ export interface paths {
         /**
          * Slot availability for a ground
          * @description Operating hours minus closures minus active bookings, sliced by the ground's `slot_minutes`. Unavailable slots are included with a `reason` so the UI can grey them out rather than leave a gap.
+         *
+         *     Pass `sport_format` to price the day for one format. A per-match format (cricket, badminton) is sliced by how long one match runs at this ground and priced per match, not per hour (DECISIONS D102).
          */
         get: operations["ground_availability"];
         put?: never;
@@ -923,6 +925,73 @@ export interface paths {
          * @description Price rules hang off a ground, which hangs off the turf in the URL.
          */
         patch: operations["my_prices_update"];
+        trace?: never;
+    };
+    "/api/v1/me/turfs/{slug}/grounds/{ground_pk}/match-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Per-match terms for a ground
+         * @description How this ground sells a per-match sport: overs, length, flat match price (D102).
+         *
+         *     A row is an *override*. Deleting one is how an owner goes back to the catalogue's
+         *     figures, which is why DELETE is offered on what looks like a settings endpoint.
+         */
+        get: operations["my_match_settings_list"];
+        put?: never;
+        /**
+         * Override a format's match terms
+         * @description How this ground sells a per-match sport: overs, length, flat match price (D102).
+         *
+         *     A row is an *override*. Deleting one is how an owner goes back to the catalogue's
+         *     figures, which is why DELETE is offered on what looks like a settings endpoint.
+         */
+        post: operations["my_match_settings_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/turfs/{slug}/grounds/{ground_pk}/match-settings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One override
+         * @description How this ground sells a per-match sport: overs, length, flat match price (D102).
+         *
+         *     A row is an *override*. Deleting one is how an owner goes back to the catalogue's
+         *     figures, which is why DELETE is offered on what looks like a settings endpoint.
+         */
+        get: operations["my_match_settings_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * Drop an override (back to the catalogue default)
+         * @description How this ground sells a per-match sport: overs, length, flat match price (D102).
+         *
+         *     A row is an *override*. Deleting one is how an owner goes back to the catalogue's
+         *     figures, which is why DELETE is offered on what looks like a settings endpoint.
+         */
+        delete: operations["my_match_settings_delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a format's match terms
+         * @description How this ground sells a per-match sport: overs, length, flat match price (D102).
+         *
+         *     A row is an *override*. Deleting one is how an owner goes back to the catalogue's
+         *     figures, which is why DELETE is offered on what looks like a settings endpoint.
+         */
+        patch: operations["my_match_settings_update"];
         trace?: never;
     };
     "/api/v1/me/turfs/{slug}/hours": {
@@ -3812,12 +3881,18 @@ export interface components {
             /** Display order */
             order?: number;
         };
+        /** @description A day of slots, plus the terms they were sliced and priced under (D102). */
         Availability: {
             /** Format: uuid */
             ground_id: string;
             /** Format: date */
             date: string;
             slot_minutes: number;
+            /** Format: uuid */
+            sport_format_id: string | null;
+            booking_unit: string;
+            match_unit: string;
+            match_unit_count: number | null;
             slots: components["schemas"]["Slot"][];
         };
         /** @enum {unknown} */
@@ -3844,6 +3919,12 @@ export interface components {
              */
             readonly price: string;
             readonly price_label: string;
+            readonly match_unit: components["schemas"]["MatchUnitEnum"] | components["schemas"]["BlankEnum"];
+            /**
+             * Units per match
+             * @description e.g. 10 for the 10-over match this booking bought.
+             */
+            readonly match_unit_count: number | null;
             readonly mode: components["schemas"]["BookingModeEnum"];
             /**
              * @description DECISIONS D2: the booker chooses. Public bookings reach the match board.
@@ -3959,6 +4040,12 @@ export interface components {
          * @enum {string}
          */
         BookingStatusEnum: "reserved" | "confirmed" | "paid" | "completed" | "expired" | "cancelled" | "no_show";
+        /**
+         * @description * `time` - By the clock
+         *     * `match` - Per match
+         * @enum {string}
+         */
+        BookingUnitEnum: "time" | "match";
         /**
          * @description * `public` - Public — looking for players
          *     * `private` - Private
@@ -4291,9 +4378,96 @@ export interface components {
              */
             readonly is_active: boolean;
             readonly notes: string;
-            readonly sport_formats: components["schemas"]["SportFormat"][];
+            readonly sport_formats: components["schemas"]["GroundSportFormat"][];
             readonly sports: components["schemas"]["SportSummary"][];
             readonly price_rules: components["schemas"]["PriceRule"][];
+            readonly format_settings: components["schemas"]["GroundFormatSetting"][];
+        };
+        /** @description An owner's override of one per-match format on one ground. */
+        GroundFormatSetting: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            sport_format_id: string;
+            readonly sport_format_name: string;
+            /**
+             * Units per match
+             * @description e.g. 6 for a six-over match. Blank uses the format's own count.
+             */
+            match_unit_count?: number | null;
+            /**
+             * Approximate minutes
+             * @description How long a match runs here. Blank uses the format's own estimate.
+             */
+            approx_minutes?: number | null;
+            /**
+             * Price per match
+             * Format: decimal
+             * @description BDT, flat per match. Blank prices the match from the matching PriceRule, scaled from the ground's slot length to the match's length.
+             */
+            match_price?: string | null;
+        };
+        /** @description An owner's override of one per-match format on one ground. */
+        GroundFormatSettingRequest: {
+            /** Format: uuid */
+            sport_format_id: string;
+            /**
+             * Units per match
+             * @description e.g. 6 for a six-over match. Blank uses the format's own count.
+             */
+            match_unit_count?: number | null;
+            /**
+             * Approximate minutes
+             * @description How long a match runs here. Blank uses the format's own estimate.
+             */
+            approx_minutes?: number | null;
+            /**
+             * Price per match
+             * Format: decimal
+             * @description BDT, flat per match. Blank prices the match from the matching PriceRule, scaled from the ground's slot length to the match's length.
+             */
+            match_price?: string | null;
+        };
+        /**
+         * @description One format as a given ground sells it (DECISIONS D102).
+         *
+         *     The same shape as a catalogue row, except that `booking_unit`, `match_unit`,
+         *     `match_unit_count` and `approx_minutes` carry this ground's **effective** values —
+         *     its `GroundFormatSetting` merged over the catalogue — plus `minutes`, the length of
+         *     one slot of this format here, and `match_price` when the turf charges a flat fee per
+         *     match. A client never has to merge the override itself.
+         */
+        GroundSportFormat: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly name: string;
+            readonly slug: string;
+            /** @description Match capacity is players_per_side x 2 unless the ground caps it lower. */
+            readonly players_per_side: number;
+            readonly capacity: number;
+            /** Display order */
+            readonly order: number;
+            /**
+             * @description `time` sells the ground by the clock in the ground's own slot length. `match` sells one match, and the three fields below say what a match is.
+             *
+             *     * `time` - By the clock
+             *     * `match` - Per match
+             */
+            readonly booking_unit: components["schemas"]["BookingUnitEnum"];
+            readonly match_unit: components["schemas"]["MatchUnitEnum"] | components["schemas"]["BlankEnum"];
+            /**
+             * Units per match
+             * @description Per-match formats only, e.g. 10 for a 10-over match. A ground may override it.
+             */
+            readonly match_unit_count: number | null;
+            /**
+             * Approximate minutes
+             * @description Per-match formats only: how long one match usually runs. This is the span the booking reserves, and the player sees it as an estimate.
+             */
+            readonly approx_minutes: number | null;
+            readonly minutes: number;
+            /** Format: decimal */
+            readonly match_price: string | null;
         };
         /**
          * @description * `artificial_turf` - Artificial turf
@@ -4620,6 +4794,15 @@ export interface components {
             readonly score: number | null;
         };
         /**
+         * @description * `overs` - overs
+         *     * `games` - games
+         *     * `sets` - sets
+         *     * `innings` - innings
+         *     * `rounds` - rounds
+         * @enum {string}
+         */
+        MatchUnitEnum: "overs" | "games" | "sets" | "innings" | "rounds";
+        /**
          * @description * `board` - On the match board
          *     * `private` - Invite only
          *     * `squad` - Squad only
@@ -4883,6 +5066,13 @@ export interface components {
             readonly latitude: number;
             /** Format: double */
             readonly longitude: number;
+            /**
+             * Google Maps link
+             * Format: uri
+             * @description The link the owner shared from Google Maps. `location` is the authority on where the turf is — this is kept so the public page can offer the venue's own Maps page, which carries photos and reviews a pin does not.
+             */
+            readonly map_url: string;
+            readonly directions_url: string;
             readonly amenities: components["schemas"]["Amenity"][];
             readonly photos: components["schemas"]["TurfPhoto"][];
             readonly sports: components["schemas"]["SportSummary"][];
@@ -4952,6 +5142,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Closure"][];
+        };
+        PaginatedGroundFormatSettingList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["GroundFormatSetting"][];
         };
         PaginatedGroundList: {
             /** @example 123 */
@@ -5155,6 +5360,27 @@ export interface components {
              */
             ends_at?: string;
             reason?: string;
+        };
+        /** @description An owner's override of one per-match format on one ground. */
+        PatchedGroundFormatSettingRequest: {
+            /** Format: uuid */
+            sport_format_id?: string;
+            /**
+             * Units per match
+             * @description e.g. 6 for a six-over match. Blank uses the format's own count.
+             */
+            match_unit_count?: number | null;
+            /**
+             * Approximate minutes
+             * @description How long a match runs here. Blank uses the format's own estimate.
+             */
+            approx_minutes?: number | null;
+            /**
+             * Price per match
+             * Format: decimal
+             * @description BDT, flat per match. Blank prices the match from the matching PriceRule, scaled from the ground's slot length to the match's length.
+             */
+            match_price?: string | null;
         };
         PatchedGroundWriteRequest: {
             name?: string;
@@ -5372,6 +5598,15 @@ export interface components {
             /** Display order */
             order?: number;
         };
+        /**
+         * @description Registering or editing a turf.
+         *
+         *     Position can arrive two ways and the serializer accepts either: an explicit
+         *     `latitude`/`longitude` pair from dragging the pin, or a `map_url` the owner pasted
+         *     out of Google Maps, which :mod:`apps.turfs.maps` reads the pair out of. Both are
+         *     optional *here* and the pairing is enforced in `validate` — a create with neither is
+         *     refused, a patch with neither simply leaves the location alone.
+         */
         PatchedTurfWriteRequest: {
             name?: string;
             description?: string;
@@ -5385,6 +5620,11 @@ export interface components {
             latitude?: number;
             /** Format: double */
             longitude?: number;
+            /**
+             * Google Maps link
+             * @description The link the owner shared from Google Maps. `location` is the authority on where the turf is — this is kept so the public page can offer the venue's own Maps page, which carries photos and reviews a pin does not.
+             */
+            map_url?: string;
             amenity_ids?: string[];
             /**
              * Auto-confirm reliable players
@@ -6429,6 +6669,34 @@ export interface components {
             readonly capacity: number;
             /** Display order */
             order?: number;
+            /**
+             * @description `time` sells the ground by the clock in the ground's own slot length. `match` sells one match, and the three fields below say what a match is.
+             *
+             *     * `time` - By the clock
+             *     * `match` - Per match
+             */
+            booking_unit?: components["schemas"]["BookingUnitEnum"];
+            /**
+             * Counted in
+             * @description Per-match formats only. Overs for cricket, games for badminton.
+             *
+             *     * `overs` - overs
+             *     * `games` - games
+             *     * `sets` - sets
+             *     * `innings` - innings
+             *     * `rounds` - rounds
+             */
+            match_unit?: components["schemas"]["MatchUnitEnum"] | components["schemas"]["BlankEnum"];
+            /**
+             * Units per match
+             * @description Per-match formats only, e.g. 10 for a 10-over match. A ground may override it.
+             */
+            match_unit_count?: number | null;
+            /**
+             * Approximate minutes
+             * @description Per-match formats only: how long one match usually runs. This is the span the booking reserves, and the player sees it as an estimate.
+             */
+            approx_minutes?: number | null;
         };
         SportMinutes: {
             sport: string;
@@ -6833,6 +7101,13 @@ export interface components {
             readonly latitude: number;
             /** Format: double */
             readonly longitude: number;
+            /**
+             * Google Maps link
+             * Format: uri
+             * @description The link the owner shared from Google Maps. `location` is the authority on where the turf is — this is kept so the public page can offer the venue's own Maps page, which carries photos and reviews a pin does not.
+             */
+            readonly map_url: string;
+            readonly directions_url: string;
             readonly amenities: components["schemas"]["Amenity"][];
             readonly photos: components["schemas"]["TurfPhoto"][];
             readonly sports: components["schemas"]["SportSummary"][];
@@ -6930,6 +7205,12 @@ export interface components {
             readonly latitude: number;
             /** Format: double */
             readonly longitude: number;
+            /**
+             * Google Maps link
+             * @description The link the owner shared from Google Maps. `location` is the authority on where the turf is — this is kept so the public page can offer the venue's own Maps page, which carries photos and reviews a pin does not.
+             */
+            map_url?: string;
+            readonly directions_url: string;
             readonly amenities: components["schemas"]["Amenity"][];
             readonly photos: components["schemas"]["TurfPhoto"][];
             readonly sports: components["schemas"]["SportSummary"][];
@@ -6938,6 +7219,15 @@ export interface components {
             /** Format: double */
             readonly distance_km: number | null;
         };
+        /**
+         * @description Registering or editing a turf.
+         *
+         *     Position can arrive two ways and the serializer accepts either: an explicit
+         *     `latitude`/`longitude` pair from dragging the pin, or a `map_url` the owner pasted
+         *     out of Google Maps, which :mod:`apps.turfs.maps` reads the pair out of. Both are
+         *     optional *here* and the pairing is enforced in `validate` — a create with neither is
+         *     refused, a patch with neither simply leaves the location alone.
+         */
         TurfWriteRequest: {
             name: string;
             description?: string;
@@ -6948,9 +7238,14 @@ export interface components {
             /** Contact phone */
             phone?: string;
             /** Format: double */
-            latitude: number;
+            latitude?: number;
             /** Format: double */
-            longitude: number;
+            longitude?: number;
+            /**
+             * Google Maps link
+             * @description The link the owner shared from Google Maps. `location` is the authority on where the turf is — this is kept so the public page can offer the venue's own Maps page, which carries photos and reviews a pin does not.
+             */
+            map_url?: string;
             amenity_ids?: string[];
             /**
              * Auto-confirm reliable players
@@ -7996,6 +8291,8 @@ export interface operations {
             query?: {
                 /** @description YYYY-MM-DD, Dhaka time. */
                 date?: string;
+                /** @description A format this ground hosts. Defaults to the ground's slot grid. */
+                sport_format?: string;
             };
             header?: never;
             path: {
@@ -8335,6 +8632,135 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PriceRule"];
+                };
+            };
+        };
+    };
+    my_match_settings_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                ground_pk: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedGroundFormatSettingList"];
+                };
+            };
+        };
+    };
+    my_match_settings_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ground_pk: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroundFormatSettingRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GroundFormatSettingRequest"];
+                "multipart/form-data": components["schemas"]["GroundFormatSettingRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroundFormatSetting"];
+                };
+            };
+        };
+    };
+    my_match_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ground_pk: string;
+                id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroundFormatSetting"];
+                };
+            };
+        };
+    };
+    my_match_settings_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ground_pk: string;
+                id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    my_match_settings_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ground_pk: string;
+                id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedGroundFormatSettingRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedGroundFormatSettingRequest"];
+                "multipart/form-data": components["schemas"]["PatchedGroundFormatSettingRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroundFormatSetting"];
                 };
             };
         };

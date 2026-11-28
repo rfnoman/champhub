@@ -12,7 +12,18 @@
     "no": "No",
     "loading": "Loading…",
     "notSet": "Not set",
-    "retry": "Try again"
+    "retry": "Try again",
+    "perMatch": "1 match",
+    "matchUnit": {
+      "overs": "{count, plural, one {# over} other {# overs}}",
+      "games": "{count, plural, one {# game} other {# games}}",
+      "sets": "{count, plural, one {# set} other {# sets}}",
+      "innings": "{count, plural, one {# innings} other {# innings}}",
+      "rounds": "{count, plural, one {# round} other {# rounds}}"
+    },
+    "approxHours": "about {hours, plural, one {# hr} other {# hrs}}",
+    "approxMinutes": "about {minutes} min",
+    "approxHoursMinutes": "about {hours} hr {minutes} min"
   },
   "counter": {
     "heading": "Counter",
@@ -377,7 +388,31 @@
     "viewFinance": "Finance",
     "navSettings": "Settings",
     "navTurf": "This turf",
-    "settingsBody": "Grounds, opening hours, prices and staff."
+    "settingsBody": "Grounds, opening hours, prices and staff.",
+    "matchTerms": "Per-match formats",
+    "matchTermsHint": "Cricket and badminton are booked as a match, not as an hour. Say how many overs or games one match is here and roughly how long it runs — players see the length as an estimate. Leave the price blank to charge your hourly rate scaled to that length.",
+    "matchCount": "Per match",
+    "matchMinutes": "Minutes",
+    "matchPrice": "Flat price (৳)",
+    "matchPricePlaceholder": "Hourly rate",
+    "matchSave": "Save",
+    "matchReset": "Use the default",
+    "matchDefault": "catalogue default",
+    "matchCustom": "your setting",
+    "location": "Location",
+    "locationHint": "The pin players see, and where Google Maps sends them.",
+    "locationSummary": "Pin set · {latitude}, {longitude}",
+    "locationUnset": "No pin set yet — players cannot find this turf.",
+    "mapLink": "Google Maps link",
+    "mapLinkPlaceholder": "Paste the Google Maps link",
+    "mapLinkHint": "Open the turf in Google Maps, press Share, and paste the link here — a short one like https://maps.app.goo.gl/… works too.",
+    "saveLocation": "Save location",
+    "checkOnMaps": "Check the pin in Google Maps",
+    "groundsSummary": "{count, plural, one {# ground} other {# grounds}} · {active} active",
+    "hoursSummary": "Open {count, plural, one {# day} other {# days}} a week",
+    "hoursUnset": "No opening hours set — nothing can be booked.",
+    "staffSummary": "{count, plural, one {# person} other {# people}}",
+    "staffNone": "Just you."
   },
   "ownerRegister": {
     "stepCounter": "Step {current} of {total}",
@@ -393,7 +428,8 @@
     "location": {
       "heading": "Where is it?",
       "body": "Drop a pin so players can find you and see how far away you are.",
-      "hint": "Click the map or drag the pin. You can fine-tune the coordinates below."
+      "hint": "Click the map or drag the pin. You can fine-tune the coordinates below.",
+      "linkHint": "Or paste the turf's Google Maps link and we will place the pin for you — Share in Google Maps gives you one."
     },
     "amenities": {
       "heading": "What do you offer?",
@@ -407,7 +443,9 @@
       "phone": "Contact phone",
       "description": "Description",
       "latitude": "Latitude",
-      "longitude": "Longitude"
+      "longitude": "Longitude",
+      "mapLink": "Google Maps link",
+      "mapLinkPlaceholder": "Paste the Google Maps link"
     }
   },
   "rentals": {

@@ -28,7 +28,20 @@ class SportFormatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SportFormat
-        fields = ["id", "name", "slug", "players_per_side", "capacity", "order"]
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "players_per_side",
+            "capacity",
+            "order",
+            # How this format is sold (DECISIONS D102). The catalogue's own figures; a
+            # ground serialises the same format with its effective ones.
+            "booking_unit",
+            "match_unit",
+            "match_unit_count",
+            "approx_minutes",
+        ]
 
 
 class SportSkillSerializer(serializers.ModelSerializer):

@@ -146,7 +146,18 @@
     "no": "No",
     "loading": "Loading…",
     "notSet": "Not set",
-    "retry": "Try again"
+    "retry": "Try again",
+    "perMatch": "1 match",
+    "matchUnit": {
+      "overs": "{count, plural, one {# over} other {# overs}}",
+      "games": "{count, plural, one {# game} other {# games}}",
+      "sets": "{count, plural, one {# set} other {# sets}}",
+      "innings": "{count, plural, one {# innings} other {# innings}}",
+      "rounds": "{count, plural, one {# round} other {# rounds}}"
+    },
+    "approxHours": "about {hours, plural, one {# hr} other {# hrs}}",
+    "approxMinutes": "about {minutes} min",
+    "approxHoursMinutes": "about {hours} hr {minutes} min"
   },
   "onboarding": {
     "stepCounter": "Step {current} of {total}",
@@ -405,7 +416,11 @@
     "squad": "Squad",
     "squadOpenHint": "This squad is open, so the match reaches the board and anyone can ask to join.",
     "squadClosedHint": "This squad is closed, so the match stays private to its members.",
-    "leaderboards": "{sport} leaderboards"
+    "leaderboards": "{sport} leaderboards",
+    "gettingThere": "Getting there",
+    "directions": "Directions",
+    "directionsHint": "Directions open in Google Maps with the route already set.",
+    "viewOnGoogleMaps": "View on Google Maps"
   },
   "adminTurfs": {
     "heading": "Turfs",

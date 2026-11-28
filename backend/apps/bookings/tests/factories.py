@@ -28,6 +28,24 @@ def bookable_ground(*, slot_minutes: int = 60, sport: str = "football", fmt: str
     return ground, sport_format
 
 
+def next_offered_start(*, ground, sport_format, hours_ahead: int = 24) -> datetime:
+    """The first start this ground actually offers for ``sport_format``.
+
+    Needed because the grid depends on the format: a ground slices the day into hours
+    for football and into 10-over matches for cricket (DECISIONS D102), so the next
+    round hour is not necessarily a slot that exists.
+    """
+    from apps.turfs.availability import get_availability
+
+    floor = now() + timedelta(hours=hours_ahead)
+    for offset in (0, 1):
+        day = (floor + timedelta(days=offset)).astimezone(DHAKA).date()
+        for slot in get_availability(ground=ground, day=day, sport_format=sport_format):
+            if slot.start >= floor:
+                return slot.start
+    raise AssertionError(f"{ground} offers no slot for {sport_format}")
+
+
 def next_slot_start(*, hours_ahead: int = 24, hour: int | None = None) -> datetime:
     """A slot start safely in the future, aligned to the top of a Dhaka hour.
 

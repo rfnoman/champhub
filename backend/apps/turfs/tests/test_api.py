@@ -11,13 +11,18 @@ from rest_framework.test import APIClient
 from apps.accounts.tests.factories import PlatformAdminFactory, UserFactory
 from apps.core.utils import DHAKA, now
 from apps.sports.models import SportFormat
-from apps.turfs.availability import clear_booked_range_providers
+from apps.turfs.availability import (
+    booked_range_providers,
+    clear_booked_range_providers,
+    register_booked_range_provider,
+)
 from apps.turfs.models import Ground, Turf, TurfMembership
 from apps.turfs.services import submit_turf_for_review
 
 from .factories import (
     ApprovedTurfFactory,
     GroundFactory,
+    GroundFormatSettingFactory,
     TurfFactory,
     TurfMembershipFactory,
     open_all_week,
@@ -34,9 +39,15 @@ UTTARA = (90.3795, 23.8759)
 
 @pytest.fixture(autouse=True)
 def no_booking_providers():
+    # Restored on the way out: the registry is process-wide, so leaving it empty makes
+    # every bookings test that runs later blind to existing bookings — which fails only
+    # when the files happen to run in that order.
+    saved = booked_range_providers()
     clear_booked_range_providers()
     yield
     clear_booked_range_providers()
+    for provider in saved:
+        register_booked_range_provider(provider)
 
 
 @pytest.fixture
@@ -256,6 +267,170 @@ class TestAvailabilityEndpoint:
         assert client.get(f"/api/v1/grounds/{ground.id}/availability").status_code == 404
 
 
+class TestPerMatchAvailability:
+    """A cricket day is a list of matches, not a list of hours (DECISIONS D102)."""
+
+    @pytest.fixture
+    def box(self):
+        return SportFormat.objects.get(sport__slug="cricket", slug="box")
+
+    @pytest.fixture
+    def turf(self, box):
+        return bookable_turf(slug="mirpur", area="Mirpur", point=MIRPUR, sport_format=box)
+
+    def test_the_day_comes_back_in_matches(self, client, player, turf, box):
+        client.force_authenticate(player)
+        tomorrow = (now().astimezone(DHAKA) + timedelta(days=1)).date()
+
+        response = client.get(
+            f"/api/v1/grounds/{turf.grounds.first().id}/availability",
+            {"date": str(tomorrow), "sport_format": str(box.id)},
+        )
+        assert response.status_code == 200
+        assert response.data["slot_minutes"] == 120
+        assert response.data["booking_unit"] == "match"
+        assert (response.data["match_unit"], response.data["match_unit_count"]) == ("overs", 10)
+        # 24h of opening, two hours a match, at twice the hourly ৳2,000.
+        assert len(response.data["slots"]) == 12
+        assert response.data["slots"][0]["price"] == "4000.00"
+        assert response.data["slots"][0]["minutes"] == 120
+
+    def test_omitting_the_format_keeps_the_hourly_grid(self, client, player, turf):
+        client.force_authenticate(player)
+
+        response = client.get(f"/api/v1/grounds/{turf.grounds.first().id}/availability")
+        assert response.data["slot_minutes"] == 60
+        assert response.data["booking_unit"] == "time"
+        assert response.data["sport_format_id"] is None
+
+    def test_the_ground_reports_its_own_terms_for_the_format(self, client, player, turf, box):
+        GroundFormatSettingFactory(
+            ground=turf.grounds.first(),
+            sport_format=box,
+            match_unit_count=6,
+            approx_minutes=75,
+            match_price="1800.00",
+        )
+        client.force_authenticate(player)
+
+        row = next(
+            fmt
+            for fmt in client.get("/api/v1/turfs/mirpur").data["grounds"][0]["sport_formats"]
+            if fmt["id"] == str(box.id)
+        )
+        assert (row["booking_unit"], row["match_unit"]) == ("match", "overs")
+        assert (row["match_unit_count"], row["minutes"]) == (6, 75)
+        assert row["match_price"] == "1800.00"
+
+    def test_the_listing_card_quotes_the_match_price(self, client, player, turf):
+        """The card's "from ৳x" has to be a price a player can actually pay (D102)."""
+        client.force_authenticate(player)
+
+        card = next(
+            row for row in client.get("/api/v1/turfs").data["results"] if row["slug"] == "mirpur"
+        )
+        assert card["price_from"] == "4000.00"
+
+    def test_a_format_the_ground_does_not_host_is_a_404(self, client, player, turf, football_5v5):
+        client.force_authenticate(player)
+
+        response = client.get(
+            f"/api/v1/grounds/{turf.grounds.first().id}/availability",
+            {"sport_format": str(football_5v5.id)},
+        )
+        assert response.status_code == 404
+
+    def test_a_malformed_format_id_is_a_400_not_a_500(self, client, player, turf):
+        client.force_authenticate(player)
+
+        response = client.get(
+            f"/api/v1/grounds/{turf.grounds.first().id}/availability",
+            {"sport_format": "not-a-uuid"},
+        )
+        assert response.status_code == 400
+
+
+class TestOwnerMatchSettings:
+    """An owner's own overs, length and flat match price (DECISIONS D102)."""
+
+    @pytest.fixture
+    def box(self):
+        return SportFormat.objects.get(sport__slug="cricket", slug="box")
+
+    @pytest.fixture
+    def ground(self, player, box):
+        turf = bookable_turf(
+            slug="mine", area="Uttara", point=UTTARA, sport_format=box, owner=player
+        )
+        return turf.grounds.first()
+
+    def test_an_owner_sets_their_own_terms(self, client, player, ground, box):
+        client.force_authenticate(player)
+
+        created = client.post(
+            f"/api/v1/me/turfs/mine/grounds/{ground.id}/match-settings",
+            {
+                "sport_format_id": str(box.id),
+                "match_unit_count": 6,
+                "approx_minutes": 75,
+                "match_price": "1800.00",
+            },
+            format="json",
+        )
+        assert created.status_code == 201
+        assert created.data["sport_format_name"] == "Box cricket"
+
+        listed = client.get(f"/api/v1/me/turfs/mine/grounds/{ground.id}/match-settings")
+        assert [row["match_unit_count"] for row in listed.data["results"]] == [6]
+
+    def test_dropping_the_override_returns_to_the_catalogue(self, client, player, ground, box):
+        setting = GroundFormatSettingFactory(ground=ground, sport_format=box, approx_minutes=75)
+        client.force_authenticate(player)
+
+        deleted = client.delete(
+            f"/api/v1/me/turfs/mine/grounds/{ground.id}/match-settings/{setting.id}"
+        )
+        assert deleted.status_code == 204
+        assert client.get(f"/api/v1/grounds/{ground.id}/availability").status_code == 200
+        assert (
+            client.get(
+                f"/api/v1/grounds/{ground.id}/availability",
+                {"sport_format": str(box.id)},
+            ).data["slot_minutes"]
+            == 120
+        )
+
+    def test_an_hourly_format_cannot_have_match_terms(self, client, player, ground, football_5v5):
+        """Nobody books "three games of football"."""
+        ground.sport_formats.add(football_5v5)
+        client.force_authenticate(player)
+
+        response = client.post(
+            f"/api/v1/me/turfs/mine/grounds/{ground.id}/match-settings",
+            {"sport_format_id": str(football_5v5.id), "approx_minutes": 75},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "sport_format_id" in response.data
+
+    def test_a_format_the_ground_does_not_host_is_refused(self, client, player, ground):
+        client.force_authenticate(player)
+        elsewhere = SportFormat.objects.get(sport__slug="badminton", slug="doubles")
+
+        response = client.post(
+            f"/api/v1/me/turfs/mine/grounds/{ground.id}/match-settings",
+            {"sport_format_id": str(elsewhere.id), "approx_minutes": 45},
+            format="json",
+        )
+        assert response.status_code == 400
+
+    def test_someone_elses_turf_is_a_404(self, client, ground, box):
+        client.force_authenticate(UserFactory())
+
+        response = client.get(f"/api/v1/me/turfs/mine/grounds/{ground.id}/match-settings")
+        assert response.status_code == 404
+
+
 class TestOwnerArea:
     def test_register_a_turf(self, client, player):
         client.force_authenticate(player)
@@ -387,6 +562,103 @@ class TestOwnerArea:
         )
         assert response.status_code == 200
         assert round(response.data["latitude"], 4) == round(UTTARA[1], 4)
+
+    def test_register_with_a_google_maps_link_instead_of_coordinates(self, client, player):
+        """An owner has the share link, not the latitude (tasks.md)."""
+        client.force_authenticate(player)
+        response = client.post(
+            "/api/v1/me/turfs",
+            {
+                "name": "Link Turf",
+                "address": "Road 5, Dhanmondi",
+                "area": "Dhanmondi",
+                "map_url": "https://www.google.com/maps/place/T/@23.7,90.3,17z/data=!3d23.7465!4d90.3760",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 201, response.data
+        assert round(response.data["latitude"], 4) == 23.7465
+        assert round(response.data["longitude"], 4) == 90.3760
+        # The link is kept as given: it is the venue's own Maps page.
+        assert "google.com/maps/place" in response.data["map_url"]
+
+    def test_registration_without_any_location_says_so(self, client, player):
+        client.force_authenticate(player)
+        response = client.post(
+            "/api/v1/me/turfs",
+            {"name": "Nowhere", "address": "Road 5", "area": "Dhanmondi"},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "latitude" in response.data
+
+    def test_half_a_coordinate_pair_is_refused(self, client, player):
+        client.force_authenticate(player)
+        response = client.post(
+            "/api/v1/me/turfs",
+            {"name": "Half", "address": "R", "area": "Dhanmondi", "latitude": 23.7},
+            format="json",
+        )
+        assert response.status_code == 400
+
+    def test_an_unreadable_link_is_refused_with_advice(self, client, player):
+        client.force_authenticate(player)
+        response = client.post(
+            "/api/v1/me/turfs",
+            {
+                "name": "Bad Link",
+                "address": "R",
+                "area": "Dhanmondi",
+                "map_url": "https://www.google.com/maps/place/Just+A+Name",
+            },
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "Google Maps" in str(response.data["map_url"])
+
+    def test_pasting_a_link_moves_the_pin_after_registration(self, client, player, football_5v5):
+        """Location was uneditable after registration; pasting a link is how it moves."""
+        bookable_turf(
+            slug="mine", area="Mirpur", point=MIRPUR, sport_format=football_5v5, owner=player
+        )
+        client.force_authenticate(player)
+
+        response = client.patch(
+            "/api/v1/me/turfs/mine",
+            {"map_url": "https://www.google.com/maps/@23.8759,90.3795,17z"},
+            format="json",
+        )
+        assert response.status_code == 200, response.data
+        assert round(response.data["latitude"], 4) == 23.8759
+
+    def test_a_dragged_pin_beats_a_stale_link(self, client, player, football_5v5):
+        bookable_turf(
+            slug="mine", area="Mirpur", point=MIRPUR, sport_format=football_5v5, owner=player
+        )
+        client.force_authenticate(player)
+
+        response = client.patch(
+            "/api/v1/me/turfs/mine",
+            {
+                "latitude": UTTARA[1],
+                "longitude": UTTARA[0],
+                "map_url": "https://www.google.com/maps/@23.7000,90.3000,17z",
+            },
+            format="json",
+        )
+        assert response.status_code == 200
+        assert round(response.data["latitude"], 4) == round(UTTARA[1], 4)
+
+    def test_editing_something_else_leaves_the_pin_alone(self, client, player, football_5v5):
+        bookable_turf(
+            slug="mine", area="Mirpur", point=MIRPUR, sport_format=football_5v5, owner=player
+        )
+        client.force_authenticate(player)
+
+        response = client.patch("/api/v1/me/turfs/mine", {"phone": "+8801711000000"})
+        assert response.status_code == 200
+        assert round(response.data["latitude"], 4) == round(MIRPUR[1], 4)
 
     def test_add_a_ground_and_activate_it(self, client, player, football_5v5):
         turf = TurfFactory(slug="mine")

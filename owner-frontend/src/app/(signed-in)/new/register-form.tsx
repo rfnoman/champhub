@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import type { Amenity } from "@/lib/api/types";
+import { describe } from "@/lib/api/errors";
 import { useApiClient } from "@/lib/api/use-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,10 +43,18 @@ export function RegisterTurfForm({ amenities }: { amenities: Amenity[] }) {
   const [area, setArea] = useState("");
   const [phone, setPhone] = useState("");
   const [position, setPosition] = useState<[number, number]>(DHAKA);
+  // `null` until the pin is actually placed: a turf left on the Dhaka default is at the
+  // centre of the city rather than at the turf, and sending that silently is how a
+  // venue ends up three kilometres from itself. A pasted link stands in instead.
+  const [placed, setPlaced] = useState(false);
+  const [mapLink, setMapLink] = useState("");
   const [chosen, setChosen] = useState<string[]>([]);
 
   const index = STEPS.indexOf(step);
-  const canAdvance = step !== "details" || (name.trim() && address.trim() && area.trim());
+  const canAdvance =
+    step === "details"
+      ? Boolean(name.trim() && address.trim() && area.trim())
+      : step !== "location" || placed || mapLink.trim().length > 0;
 
   async function submit() {
     setSubmitting(true);
@@ -58,15 +67,19 @@ export function RegisterTurfForm({ amenities }: { amenities: Amenity[] }) {
         address,
         area,
         phone,
-        latitude: position[0],
-        longitude: position[1],
+        // One of the two is always present — `canAdvance` will not leave the location
+        // step without it. The pin wins when both are, matching the backend.
+        ...(placed ? { latitude: position[0], longitude: position[1] } : {}),
+        ...(mapLink.trim() ? { map_url: mapLink.trim() } : {}),
         amenity_ids: chosen,
       } as never,
     });
 
     setSubmitting(false);
     if (apiError || !data) {
-      setError(t("failed"));
+      // The backend explains an unreadable Maps link; "something went wrong" would
+      // leave the owner re-pasting the same link.
+      setError(describe(apiError) ?? t("failed"));
       return;
     }
 
@@ -157,10 +170,25 @@ export function RegisterTurfForm({ amenities }: { amenities: Amenity[] }) {
                 label: name || t("fields.name"),
               },
             ]}
-            onMove={(latitude, longitude) => setPosition([latitude, longitude])}
+            onMove={(latitude, longitude) => {
+              setPosition([latitude, longitude]);
+              setPlaced(true);
+            }}
             className="h-80 w-full rounded-xl border"
           />
           <p className="text-muted-foreground text-xs">{t("location.hint")}</p>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="map-link">{t("fields.mapLink")}</Label>
+            <Input
+              id="map-link"
+              inputMode="url"
+              value={mapLink}
+              placeholder={t("fields.mapLinkPlaceholder")}
+              onChange={(event) => setMapLink(event.target.value)}
+            />
+            <p className="text-muted-foreground text-xs">{t("location.linkHint")}</p>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="latitude">{t("fields.latitude")}</Label>
@@ -169,7 +197,10 @@ export function RegisterTurfForm({ amenities }: { amenities: Amenity[] }) {
                 type="number"
                 step="0.000001"
                 value={position[0]}
-                onChange={(event) => setPosition([Number(event.target.value) || 0, position[1]])}
+                onChange={(event) => {
+                  setPosition([Number(event.target.value) || 0, position[1]]);
+                  setPlaced(true);
+                }}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -179,7 +210,10 @@ export function RegisterTurfForm({ amenities }: { amenities: Amenity[] }) {
                 type="number"
                 step="0.000001"
                 value={position[1]}
-                onChange={(event) => setPosition([position[0], Number(event.target.value) || 0])}
+                onChange={(event) => {
+                  setPosition([position[0], Number(event.target.value) || 0]);
+                  setPlaced(true);
+                }}
               />
             </div>
           </div>

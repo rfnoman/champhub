@@ -324,6 +324,15 @@ Two projects from the same GitHub repo:
 
 - Both apps use the **same Clerk instance**. The two hosts share the registrable domain
   `champhub.fit`, so one sign-in covers both (D85).
+- There is deliberately **no `NEXT_PUBLIC_CLERK_SIGN_IN_URL`** row (or the three beside
+  it). This table not having them is what broke sign-in on the first deploy: they were
+  in `.env.local.example` only, so local development had them and production did not,
+  and an empty Clerk URL is not an error — Clerk falls back to the Dashboard. Signed-out
+  visitors were sent to the hosted account portal on `accounts.champhub.fit` in Clerk's
+  default purple, and anyone who did sign in landed on the marketing page. They are in
+  `src/lib/clerk-routes.ts` in each app now, read by both `app/layout.tsx` and
+  `src/proxy.ts`, and a unit test checks each one names a route that exists. Do not add
+  them back here.
 - `NEXT_PUBLIC_*` is baked in at build time: change one, then **redeploy**.
 - `vercel.json` pins `sin1`. The API is in Bangalore, so consider `bom1` (Mumbai) for
   server-side fetches. Measure both before changing.

@@ -34,7 +34,11 @@ def _with_related(queryset: QuerySet[Turf], *, only_active_grounds: bool) -> Que
         "photos",
         Prefetch(
             "grounds",
-            queryset=grounds.prefetch_related("sport_formats__sport", "price_rules"),
+            # `format_settings` is read by every ground's selling terms (D102), so it
+            # is prefetched rather than queried once per ground per card.
+            queryset=grounds.prefetch_related(
+                "sport_formats__sport", "price_rules", "format_settings"
+            ),
         ),
         "operating_hours",
     )

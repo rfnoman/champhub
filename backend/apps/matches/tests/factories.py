@@ -7,7 +7,7 @@ from factory.django import DjangoModelFactory
 
 from apps.bookings.models import BookingMode, BookingVisibility
 from apps.bookings.services import create_booking
-from apps.bookings.tests.factories import bookable_ground, next_slot_start
+from apps.bookings.tests.factories import bookable_ground, next_offered_start
 from apps.matches.models import Match, Squad, SquadMembership
 from apps.matches.services import create_squad
 
@@ -63,7 +63,7 @@ def make_match(
     booking = create_booking(
         user=booker,
         ground=ground,
-        start=next_slot_start(hours_ahead=hours_ahead),
+        start=next_offered_start(ground=ground, sport_format=sport_format, hours_ahead=hours_ahead),
         sport_format=sport_format,
         mode=BookingMode.GROUP if squad else BookingMode.INDIVIDUAL,
         visibility=visibility,

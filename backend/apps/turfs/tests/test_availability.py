@@ -10,13 +10,17 @@ import pytest
 from django.utils import timezone
 
 from apps.core.utils import DHAKA
+from apps.sports.models import BookingUnit, SportFormat
 from apps.turfs.availability import (
     TimeRange,
+    booked_range_providers,
+    cheapest_price,
     clear_booked_range_providers,
     get_availability,
     opening_windows,
     price_for,
     register_booked_range_provider,
+    selling_terms,
     uncovered_minutes,
 )
 from apps.turfs.models import OperatingHours
@@ -25,6 +29,7 @@ from .factories import (
     ApprovedTurfFactory,
     ClosureFactory,
     GroundFactory,
+    GroundFormatSettingFactory,
     OperatingHoursFactory,
     PriceRuleFactory,
     open_all_week,
@@ -40,10 +45,18 @@ assert FUTURE.weekday() == 2
 
 @pytest.fixture(autouse=True)
 def no_booking_providers():
-    """Phase 03 registers one at import time; tests opt in explicitly."""
+    """Phase 03 registers one at import time; tests opt in explicitly.
+
+    Restored on the way out: the registry is process-wide, so leaving it empty makes
+    every bookings test that runs later blind to existing bookings — a failure that
+    appears only when the files happen to run in that order.
+    """
+    saved = booked_range_providers()
     clear_booked_range_providers()
     yield
     clear_booked_range_providers()
+    for provider in saved:
+        register_booked_range_provider(provider)
 
 
 @pytest.fixture
@@ -422,3 +435,141 @@ def test_operating_hours_knows_when_it_crosses_midnight():
     assert OperatingHours(open_time=time(18), close_time=time(2)).crosses_midnight is True
     assert OperatingHours(open_time=time(8), close_time=time(22)).crosses_midnight is False
     assert OperatingHours(open_time=time(6), close_time=time(0)).crosses_midnight is True
+
+
+class TestPerMatchFormats:
+    """Cricket and badminton are sold as a match, not as an hour (DECISIONS D102)."""
+
+    @pytest.fixture
+    def box(self):
+        """The seeded 10-over, ~2-hour box cricket format."""
+        fmt = SportFormat.objects.get(sport__slug="cricket", slug="box")
+        assert fmt.booking_unit == BookingUnit.MATCH, "migration 0006 should have set this"
+        return fmt
+
+    @pytest.fixture
+    def pitch(self, turf, box):
+        open_all_week(turf, opens=time(8), closes=time(22))
+        ground = GroundFactory(turf=turf, slot_minutes=60)
+        ground.sport_formats.set([box])
+        price_everything(ground, price="1500.00")
+        return ground
+
+    def test_terms_come_from_the_catalogue_by_default(self, pitch, box):
+        terms = selling_terms(ground=pitch, sport_format=box)
+        assert (terms.per_match, terms.minutes) == (True, 120)
+        assert (terms.match_unit, terms.match_unit_count) == ("overs", 10)
+        assert terms.match_price is None
+
+    def test_a_ground_override_wins(self, pitch, box):
+        GroundFormatSettingFactory(
+            ground=pitch,
+            sport_format=box,
+            match_unit_count=6,
+            approx_minutes=75,
+            match_price="1800.00",
+        )
+        terms = selling_terms(ground=pitch, sport_format=box)
+        assert (terms.minutes, terms.match_unit_count) == (75, 6)
+        assert terms.match_price == Decimal("1800.00")
+
+    def test_a_partly_filled_override_falls_back_per_field(self, pitch, box):
+        """An owner who sets only the over count keeps the catalogue's length."""
+        GroundFormatSettingFactory(ground=pitch, sport_format=box, match_unit_count=8)
+        terms = selling_terms(ground=pitch, sport_format=box)
+        assert (terms.match_unit_count, terms.minutes) == (8, 120)
+
+    def test_no_format_asked_for_keeps_the_hourly_grid(self, pitch):
+        terms = selling_terms(ground=pitch)
+        assert (terms.per_match, terms.minutes) == (False, 60)
+
+    def test_slots_are_as_long_as_a_match(self, pitch, box):
+        slots = get_availability(ground=pitch, day=FUTURE, sport_format=box)
+        assert all(slot.minutes == 120 for slot in slots)
+        assert [slot.start.astimezone(DHAKA).hour for slot in slots] == [8, 10, 12, 14, 16, 18, 20]
+
+    def test_the_same_ground_keeps_its_hourly_grid_for_an_hourly_format(self, pitch, box):
+        """One ground, two answers: the format is what decides the slot length."""
+        hourly = get_availability(ground=pitch, day=FUTURE)
+        assert all(slot.minutes == 60 for slot in hourly)
+        assert len(hourly) == 14
+
+    def test_a_match_is_priced_pro_rata_from_the_hourly_band(self, pitch, box):
+        """৳1,500 an hour, two hours a match: ৳3,000 — not ৳1,500."""
+        slots = get_availability(ground=pitch, day=FUTURE, sport_format=box)
+        assert all(slot.price == Decimal("3000.00") for slot in slots)
+
+    def test_a_shorter_match_costs_less_than_the_slot(self, pitch, box):
+        GroundFormatSettingFactory(ground=pitch, sport_format=box, approx_minutes=90)
+        slots = get_availability(ground=pitch, day=FUTURE, sport_format=box)
+        assert slots[0].price == Decimal("2250.00")
+
+    def test_a_flat_match_price_replaces_the_pro_rata_figure(self, pitch, box):
+        GroundFormatSettingFactory(ground=pitch, sport_format=box, match_price="1800.00")
+        slots = get_availability(ground=pitch, day=FUTURE, sport_format=box)
+        assert all(slot.price == Decimal("1800.00") for slot in slots)
+        # The band label still comes from the price rule — it says *when*, not *what*.
+        assert slots[0].label == "Standard"
+
+    def test_a_flat_price_does_not_sell_an_unpriced_hour(self, turf, box):
+        """`match_price` overrides the amount, never the coverage (DOMAIN §4)."""
+        open_all_week(turf, opens=time(8), closes=time(22))
+        ground = GroundFactory(turf=turf, slot_minutes=60)
+        ground.sport_formats.set([box])
+        PriceRuleFactory(
+            ground=ground, weekdays=[], start_time=time(8), end_time=time(12), price="1500.00"
+        )
+        GroundFormatSettingFactory(ground=ground, sport_format=box, match_price="1800.00")
+
+        slots = get_availability(ground=ground, day=FUTURE, sport_format=box)
+        by_hour = {slot.start.astimezone(DHAKA).hour: slot for slot in slots}
+        assert by_hour[8].price == Decimal("1800.00")
+        assert by_hour[14].price is None
+        assert by_hour[14].reason == "unpriced"
+
+    def test_an_evening_match_is_priced_from_the_band_it_starts_in(self, turf, box):
+        open_all_week(turf, opens=time(8), closes=time(22))
+        ground = GroundFactory(turf=turf, slot_minutes=60)
+        ground.sport_formats.set([box])
+        PriceRuleFactory(
+            ground=ground, weekdays=[], start_time=time(8), end_time=time(18), price="1000.00"
+        )
+        PriceRuleFactory(
+            ground=ground, weekdays=[], start_time=time(18), end_time=time(22), price="2000.00"
+        )
+
+        by_hour = {
+            slot.start.astimezone(DHAKA).hour: slot.price
+            for slot in get_availability(ground=ground, day=FUTURE, sport_format=box)
+        }
+        assert by_hour[16] == Decimal("2000.00")  # 2 x the off-peak hour it starts in
+        assert by_hour[18] == Decimal("4000.00")  # 2 x the peak hour
+
+    def test_the_from_price_quotes_a_match_on_a_cricket_only_ground(self, pitch, box):
+        """A card that said "from ৳1,500" would undercut the only thing on sale by half."""
+        assert cheapest_price(ground=pitch) == Decimal("3000.00")
+
+    def test_a_flat_match_price_is_what_gets_quoted(self, pitch, box):
+        GroundFormatSettingFactory(ground=pitch, sport_format=box, match_price="1800.00")
+        assert cheapest_price(ground=pitch) == Decimal("1800.00")
+
+    def test_an_hour_is_quoted_where_an_hour_can_be_bought(self, pitch, box):
+        """Nets on the same strip are sold by the clock, so the hourly rate is honest."""
+        nets = SportFormat.objects.get(sport__slug="cricket", slug="nets")
+        pitch.sport_formats.add(nets)
+        assert cheapest_price(ground=pitch) == Decimal("1500.00")
+
+    def test_an_unpriced_ground_quotes_nothing(self, turf, box):
+        ground = GroundFactory(turf=turf, slot_minutes=60)
+        ground.sport_formats.set([box])
+        assert cheapest_price(ground=ground) is None
+
+    def test_a_match_that_would_run_past_closing_is_not_offered(self, turf, box):
+        """The last 10-over match of the night has to finish before the gate shuts."""
+        open_all_week(turf, opens=time(18), closes=time(21))
+        ground = GroundFactory(turf=turf, slot_minutes=60)
+        ground.sport_formats.set([box])
+        price_everything(ground)
+
+        slots = get_availability(ground=ground, day=FUTURE, sport_format=box)
+        assert [slot.start.astimezone(DHAKA).hour for slot in slots] == [18]

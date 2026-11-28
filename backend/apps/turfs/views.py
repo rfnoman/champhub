@@ -6,9 +6,11 @@ from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.shortcuts import get_object_or_404
 from django.utils.translation import get_language
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -18,11 +20,13 @@ from apps.core.cache import PUBLIC_TTL, cached
 from apps.core.permissions import IsPlatformAdmin
 from apps.core.utils import DHAKA, now
 
-from .availability import get_availability, uncovered_minutes
+from .availability import get_availability, selling_terms, uncovered_minutes
+from .maps import point_from
 from .models import (
     Amenity,
     Closure,
     Ground,
+    GroundFormatSetting,
     OperatingHours,
     PriceRule,
     Turf,
@@ -42,6 +46,7 @@ from .serializers import (
     AmenitySerializer,
     AvailabilitySerializer,
     ClosureSerializer,
+    GroundFormatSettingSerializer,
     GroundSerializer,
     GroundWriteSerializer,
     OperatingHoursSerializer,
@@ -74,6 +79,33 @@ from .services import (
 def _drf_error(exc: DjangoValidationError) -> Response:
     detail = exc.message_dict if hasattr(exc, "message_dict") else {"detail": exc.messages}
     return Response(detail, status=status.HTTP_400_BAD_REQUEST)
+
+
+def _location_from(data: dict, *, required: bool = True):
+    """Pull the turf's position out of validated write data, consuming its fields.
+
+    Two ways in (see `TurfWriteSerializer`): a dragged pin, which arrives as an explicit
+    pair, or a pasted Google Maps link, which `apps.turfs.maps` reads. The pin wins when
+    both are present — an owner who just dragged it meant the drag, and the link may be
+    the stale one they pasted a minute earlier.
+
+    `map_url` is deliberately *not* consumed: it is a real column, stored as the owner
+    gave it, so the public page can link back to the venue's own Maps page.
+    """
+    latitude = data.pop("latitude", None)
+    longitude = data.pop("longitude", None)
+    if latitude is not None and longitude is not None:
+        return Point(longitude, latitude, srid=4326)
+
+    link = data.get("map_url") or ""
+    if link:
+        # Reaches out to Google for a `maps.app.goo.gl` share link, whose coordinates
+        # live only in what it redirects to. Raises ValidationError when unreadable.
+        return point_from(link)
+
+    if required:
+        raise DjangoValidationError({"latitude": "Give the turf a location."})
+    return None
 
 
 def _parse_point(raw: str | None) -> tuple[float, float] | None:
@@ -197,18 +229,28 @@ class GroundAvailabilityView(APIView):
         description=(
             "Operating hours minus closures minus active bookings, sliced by the "
             "ground's `slot_minutes`. Unavailable slots are included with a `reason` so "
-            "the UI can grey them out rather than leave a gap."
+            "the UI can grey them out rather than leave a gap.\n\n"
+            "Pass `sport_format` to price the day for one format. A per-match format "
+            "(cricket, badminton) is sliced by how long one match runs at this ground "
+            "and priced per match, not per hour (DECISIONS D102)."
         ),
-        parameters=[OpenApiParameter("date", str, description="YYYY-MM-DD, Dhaka time.")],
+        parameters=[
+            OpenApiParameter("date", str, description="YYYY-MM-DD, Dhaka time."),
+            OpenApiParameter(
+                "sport_format",
+                OpenApiTypes.UUID,
+                description="A format this ground hosts. Defaults to the ground's slot grid.",
+            ),
+        ],
         responses={200: AvailabilitySerializer},
     )
     def get(self, request, ground_id):
         # Only grounds at an approved turf: availability would otherwise leak the
         # existence of a venue still in review.
         ground = get_object_or_404(
-            Ground.objects.select_related("turf").filter(
-                is_active=True, turf__status=Turf.Status.APPROVED
-            ),
+            Ground.objects.select_related("turf")
+            .prefetch_related("format_settings")
+            .filter(is_active=True, turf__status=Turf.Status.APPROVED),
             id=ground_id,
         )
         try:
@@ -216,13 +258,30 @@ class GroundAvailabilityView(APIView):
         except DjangoValidationError as exc:
             return _drf_error(exc)
 
-        slots = get_availability(ground=ground, day=day)
+        # A format the ground does not host is a 404, not an empty day: the client asked
+        # about something that does not exist here.
+        sport_format = None
+        requested = request.query_params.get("sport_format")
+        if requested:
+            try:
+                sport_format = get_object_or_404(ground.sport_formats.all(), id=requested)
+            except ValueError, DjangoValidationError:
+                # A malformed UUID reaches the ORM as a ValidationError, which would be
+                # a 500 if it got past here.
+                return _drf_error(DjangoValidationError({"sport_format": "Not a valid id."}))
+
+        terms = selling_terms(ground=ground, sport_format=sport_format)
+        slots = get_availability(ground=ground, day=day, sport_format=sport_format)
         return Response(
             AvailabilitySerializer(
                 {
                     "ground_id": ground.id,
                     "date": day,
-                    "slot_minutes": ground.slot_minutes,
+                    "slot_minutes": terms.minutes,
+                    "sport_format_id": sport_format.id if sport_format else None,
+                    "booking_unit": terms.booking_unit,
+                    "match_unit": terms.match_unit,
+                    "match_unit_count": terms.match_unit_count,
                     "slots": slots,
                 }
             ).data
@@ -271,9 +330,9 @@ class MyTurfViewSet(
         payload.is_valid(raise_exception=True)
         data = dict(payload.validated_data)
         amenities = data.pop("amenities", [])
-        location = Point(data.pop("longitude"), data.pop("latitude"), srid=4326)
 
         try:
+            location = _location_from(data)
             turf = create_turf(owner=request.user, location=location, **data)
         except DjangoValidationError as exc:
             return _drf_error(exc)
@@ -292,10 +351,12 @@ class MyTurfViewSet(
         data = dict(payload.validated_data)
 
         amenities = data.pop("amenities", None)
-        latitude = data.pop("latitude", None)
-        longitude = data.pop("longitude", None)
-        if latitude is not None and longitude is not None:
-            turf.location = Point(longitude, latitude, srid=4326)
+        try:
+            location = _location_from(data, required=False)
+        except DjangoValidationError as exc:
+            return _drf_error(exc)
+        if location is not None:
+            turf.location = location
 
         for field, value in data.items():
             setattr(turf, field, value)
@@ -404,7 +465,7 @@ class MyGroundViewSet(TurfSubResourceViewSet):
 
     def get_queryset(self):
         return Ground.objects.filter(turf=self.get_turf()).prefetch_related(
-            "sport_formats__sport", "price_rules"
+            "sport_formats__sport", "price_rules", "format_settings__sport_format"
         )
 
     def create(self, request, *args, **kwargs):
@@ -551,6 +612,50 @@ class MyPriceRuleViewSet(TurfSubResourceViewSet):
 
     def perform_create(self, serializer):
         serializer.save(ground=self.get_ground())
+
+
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="my_match_settings_list", summary="Per-match terms for a ground"
+    ),
+    create=extend_schema(
+        operation_id="my_match_settings_create", summary="Override a format's match terms"
+    ),
+    partial_update=extend_schema(
+        operation_id="my_match_settings_update", summary="Update a format's match terms"
+    ),
+    destroy=extend_schema(
+        operation_id="my_match_settings_delete",
+        summary="Drop an override (back to the catalogue default)",
+    ),
+    retrieve=extend_schema(operation_id="my_match_settings_retrieve", summary="One override"),
+)
+class MyMatchSettingViewSet(TurfSubResourceViewSet):
+    """How this ground sells a per-match sport: overs, length, flat match price (D102).
+
+    A row is an *override*. Deleting one is how an owner goes back to the catalogue's
+    figures, which is why DELETE is offered on what looks like a settings endpoint.
+    """
+
+    model = GroundFormatSetting
+    serializer_class = GroundFormatSettingSerializer
+    permission_classes = [IsAuthenticated, IsTurfOwnerOrStaffReadOnly]
+    queryset = GroundFormatSetting.objects.none()
+
+    def get_ground(self) -> Ground:
+        return get_object_or_404(Ground, turf=self.get_turf(), pk=self.kwargs["ground_pk"])
+
+    def get_queryset(self):
+        return GroundFormatSetting.objects.filter(ground=self.get_ground()).select_related(
+            "sport_format"
+        )
+
+    def perform_create(self, serializer):
+        ground = self.get_ground()
+        fmt = serializer.validated_data["sport_format"]
+        if fmt not in ground.sport_formats.all():
+            raise DRFValidationError({"sport_format_id": f"{ground.name} does not host that."})
+        serializer.save(ground=ground)
 
 
 class StaffMembershipViewSet(

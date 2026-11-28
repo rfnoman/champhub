@@ -6,7 +6,7 @@ import { getServerApiClient } from "@/lib/api/server";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaderboards } from "@/components/ratings/leaderboards";
-import { TurfMap } from "@/components/turf/turf-map";
+import { TurfLocation } from "@/components/turf/turf-location";
 
 import { BookingPanel } from "./booking-panel";
 
@@ -135,21 +135,15 @@ export default async function TurfDetailPage({ params }: { params: Promise<{ slu
         </section>
       )}
 
-      {data.latitude != null && data.longitude != null && (
-        <TurfMap
-          center={[data.latitude, data.longitude]}
-          zoom={15}
-          markers={[
-            {
-              id: data.id,
-              latitude: data.latitude,
-              longitude: data.longitude,
-              label: data.name,
-              sublabel: data.area,
-            },
-          ]}
-        />
-      )}
+      <TurfLocation
+        name={data.name}
+        area={data.area}
+        address={data.address}
+        latitude={data.latitude}
+        longitude={data.longitude}
+        directionsUrl={data.directions_url}
+        mapUrl={data.map_url}
+      />
     </div>
   );
 }

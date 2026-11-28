@@ -33,8 +33,9 @@ from apps.core.utils import now
 from apps.notifications.models import Notification, NotificationKind
 from apps.payments.models import PaymentStatus
 from apps.players.services import get_or_create_profile
+from apps.sports.models import SportFormat
 from apps.turfs.models import Turf, TurfMembership
-from apps.turfs.tests.factories import TurfMembershipFactory
+from apps.turfs.tests.factories import GroundFormatSettingFactory, TurfMembershipFactory
 
 from .factories import bookable_ground, next_slot_start
 
@@ -223,6 +224,70 @@ class TestCreateBooking:
         assert not Notification.objects.filter(
             user=staff, kind=NotificationKind.BOOKING_PENDING_CONFIRMATION
         ).exists()
+
+
+class TestPerMatchBookings:
+    """Booking a cricket match buys 10 overs, and the calendar reserves the 2 hours."""
+
+    @pytest.fixture
+    def cricket(self):
+        ground, sport_format = bookable_ground(sport="cricket", fmt="box")
+        return ground, sport_format
+
+    def test_the_booking_spans_a_match_not_a_slot(self, player, cricket):
+        ground, box = cricket
+        # Matches are sliced from midnight in two-hour blocks, so an even hour is where
+        # one actually starts.
+        start = next_slot_start(hour=10)
+
+        booking = book(player, ground, box, start=start)
+        assert booking.starts_at == start
+        assert (booking.ends_at - booking.starts_at) == timedelta(minutes=120)
+
+    def test_what_was_bought_is_recorded_on_the_booking(self, player, cricket):
+        booking = book(player, *cricket, start=next_slot_start(hour=10))
+        assert (booking.match_unit, booking.match_unit_count) == ("overs", 10)
+
+    def test_the_match_price_is_not_the_hourly_price(self, player, cricket):
+        """৳2,000 an hour on this ground, two hours a match."""
+        assert book(player, *cricket, start=next_slot_start(hour=10)).price == Decimal("4000.00")
+
+    def test_the_ground_can_sell_its_own_match_instead(self, player, cricket):
+        ground, box = cricket
+        GroundFormatSettingFactory(
+            ground=ground,
+            sport_format=box,
+            match_unit_count=6,
+            approx_minutes=75,
+            match_price="1800.00",
+        )
+        # 10:00 is eight 75-minute matches after midnight, so it is still on the grid.
+        booking = book(player, ground, box, start=next_slot_start(hour=10))
+
+        assert booking.price == Decimal("1800.00")
+        assert booking.match_unit_count == 6
+        assert (booking.ends_at - booking.starts_at) == timedelta(minutes=75)
+
+    def test_an_hourly_booking_records_no_match_unit(self, player, ground, sport_format):
+        booking = book(player, ground, sport_format)
+        assert (booking.match_unit, booking.match_unit_count) == ("", None)
+
+    def test_a_start_off_the_match_grid_is_not_an_offered_slot(self, player, cricket):
+        """Matches run 08:00, 10:00, 12:00… so 09:00 is not on offer, even on the hour."""
+        ground, box = cricket
+        with pytest.raises(ValidationError):
+            book(player, ground, box, start=next_slot_start(hour=9))
+
+    def test_a_match_blocks_every_hour_it_covers(self, player, cricket):
+        """The exclusion constraint is on time, so the whole two hours is gone."""
+        ground, box = cricket
+        start = next_slot_start(hour=10)
+        book(player, ground, box, start=start)
+        nets = SportFormat.objects.get(sport__slug="cricket", slug="nets")
+        ground.sport_formats.add(nets)
+
+        with pytest.raises(SlotTakenError):
+            book(UserFactory(), ground, nets, start=start + timedelta(hours=1))
 
 
 class TestConfirmationDeadline:

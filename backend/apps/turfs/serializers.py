@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+from copy import copy
+
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from apps.sports.models import MatchUnit, SportFormat
 from apps.sports.serializers import SportFormatSerializer, SportSummarySerializer
 
+from .availability import cheapest_price, selling_terms
 from .models import (
     Amenity,
     Closure,
     Ground,
+    GroundFormatSetting,
     OperatingHours,
     PriceRule,
     Turf,
@@ -75,10 +80,88 @@ class ClosureSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class GroundSportFormatSerializer(SportFormatSerializer):
+    """One format as a given ground sells it (DECISIONS D102).
+
+    The same shape as a catalogue row, except that `booking_unit`, `match_unit`,
+    `match_unit_count` and `approx_minutes` carry this ground's **effective** values —
+    its `GroundFormatSetting` merged over the catalogue — plus `minutes`, the length of
+    one slot of this format here, and `match_price` when the turf charges a flat fee per
+    match. A client never has to merge the override itself.
+    """
+
+    minutes = serializers.IntegerField(read_only=True)
+    match_price = serializers.DecimalField(
+        max_digits=12, decimal_places=2, read_only=True, allow_null=True
+    )
+    # Declared rather than inferred: a read-only model field drops `allow_blank`, and
+    # the generated client would then not know that an hourly format sends "".
+    match_unit = serializers.ChoiceField(
+        choices=MatchUnit.choices, read_only=True, allow_blank=True
+    )
+
+    class Meta(SportFormatSerializer.Meta):
+        fields = [*SportFormatSerializer.Meta.fields, "minutes", "match_price"]
+        # Response-only, for the same reason GroundSerializer declares it: every field
+        # here is always present, and a client should not have to treat `booking_unit`
+        # as possibly undefined.
+        read_only_fields = fields
+
+
+def ground_format_terms(ground: Ground) -> list[SportFormat]:
+    """Every format on ``ground``, carrying that ground's selling terms.
+
+    Each row is a **copy**: the originals come out of the prefetch cache and may be
+    shared, so overwriting them in place would leak one ground's over count into the
+    next ground in the same response.
+    """
+    rows = []
+    for fmt in ground.sport_formats.all():
+        terms = selling_terms(ground=ground, sport_format=fmt)
+        row = copy(fmt)
+        row.booking_unit = terms.booking_unit
+        row.match_unit = terms.match_unit
+        row.match_unit_count = terms.match_unit_count
+        row.approx_minutes = terms.minutes if terms.per_match else None
+        row.minutes = terms.minutes
+        row.match_price = terms.match_price
+        rows.append(row)
+    return rows
+
+
+class GroundFormatSettingSerializer(serializers.ModelSerializer):
+    """An owner's override of one per-match format on one ground."""
+
+    sport_format_id = serializers.PrimaryKeyRelatedField(
+        queryset=SportFormat.objects.filter(is_active=True),
+        source="sport_format",
+    )
+    sport_format_name = serializers.CharField(source="sport_format.display_name", read_only=True)
+
+    class Meta:
+        model = GroundFormatSetting
+        fields = [
+            "id",
+            "sport_format_id",
+            "sport_format_name",
+            "match_unit_count",
+            "approx_minutes",
+            "match_price",
+        ]
+
+    # Named for the *serializer* field, not the model one: DRF looks up
+    # `validate_<declared name>`, so `validate_sport_format` would never run.
+    def validate_sport_format_id(self, value: SportFormat) -> SportFormat:
+        if not value.is_per_match:
+            raise serializers.ValidationError("That format is sold by the clock, not per match.")
+        return value
+
+
 class GroundSerializer(serializers.ModelSerializer):
-    sport_formats = SportFormatSerializer(many=True, read_only=True)
+    sport_formats = serializers.SerializerMethodField()
     sports = SportSummarySerializer(many=True, read_only=True)
     price_rules = PriceRuleSerializer(many=True, read_only=True)
+    format_settings = GroundFormatSettingSerializer(many=True, read_only=True)
     surface_label = serializers.CharField(source="get_surface_display", read_only=True)
 
     class Meta:
@@ -96,12 +179,17 @@ class GroundSerializer(serializers.ModelSerializer):
             "sport_formats",
             "sports",
             "price_rules",
+            "format_settings",
         ]
         # Response-only: writes go through GroundWriteSerializer. Declaring every field
         # read-only is what makes them *required* in the generated response type —
         # otherwise a model default (slot_minutes, max_players) reads as `number |
         # undefined` on the client even though it is always present.
         read_only_fields = fields
+
+    @extend_schema_field(GroundSportFormatSerializer(many=True))
+    def get_sport_formats(self, ground: Ground):
+        return GroundSportFormatSerializer(ground_format_terms(ground), many=True).data
 
 
 class GroundWriteSerializer(serializers.ModelSerializer):
@@ -129,6 +217,9 @@ class TurfSummarySerializer(serializers.ModelSerializer):
 
     latitude = serializers.FloatField(read_only=True)
     longitude = serializers.FloatField(read_only=True)
+    #: Derived from `location`, so a card can offer directions without the client having
+    #: to know how Google spells a route URL.
+    directions_url = serializers.CharField(read_only=True)
     amenities = AmenitySerializer(many=True, read_only=True)
     photos = TurfPhotoSerializer(many=True, read_only=True)
     sports = serializers.SerializerMethodField()
@@ -147,6 +238,8 @@ class TurfSummarySerializer(serializers.ModelSerializer):
             "address",
             "latitude",
             "longitude",
+            "map_url",
+            "directions_url",
             "amenities",
             "photos",
             "sports",
@@ -170,9 +263,14 @@ class TurfSummarySerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.CharField(allow_null=True))
     def get_price_from(self, obj) -> str | None:
-        """Cheapest slot price across the turf's active grounds, for the listing card."""
-        prices = [rule.price for ground in obj.grounds.all() for rule in ground.price_rules.all()]
-        return str(min(prices)) if prices else None
+        """Cheapest thing a player can buy across the turf's active grounds.
+
+        Per ground rather than per price rule, because a cricket ground's cheapest
+        product is a match and not an hour (DECISIONS D102).
+        """
+        prices = [cheapest_price(ground=ground) for ground in obj.grounds.all()]
+        quotable = [price for price in prices if price is not None]
+        return str(min(quotable)) if quotable else None
 
     @extend_schema_field(serializers.FloatField(allow_null=True))
     def get_distance_km(self, obj) -> float | None:
@@ -252,8 +350,19 @@ class OwnerTurfSerializer(TurfDetailSerializer):
 
 
 class TurfWriteSerializer(serializers.ModelSerializer):
-    latitude = serializers.FloatField(write_only=True, min_value=-90, max_value=90)
-    longitude = serializers.FloatField(write_only=True, min_value=-180, max_value=180)
+    """Registering or editing a turf.
+
+    Position can arrive two ways and the serializer accepts either: an explicit
+    `latitude`/`longitude` pair from dragging the pin, or a `map_url` the owner pasted
+    out of Google Maps, which :mod:`apps.turfs.maps` reads the pair out of. Both are
+    optional *here* and the pairing is enforced in `validate` — a create with neither is
+    refused, a patch with neither simply leaves the location alone.
+    """
+
+    latitude = serializers.FloatField(write_only=True, min_value=-90, max_value=90, required=False)
+    longitude = serializers.FloatField(
+        write_only=True, min_value=-180, max_value=180, required=False
+    )
     amenity_ids = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Amenity.objects.all(), source="amenities", required=False
     )
@@ -269,11 +378,33 @@ class TurfWriteSerializer(serializers.ModelSerializer):
             "phone",
             "latitude",
             "longitude",
+            "map_url",
             "amenity_ids",
             "auto_confirm_enabled",
             "cancellation_free_hours",
             "advance_percent",
         ]
+        extra_kwargs = {"map_url": {"required": False, "allow_blank": True}}
+
+    def validate(self, attrs):
+        """One of the two ways of saying where the turf is, and half a pair is neither."""
+        has_lat = attrs.get("latitude") is not None
+        has_lng = attrs.get("longitude") is not None
+        if has_lat != has_lng:
+            raise serializers.ValidationError(
+                {"latitude": "Give both latitude and longitude, or neither."}
+            )
+
+        creating = self.instance is None
+        if creating and not has_lat and not attrs.get("map_url"):
+            raise serializers.ValidationError(
+                {
+                    "latitude": (
+                        "Where is the turf? Drop the pin on the map, or paste its Google Maps link."
+                    )
+                }
+            )
+        return attrs
 
 
 class TurfMembershipSerializer(serializers.ModelSerializer):
@@ -329,9 +460,17 @@ class SlotSerializer(serializers.Serializer):
 
 
 class AvailabilitySerializer(serializers.Serializer):
+    """A day of slots, plus the terms they were sliced and priced under (D102)."""
+
     ground_id = serializers.UUIDField()
     date = serializers.DateField()
+    #: The length of every slot below. Equal to the ground's own `slot_minutes` unless a
+    #: per-match format was asked for, in which case it is how long a match runs here.
     slot_minutes = serializers.IntegerField()
+    sport_format_id = serializers.UUIDField(allow_null=True)
+    booking_unit = serializers.CharField()
+    match_unit = serializers.CharField(allow_blank=True)
+    match_unit_count = serializers.IntegerField(allow_null=True)
     slots = SlotSerializer(many=True)
 
 

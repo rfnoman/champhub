@@ -2321,3 +2321,88 @@ have caught it.
 - **The sidebar is a hand-written list** (D98). A model registered tomorrow appears under
   "all applications" and nowhere else until somebody adds it, and nothing fails if they
   do not.
+
+---
+
+# Cricket and badminton are booked per match
+
+Not a numbered phase — asked for during the Phase 13 deploy branch. Decision **D102**.
+
+**What it is.** A turf cannot sell cricket by the hour. Players buy a *10-over match*,
+and the two hours it takes are an estimate the ground reserves, not the product. The
+booking stack was hourly end to end — `Ground.slot_minutes`, a `PriceRule` priced per
+slot, availability sliced by that one number — so the change is a second axis on the
+grid: **the format now decides the slot length and the price**, and one ground answers
+"what is open tomorrow" differently for box cricket (matches) and for nets (hours).
+
+**Backend.**
+
+- `SportFormat` gains `booking_unit` (`time` | `match`), `match_unit` (overs, games,
+  sets, innings, rounds), `match_unit_count` and `approx_minutes`, with a check
+  constraint that a per-match format cannot exist without all three — an unsellable row
+  that availability would have no length to slice by. `clean()` says the same thing in
+  the admin before Postgres has to.
+- `GroundFormatSetting` is the per-ground override: its own over count, its own length,
+  and a flat `match_price`. Every field is nullable and means "use the catalogue", so a
+  row exists only where a turf disagrees. The flat price overrides the **amount**, never
+  the **coverage** — an hour no `PriceRule` covers stays unsellable, which is the
+  invariant `activate_ground` enforces.
+- `availability.selling_terms(ground, sport_format)` is the single answer to "how is this
+  sold here", and `get_availability` and `create_booking` both read it. A match is priced
+  by the band it *starts* in, scaled from the ground's slot length to the match's: ৳1,500
+  an hour is ৳3,000 for a two-hour match. `Booking` snapshots `match_unit` and
+  `match_unit_count` next to `price`, so next month's over count cannot rewrite history.
+- `GET /grounds/{id}/availability?sport_format=…` slices and prices for that format and
+  reports the terms back; omitting it is exactly the old behaviour, which is why every
+  pre-existing test still passes unchanged. Owners get
+  `…/grounds/{id}/match-settings` (list/create/update/**delete** — deleting is how you go
+  back to the catalogue).
+- `price_from` on a listing card now quotes `cheapest_price(ground)` — the cheapest thing
+  a player can actually buy. A cricket-only ground was advertising the hourly rate at half
+  the price of the only thing on sale.
+- Catalogue: box cricket 10 overs ≈ 2 h, T20 20 overs ≈ 3 h, badminton best-of-3 ≈ 45 min
+  (singles) and 60 (doubles). **Nets stay hourly** — practice really is sold by the clock.
+  Migration `sports/0006` re-runs `sync_catalogue`, because `0002` wrote those rows against
+  a schema that did not have the columns yet.
+
+**Frontends.** `lib/match-terms.ts` (copied into both apps, D83) decides which message
+key describes a format — `matchUnit.overs` with a count, and `approxHours` /
+`approxMinutes` / `approxHoursMinutes` for "about 2 hrs" / "about 45 min" / "about 1 hr
+15 min". Whole hours read as hours; "about 120 min" is how a spreadsheet talks. The
+player's **format picker moved above the slot grid** — it used to live in the review step,
+which is impossible now that it decides what the grid contains — and each tile reads
+"10 overs · about 2 hrs" over its price. The review panel says "1 match · 10 overs" with
+the window and the estimate beneath it. Owners edit their own terms per format inside the
+ground row, and the per-match formats are the only ones that get that editor. Both booking
+detail pages (player and staff) show what was bought.
+
+**Verification.** Backend **1920 passed, 4 skipped** — 30 of them new, covering the
+constraint, terms resolution and its per-field fallback, slicing, pro-rata and flat
+pricing, the coverage invariant, the from-price, the API in both shapes, the owner
+endpoints and the booking service. Vitest 87 (both apps green), lint, typecheck and
+`format:check` clean in both. Playwright against the production build: the player's turf,
+booking, discovery, matches and journey specs, and the owner's turf and smoke specs — all
+green. Driven by hand in the browser too: the seeded Bashundhara box (6 overs, 75 min,
+flat ৳1,800) and Dhanmondi's badminton court (3 games, ~45 min, ৳450 off-peak / ৳675 peak).
+
+**Found on the way.** `apps/turfs/tests/test_api.py` cleared the process-wide booked-range
+provider registry and never put it back, so every bookings test that ran *after* it was
+blind to existing bookings — invisible under the normal alphabetical order, a confusing
+failure under any other. Both fixtures now restore what they found. The shared
+`make_match` test factory also had to stop assuming the next round hour is bookable: on a
+per-match format it is not.
+
+**Follow-ups, honestly:**
+
+- **Nothing stops a ground's match length from fitting badly inside its opening hours.**
+  A 75-minute match on a turf that shuts at 22:00 simply drops the remainder, which is
+  correct but silent — the owner is not told that their last match of the night is
+  unsellable.
+- **The owner's editor is three number fields**, with no preview of what the day will
+  look like afterwards and no warning that halving the length halves the price.
+- **A match that runs long is still somebody else's problem.** The calendar reserves
+  `approx_minutes` and the next match starts on time; nothing models the overrun that the
+  word "approximate" is admitting to.
+- **The match board and the player's bookings list** still show times only; the overs are
+  on the detail pages but not in the lists.
+- **The Bangla for the new keys is mine**, and joins the queue waiting on a native speaker.

@@ -11,12 +11,15 @@ ground for a time range (Phase 03), so everything here exists to answer one ques
 * `OperatingHours` and `Closure` say when a turf is open; `PriceRule` says what a slot
   costs. A ground cannot be activated until its price rules cover every open minute,
   which is what stops Phase 03 from ever having to price a slot it cannot price.
+* `GroundFormatSetting` is how one ground sells a per-match sport — its own over count,
+  match length and flat match price, overriding the catalogue (DECISIONS D102).
 """
 
 from __future__ import annotations
 
 from django.conf import settings
 from django.contrib.gis.db import models as gis_models
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -90,6 +93,16 @@ class Turf(BaseModel):
             "on the sphere rather than degrees."
         ),
     )
+    map_url = models.URLField(
+        _("Google Maps link"),
+        max_length=600,
+        blank=True,
+        help_text=(
+            "The link the owner shared from Google Maps. `location` is the authority on "
+            "where the turf is — this is kept so the public page can offer the venue's "
+            "own Maps page, which carries photos and reviews a pin does not."
+        ),
+    )
     phone = models.CharField(_("contact phone"), max_length=32, blank=True)
     amenities = models.ManyToManyField(Amenity, blank=True, related_name="turfs")
 
@@ -156,6 +169,17 @@ class Turf(BaseModel):
     @property
     def longitude(self) -> float | None:
         return self.location.x if self.location else None
+
+    @property
+    def directions_url(self) -> str:
+        """Google Maps, already pointed at this turf and ready to navigate.
+
+        Always derived from `location` rather than from `map_url`: the stored link may
+        be a place page or a dropped pin, and only one of those opens a route.
+        """
+        from .maps import directions_url
+
+        return directions_url(self.latitude, self.longitude)
 
 
 class TurfPhoto(BaseModel):
@@ -423,6 +447,72 @@ class PriceRule(BaseModel):
         end = self.end_time.hour * 60 + self.end_time.minute
         span = (end - start) if end > start else (24 * 60 - start + end)
         return (days, span)
+
+
+class GroundFormatSetting(BaseModel):
+    """How one ground sells one per-match format, where it differs from the catalogue.
+
+    The catalogue says a cricket match is 10 overs in about two hours (DECISIONS D102).
+    Real turfs disagree — a small box in Mohammadpur sells 6 overs in 75 minutes, and
+    one in Uttara charges a flat fee per match rather than the hourly rate scaled up. So
+    every field here is **nullable and means "use the catalogue default"**; a row exists
+    only for the ground that overrides something.
+
+    ``match_price`` overrides the *amount*, never the *coverage*: a slot no `PriceRule`
+    covers stays unsellable, because that invariant is what ground activation checks.
+    """
+
+    ground = models.ForeignKey(Ground, on_delete=models.CASCADE, related_name="format_settings")
+    sport_format = models.ForeignKey(
+        SportFormat, on_delete=models.CASCADE, related_name="ground_settings"
+    )
+    match_unit_count = models.PositiveSmallIntegerField(
+        _("units per match"),
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        help_text="e.g. 6 for a six-over match. Blank uses the format's own count.",
+    )
+    approx_minutes = models.PositiveSmallIntegerField(
+        _("approximate minutes"),
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(15), MaxValueValidator(480)],
+        help_text="How long a match runs here. Blank uses the format's own estimate.",
+    )
+    match_price = models.DecimalField(
+        _("price per match"),
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        help_text=(
+            "BDT, flat per match. Blank prices the match from the matching PriceRule, "
+            "scaled from the ground's slot length to the match's length."
+        ),
+    )
+
+    class Meta:
+        verbose_name = _("ground match setting")
+        verbose_name_plural = _("ground match settings")
+        ordering = ["ground__name", "sport_format__order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["ground", "sport_format"], name="unique_format_setting_per_ground"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.ground} / {self.sport_format.name}"
+
+    def clean(self) -> None:
+        """Reject a setting for a format sold by the clock, or one the ground cannot host."""
+        super().clean()
+        if self.sport_format_id and not self.sport_format.is_per_match:
+            raise DjangoValidationError(
+                {"sport_format": _("That format is sold by the clock, not per match.")}
+            )
 
 
 #: Importable aliases for `SPECTACULAR_SETTINGS["ENUM_NAME_OVERRIDES"]`, which resolves

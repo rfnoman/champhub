@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Money } from "@/components/ui/money";
 import { SlotGrid } from "@/components/turf/slot-grid";
 import { formatWhen } from "@/i18n/formats";
+import { approxDuration, matchUnitLabel } from "@/lib/match-terms";
 
 /** Dhaka-local YYYY-MM-DD, which is what the availability endpoint expects. */
 function dhakaDate(offsetDays = 0): string {
@@ -20,13 +21,18 @@ function dhakaDate(offsetDays = 0): string {
 }
 
 /**
- * Ground picker, date picker, slot grid, and the booking review step.
+ * Ground picker, format picker, date picker, slot grid, and the booking review step.
  *
  * Selecting a slot opens a review panel rather than booking straight away: the player
  * needs to see the price, the cancellation policy and that payment is cash at the turf
  * before they commit. A **409** from the API is the expected outcome of two players
  * pressing Book at the same moment, so it is handled as "pick another slot" rather than
  * as an error.
+ *
+ * The **format is chosen before the slots**, not in the review step where it used to
+ * live: a per-match format is sliced and priced per match (DECISIONS D102), so "what are
+ * we playing" is the question that decides what the grid can even offer. Cricket on a
+ * ground with hourly football gives a different grid from the same ground's football.
  */
 export function BookingPanel({
   grounds,
@@ -40,6 +46,7 @@ export function BookingPanel({
   squads: SquadSummary[];
 }) {
   const t = useTranslations("turfs");
+  const c = useTranslations("common");
   const locale = useLocale();
   const api = useApiClient();
   const router = useRouter();
@@ -59,7 +66,15 @@ export function BookingPanel({
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const key = `${groundId}|${date}`;
+  const ground = grounds.find((item) => item.id === groundId);
+  // A ground can host several formats (5v5 and 7v7 on the same pitch, or cricket and
+  // badminton in one hall); the player picks when there is a choice, and the first is
+  // assumed when there is not.
+  const formats = ground?.sport_formats ?? [];
+  const format = formats.find((item) => item.id === formatId) ?? formats[0];
+  const activeFormatId = format?.id;
+
+  const key = `${groundId}|${date}|${activeFormatId ?? ""}`;
   const loading = loaded?.key !== key;
   const slots = loaded?.key === key ? loaded.slots : [];
 
@@ -69,12 +84,16 @@ export function BookingPanel({
 
     (async () => {
       const { data } = await api.GET("/api/v1/grounds/{ground_id}/availability", {
-        params: { path: { ground_id: groundId }, query: { date } },
+        params: {
+          path: { ground_id: groundId },
+          // The format decides the slot length and the price, so it is part of the
+          // question, not of the answer (DECISIONS D102).
+          query: { date, ...(activeFormatId ? { sport_format: activeFormatId } : {}) },
+        },
       });
       if (!cancelled) {
-        setLoaded({ key: `${groundId}|${date}`, slots: data?.slots ?? [] });
+        setLoaded({ key: `${groundId}|${date}|${activeFormatId ?? ""}`, slots: data?.slots ?? [] });
         setSelected(undefined);
-        setFormatId(undefined);
         setError(null);
       }
     })();
@@ -82,18 +101,15 @@ export function BookingPanel({
     return () => {
       cancelled = true;
     };
-  }, [api, groundId, date]);
+  }, [api, groundId, date, activeFormatId]);
 
   if (grounds.length === 0) {
     return <p className="text-muted-foreground text-sm">{t("noGrounds")}</p>;
   }
 
   const chosen = slots.find((slot) => slot.start === selected);
-  const ground = grounds.find((item) => item.id === groundId);
-  // A ground can host several formats (5v5 and 7v7 on the same pitch); the player picks
-  // when there is a choice, and the first is assumed when there is not.
-  const formats = ground?.sport_formats ?? [];
-  const format = formats.find((item) => item.id === formatId) ?? formats[0];
+  const unit = matchUnitLabel(format);
+  const approx = unit ? approxDuration(format?.minutes) : null;
 
   async function confirmBooking() {
     if (!chosen || !format) return;
@@ -138,7 +154,11 @@ export function BookingPanel({
           <select
             id="ground"
             value={groundId}
-            onChange={(event) => setGroundId(event.target.value)}
+            onChange={(event) => {
+              setGroundId(event.target.value);
+              // The new ground may not host the format that was chosen on the old one.
+              setFormatId(undefined);
+            }}
             className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
           >
             {grounds.map((ground) => (
@@ -148,6 +168,23 @@ export function BookingPanel({
             ))}
           </select>
         </div>
+        {formats.length > 1 && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="format">{t("format")}</Label>
+            <select
+              id="format"
+              value={activeFormatId ?? ""}
+              onChange={(event) => setFormatId(event.target.value)}
+              className="field-select border-input bg-background h-9 rounded-lg border px-2.5 text-sm"
+            >
+              {formats.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="date">{t("date")}</Label>
           <Input
@@ -165,7 +202,12 @@ export function BookingPanel({
       {loading ? (
         <p className="text-muted-foreground text-sm">{t("loadingSlots")}</p>
       ) : (
-        <SlotGrid slots={slots} selected={selected} onSelect={(slot) => setSelected(slot.start)} />
+        <SlotGrid
+          slots={slots}
+          terms={format}
+          selected={selected}
+          onSelect={(slot) => setSelected(slot.start)}
+        />
       )}
 
       {error && (
@@ -178,7 +220,15 @@ export function BookingPanel({
         <div className="bg-muted/40 flex flex-col gap-3 rounded-lg border p-4 text-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <span className="font-medium">
-              <span className="num">{formatWhen(chosen.start, locale, "time")}</span>
+              {unit ? (
+                <>
+                  {c("perMatch")}
+                  {" · "}
+                  {c(unit.key, unit.values)}
+                </>
+              ) : (
+                <span className="num">{formatWhen(chosen.start, locale, "time")}</span>
+              )}
               {" · "}
               <Money amount={chosen.price} />
             </span>
@@ -187,24 +237,20 @@ export function BookingPanel({
             </span>
           </div>
 
-          {formats.length > 1 && (
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs">{t("format")}</Label>
-              <div className="flex flex-wrap gap-2">
-                {formats.map((option) => (
-                  <Button
-                    key={option.id}
-                    type="button"
-                    size="xs"
-                    variant={format?.id === option.id ? "default" : "outline"}
-                    aria-pressed={format?.id === option.id}
-                    onClick={() => setFormatId(option.id)}
-                  >
-                    {option.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
+          {unit && (
+            /* The window the turf reserves, said as the estimate it is: ten overs can
+               run long, and the booking is for the match, not for the two hours. */
+            <p className="text-muted-foreground text-xs">
+              <span className="num">{formatWhen(chosen.start, locale, "time")}</span>
+              {"–"}
+              <span className="num">{formatWhen(chosen.end, locale, "time")}</span>
+              {approx && (
+                <>
+                  {" · "}
+                  {c(approx.key, approx.values)}
+                </>
+              )}
+            </p>
           )}
 
           {squads.length > 0 && (

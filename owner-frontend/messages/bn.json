@@ -12,7 +12,18 @@
     "no": "না",
     "loading": "আসছে…",
     "notSet": "দেওয়া হয়নি",
-    "retry": "আবার চেষ্টা করুন"
+    "retry": "আবার চেষ্টা করুন",
+    "perMatch": "1 ম্যাচ",
+    "matchUnit": {
+      "overs": "{count, plural, one {# ওভার} other {# ওভার}}",
+      "games": "{count, plural, one {# গেম} other {# গেম}}",
+      "sets": "{count, plural, one {# সেট} other {# সেট}}",
+      "innings": "{count, plural, one {# ইনিংস} other {# ইনিংস}}",
+      "rounds": "{count, plural, one {# রাউন্ড} other {# রাউন্ড}}"
+    },
+    "approxHours": "প্রায় {hours, plural, one {# ঘণ্টা} other {# ঘণ্টা}}",
+    "approxMinutes": "প্রায় {minutes} মিনিট",
+    "approxHoursMinutes": "প্রায় {hours} ঘণ্টা {minutes} মিনিট"
   },
   "counter": {
     "heading": "কাউন্টার",
@@ -377,7 +388,31 @@
     "viewFinance": "হিসাব",
     "navSettings": "সেটিংস",
     "navTurf": "এই টার্ফ",
-    "settingsBody": "মাঠ, খোলার সময়, দাম আর কর্মী।"
+    "settingsBody": "মাঠ, খোলার সময়, দাম আর কর্মী।",
+    "matchTerms": "ম্যাচ-ভিত্তিক ফরম্যাট",
+    "matchTermsHint": "ক্রিকেট আর ব্যাডমিন্টন ঘণ্টায় নয়, ম্যাচ হিসেবে বুক হয়। এখানে এক ম্যাচ মানে কত ওভার বা কত গেম, আর সময় মোটামুটি কত — খেলোয়াড়েরা সময়টা আনুমানিক হিসেবেই দেখে। দাম ফাঁকা রাখলে আপনার ঘণ্টার দাম ওই সময় অনুযায়ী হিসেব হবে।",
+    "matchCount": "প্রতি ম্যাচ",
+    "matchMinutes": "মিনিট",
+    "matchPrice": "এক দাম (৳)",
+    "matchPricePlaceholder": "ঘণ্টার দাম",
+    "matchSave": "সেভ",
+    "matchReset": "ডিফল্টে ফিরুন",
+    "matchDefault": "ক্যাটালগের ডিফল্ট",
+    "matchCustom": "আপনার সেটিং",
+    "location": "অবস্থান",
+    "locationHint": "খেলোয়াড়রা যে পিন দেখে, গুগল ম্যাপস যেখানে পাঠাবে।",
+    "locationSummary": "পিন দেওয়া আছে · {latitude}, {longitude}",
+    "locationUnset": "এখনও পিন দেওয়া হয়নি — খেলোয়াড়রা এই টার্ফ খুঁজে পাবে না।",
+    "mapLink": "গুগল ম্যাপস লিঙ্ক",
+    "mapLinkPlaceholder": "গুগল ম্যাপস লিঙ্ক পেস্ট করুন",
+    "mapLinkHint": "গুগল ম্যাপসে টার্ফ খুলে Share চাপুন, তারপর লিঙ্কটি এখানে পেস্ট করুন — https://maps.app.goo.gl/… মতো শর্ট লিঙ্কও কাজ করে।",
+    "saveLocation": "অবস্থান সেভ করুন",
+    "checkOnMaps": "গুগল ম্যাপসে পিন যাচাই করুন",
+    "groundsSummary": "{count, plural, one {# গ্রাউন্ড} other {# গ্রাউন্ড}} · {active}টি সক্রিয়",
+    "hoursSummary": "সপ্তাহে {count, plural, one {# দিন} other {# দিন}} খোলা",
+    "hoursUnset": "খোলার সময় দেওয়া হয়নি — কিছুই বুক করা যাবে না।",
+    "staffSummary": "{count, plural, one {# জন} other {# জন}}",
+    "staffNone": "শুধু আপনি।"
   },
   "ownerRegister": {
     "stepCounter": "ধাপ {current} / {total}",
@@ -393,7 +428,8 @@
     "location": {
       "heading": "কোথায় এটি?",
       "body": "একটি পিন বসান, যাতে খেলোয়াড়েরা আপনাকে খুঁজে পায় আর দূরত্ব দেখতে পারে।",
-      "hint": "ম্যাপে চাপ দিন বা পিনটি টেনে নিন। নিচে অক্ষাংশ-দ্রাঘিমাংশ ঠিক করে নিতে পারেন।"
+      "hint": "ম্যাপে চাপ দিন বা পিনটি টেনে নিন। নিচে অক্ষাংশ-দ্রাঘিমাংশ ঠিক করে নিতে পারেন।",
+      "linkHint": "অথবা টার্ফের গুগল ম্যাপস লিঙ্ক পেস্ট করুন, আমরা পিনটি বসিয়ে দেব — গুগল ম্যাপসে Share চাপলেই লিঙ্ক পাবেন।"
     },
     "amenities": {
       "heading": "আপনি কী কী দেন?",
@@ -407,7 +443,9 @@
       "phone": "যোগাযোগের ফোন",
       "description": "বিবরণ",
       "latitude": "অক্ষাংশ",
-      "longitude": "দ্রাঘিমাংশ"
+      "longitude": "দ্রাঘিমাংশ",
+      "mapLink": "গুগল ম্যাপস লিঙ্ক",
+      "mapLinkPlaceholder": "গুগল ম্যাপস লিঙ্ক পেস্ট করুন"
     }
   },
   "rentals": {

@@ -104,24 +104,28 @@ test.describe("turf detail", () => {
     await page.getByLabel("Date").fill(tomorrow);
     await expect(page.locator("[data-slot-start]").first()).toBeVisible();
 
+    // The ground *and the format* the panel is showing: a per-match format is sliced by
+    // how long a match runs, so asking the API about the wrong one compares two
+    // different days (DECISIONS D102).
+    const groundId = await page.locator("#ground").inputValue();
+    const formatSelect = page.locator("#format");
+    const formatId = (await formatSelect.count()) > 0 ? await formatSelect.inputValue() : "";
+
     const fromApi = await page.evaluate(
-      async ([base, date]) => {
+      async ([base, date, ground, format]) => {
         const token = await (
           window as never as { Clerk: { session: { getToken(): Promise<string> } } }
         ).Clerk.session.getToken();
-        const turf = await (
-          await fetch(`${base}/api/v1/turfs/dhanmondi-arena`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-        ).json();
+        const query = new URLSearchParams({ date });
+        if (format) query.set("sport_format", format);
         const availability = await (
-          await fetch(`${base}/api/v1/grounds/${turf.grounds[0].id}/availability?date=${date}`, {
+          await fetch(`${base}/api/v1/grounds/${ground}/availability?${query}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
         ).json();
         return availability.slots.length as number;
       },
-      [apiBaseUrl(), tomorrow] as const,
+      [apiBaseUrl(), tomorrow, groundId, formatId] as const,
     );
 
     await expect(page.locator("[data-slot-start]")).toHaveCount(fromApi);

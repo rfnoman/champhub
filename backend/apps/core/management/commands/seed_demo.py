@@ -30,7 +30,14 @@ from apps.sports.catalogue import sync_catalogue
 from apps.sports.models import SportFormat
 from apps.turfs.catalogue import sync_amenities
 from apps.turfs.demo import DEMO_TURFS, price_decimal
-from apps.turfs.models import Amenity, OperatingHours, PriceRule, Turf, TurfMembership
+from apps.turfs.models import (
+    Amenity,
+    GroundFormatSetting,
+    OperatingHours,
+    PriceRule,
+    Turf,
+    TurfMembership,
+)
 from apps.turfs.services import activate_ground, approve_turf, create_ground, create_turf
 
 
@@ -272,6 +279,22 @@ class Command(BaseCommand):
                 ground.sport_formats.set(
                     [formats[key] for key in ground_spec["formats"] if key in formats]
                 )
+
+                for setting in ground_spec.get("match_settings", []):
+                    fmt = formats.get(setting["format"])
+                    if fmt is None:
+                        continue
+                    GroundFormatSetting.objects.update_or_create(
+                        ground=ground,
+                        sport_format=fmt,
+                        defaults={
+                            "match_unit_count": setting.get("match_unit_count"),
+                            "approx_minutes": setting.get("approx_minutes"),
+                            "match_price": price_decimal(setting["match_price"])
+                            if setting.get("match_price")
+                            else None,
+                        },
+                    )
 
                 for weekdays, start, end, price, label in ground_spec["prices"]:
                     PriceRule.objects.update_or_create(

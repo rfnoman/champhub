@@ -11,6 +11,7 @@ from .models import (
     Amenity,
     Closure,
     Ground,
+    GroundFormatSetting,
     OperatingHours,
     PriceRule,
     Turf,
@@ -33,6 +34,15 @@ class GroundInline(TabularInline):
     show_change_link = True
     fields = ("name", "surface", "max_players", "slot_minutes", "is_active")
     readonly_fields = ("is_active",)
+
+
+class GroundFormatSettingInline(TabularInline):
+    """Only useful for cricket and badminton — the per-match formats (D102)."""
+
+    model = GroundFormatSetting
+    extra = 0
+    autocomplete_fields = ("sport_format",)
+    fields = ("sport_format", "match_unit_count", "approx_minutes", "match_price")
 
 
 class OperatingHoursInline(TabularInline):
@@ -105,7 +115,15 @@ class GroundAdmin(ModelAdmin):
     autocomplete_fields = ("turf",)
     filter_horizontal = ("sport_formats",)
     prepopulated_fields = {"slug": ("name",)}
-    inlines = [PriceRuleInline]
+    inlines = [PriceRuleInline, GroundFormatSettingInline]
+
+
+@admin.register(GroundFormatSetting)
+class GroundFormatSettingAdmin(ModelAdmin):
+    list_display = ("ground", "sport_format", "match_unit_count", "approx_minutes", "match_price")
+    list_filter = ("sport_format__sport",)
+    search_fields = ("ground__name", "ground__turf__name")
+    autocomplete_fields = ("ground", "sport_format")
 
 
 @admin.register(TurfMembership)

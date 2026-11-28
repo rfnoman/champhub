@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Money } from "@/components/ui/money";
 import { getServerApiClient } from "@/lib/api/server";
+import { approxDuration, matchUnitLabel } from "@/lib/match-terms";
 
 import { StaffActions } from "./staff-actions";
 
@@ -43,12 +44,24 @@ export default async function TurfBookingPage({
   if (!data || data.turf_slug !== slug) notFound();
 
   const t = await getTranslations("ownerBooking");
+  const c = await getTranslations("common");
+  // Staff need to know what was sold, not only when: this booking bought 10 overs
+  // (DECISIONS D102), and the two hours it reserved are an estimate.
+  const unit = matchUnitLabel(data);
+  const approx = unit
+    ? approxDuration(Math.round((Date.parse(data.ends_at) - Date.parse(data.starts_at)) / 60_000))
+    : null;
 
   return (
     <div className="flex flex-col gap-6">
       <SectionHeader
         title={data.player_name}
-        body={`${data.ground_name} · ${data.sport.name} ${data.sport_format.name}`}
+        body={[
+          `${data.ground_name} · ${data.sport.name} ${data.sport_format.name}`,
+          unit && c(unit.key, unit.values),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
         actions={
           <>
             <BookingStatusBadge status={data.status} label={data.status_label} />
@@ -59,6 +72,7 @@ export default async function TurfBookingPage({
 
       <p className="text-sm">
         <BookingTime start={data.starts_at} end={data.ends_at} />
+        {approx && <span className="text-muted-foreground"> · {c(approx.key, approx.values)}</span>}
       </p>
 
       {data.cancel_reason && (
