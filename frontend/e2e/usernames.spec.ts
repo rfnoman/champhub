@@ -65,11 +65,22 @@ test.describe("usernames", () => {
       await page.getByLabel("Username", { exact: true }).fill(`@${guestHandle}`);
       await page.getByRole("button", { name: "Invite", exact: true }).first().click();
 
-      // And it arrives: the guest, who was never asked for anything but a handle.
-      await guest.page.goto(`/matches/${matchId}`);
+      // Wait for the organiser's own view to show the invitation before looking at the
+      // guest's. `click()` returns when the click is dispatched, not when the POST has
+      // been recorded, so navigating the second context straight away is a race the
+      // faster production build loses — the guest's page renders server-side before the
+      // row exists and shows "Ask to join" instead.
       await expect(
-        guest.page.getByRole("heading", { name: "You have been invited" }),
+        page.getByText(`@${guestHandle}`).or(page.getByText("Waiting for them to accept")).first(),
       ).toBeVisible();
+
+      // And it arrives: the guest, who was never asked for anything but a handle.
+      //
+      // Matched on the text, not `role=heading`: the card's title is a `<div>` in the
+      // design system, so a heading role was never going to resolve — which is why this
+      // assertion had been failing on its own terms rather than on the app's.
+      await guest.page.goto(`/matches/${matchId}`);
+      await expect(guest.page.getByText("You have been invited")).toBeVisible();
     } finally {
       await guest.close();
     }
@@ -87,7 +98,10 @@ test.describe("usernames", () => {
     await page.getByLabel("Username", { exact: true }).fill("nobody_here_at_all");
     await page.getByRole("button", { name: "Invite", exact: true }).first().click();
 
-    await expect(page.getByRole("alert")).toContainText(/username/i);
+    // Matched on the text rather than role=alert: Next's route announcer is one too,
+    // so the role matches two elements and strict mode refuses to choose. The same
+    // pitfall is already noted in the owner app's counter spec.
+    await expect(page.getByText(/No player has that username/i)).toBeVisible();
   });
 
   test("a handle can be changed from settings, and the old one stops resolving", async ({
