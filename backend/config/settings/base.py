@@ -450,6 +450,7 @@ SPECTACULAR_SETTINGS = {
         "StatValueTypeEnum": "apps.sports.models.STAT_VALUE_TYPE_CHOICES",
         "StatScopeEnum": "apps.sports.models.STAT_SCOPE_CHOICES",
         "IdentityStatusEnum": "apps.accounts.models.IDENTITY_STATUS_CHOICES",
+        "AccountClaimStatusEnum": "apps.accounts.models.ACCOUNT_CLAIM_STATUS_CHOICES",
         "IdentityDocumentTypeEnum": "apps.accounts.models.IDENTITY_DOCUMENT_TYPE_CHOICES",
         "PlayerGenderEnum": "apps.players.models.PLAYER_GENDER_CHOICES",
         "ProductKindEnum": "apps.inventory.models.PRODUCT_KIND_CHOICES",

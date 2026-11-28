@@ -484,3 +484,9 @@ class AccountClaim(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.user} claims {self.guest} ({self.status})"
+
+
+#: Importable alias for ENUM_NAME_OVERRIDES, same as the identity ones above. Without it
+#: drf-spectacular resolves this `status` against every other `status` choice set in the
+#: project and names the collision `Status99fEnum`, which CI's `--fail-on-warn` refuses.
+ACCOUNT_CLAIM_STATUS_CHOICES = AccountClaim.Status.choices
