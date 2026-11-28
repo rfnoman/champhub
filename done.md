@@ -216,3 +216,31 @@ frontends lint, typecheck, format and unit-test clean.
 - **A rejected claim gives no way to appeal in-app.** The copy says to ask turf staff to
   vouch, and there is no mechanism for staff to do that vouching.
 - **The Bangla for all of this is mine**, and joins the queue waiting on a native speaker.
+
+---
+
+## Verification notes — 2026-11-28
+
+Running the end-to-end suites against the **production build** (not `next dev`, per the
+Playwright config's own comment) turned up seven failing specs. None of them were app
+bugs introduced by this work, but two kinds are worth writing down.
+
+**Four specs encoded behaviour this batch deliberately changed.** They clicked past the
+registration form's map step with a comment saying the Dhaka default was fine, and one
+filled the walk-in Name and Phone directly. Both are now wrong on purpose (D103, D108),
+so the specs paste a Maps link and pick the guest half of the form. That is the kind of
+failure a test is *for*.
+
+**Three were the specs' own bugs, and had been for a while.** `usernames.spec.ts` asked
+for `role=heading` on a card title the design system renders as a `<div>`, matched
+`role=alert` where Next's route announcer also matches, and clicked Invite then switched
+browser context before the POST had landed. The database was checked first — the invites
+were being written with `leader_approved` and the serializer's own filter found them —
+so there was nothing to fix behind the glass. The file's absence from the previous
+phase's list of green specs now makes sense.
+
+**Also worth knowing for the next person:** `npm run test:e2e` locally reuses an already
+running dev server (`reuseExistingServer: !CI`), so a dev server left up means the suite
+silently tests `next dev` and reports failures the config exists to avoid — and Clerk's
+secret has to be exported into the shell or 115 authenticated specs skip without saying
+much about it.

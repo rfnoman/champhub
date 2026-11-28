@@ -2476,6 +2476,18 @@ three of the findings below came from.
   account by definition.
 - Naming the QR landing page's i18n namespace `counter` silently overwrote the owner
   app's POS till namespace. Restored from HEAD; it is `counterScan`.
+- **`usernames.spec.ts` was failing on its own terms, and had been.** Three test bugs,
+  no app bug: it asked for `role=heading` on a card title that the design system renders
+  as a `<div>`; it matched `role=alert`, which also matches Next's route announcer, so
+  strict mode refused to choose; and it clicked Invite then navigated the second browser
+  context immediately, which is a race the faster production build loses. Confirmed
+  against the database before touching anything — the invites were being written with
+  `leader_approved` and the serializer's own filter found them. That file's absence from
+  the previous phase's list of green specs now makes sense.
+- **Four e2e specs had to learn that a turf needs a location** (D103). They clicked past
+  the map step with a comment saying the Dhaka default was fine, which is exactly the
+  behaviour that changed. They paste the Maps link now, which also exercises the parser
+  through the whole stack.
 
 **Follow-ups, honestly:** each batch entry in `done.md` ends with its own list. The one
 worth repeating here is that **the walk-in time field is free text against a per-match
